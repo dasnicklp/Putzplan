@@ -235,9 +235,7 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-// Die App wird vom Worker selbst ausgeliefert, das Backend liegt also unter derselben Adresse.
-// Nur falls die App woanders liegt (z. B. GitHub Pages), wird die volle Worker-Adresse benutzt.
-const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
+const API_BASE = 'https://putzplan-api.n-kudenholdt2000.workers.dev'; // Adresse des Workers (aus der Action "Backend veröffentlichen")
 const PEOPLE = { nick: 'Nick', partner: 'Freundin' };          // Anzeigenamen
 const CATS = ['Küche', 'Bad', 'Wohnzimmer', 'Wäsche', 'Sonstiges'];
 const REPEAT_LABEL = { none: '', weekly: '↻ wöchentlich', monthly: '↻ monatlich' };

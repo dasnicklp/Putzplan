@@ -1,12 +1,12 @@
-# Veröffentlicht Backend (worker/) und App (docs/) auf Cloudflare.
+# Veröffentlicht das Backend (worker/) auf Cloudflare.
 # Braucht zwei Repository-Secrets: CLOUDFLARE_API_TOKEN und CLOUDFLARE_ACCOUNT_ID (siehe SETUP.md).
 # Legt die D1-Datenbank "putzplan" beim ersten Lauf selbst an.
-name: App und Backend veröffentlichen
+name: Backend veröffentlichen
 
 on:
   push:
     branches: [main]
-    paths: ['worker/**', 'docs/**', '.github/workflows/deploy-worker.yml']
+    paths: ['worker/**', '.github/workflows/deploy-worker.yml']
   workflow_dispatch:
 
 jobs:
@@ -66,12 +66,9 @@ jobs:
       - name: Erreichbarkeit prüfen
         run: |
           for i in 1 2 3 4 5 6 7 8 9 10; do
-            if curl -fsS "$WORKER_URL/api" | grep -q '"putzplan-api"' && curl -fsS "$WORKER_URL/" | grep -q '<title>Putzplan</title>'; then
-              echo "Backend und App antworten."
-              echo "### App-Adresse für die Handys: $WORKER_URL/" >> "$GITHUB_STEP_SUMMARY"
-              exit 0
-            fi
+            BODY=$(curl -fsS "$WORKER_URL/api" || true)
+            if [[ "$BODY" == *'"putzplan-api"'* ]]; then echo "Worker antwortet."; exit 0; fi
             sleep 3
           done
-          echo "::error::Worker oder App antworten nicht unter $WORKER_URL"
+          echo "::error::Worker antwortet nicht unter $WORKER_URL/api"
           exit 1

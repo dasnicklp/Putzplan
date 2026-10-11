@@ -1,8 +1,8 @@
 // Service Worker: Offline-Cache für die App-Dateien.
 // Netzwerk zuerst (damit Updates ankommen), Cache als Rückfall (damit es offline trotzdem startet).
 // Die Verbindung zum Backend (andere Domain) wird nie zwischengespeichert.
-const CACHE = 'putzplan-v2';
-const SHELL = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
+const CACHE = 'putzplan-v1';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
@@ -30,6 +30,6 @@ self.addEventListener('fetch', (e) => {
         caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
         return res;
       })
-      .catch(() => caches.match(e.request).then((r) => r || caches.match('./')))
+      .catch(() => caches.match(e.request).then((r) => r || caches.match('./index.html')))
   );
 });

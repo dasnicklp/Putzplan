@@ -12,16 +12,14 @@ Gemeinsamer Putzplan für zwei Personen als Web-App (PWA). Läuft auf iPhone und
 ## Aufbau
 
 ```
-docs/      App (statisch, wird vom Worker mit ausgeliefert)
+docs/      App (statisch, wird von GitHub Pages ausgeliefert)
   index.html            die ganze App: Oberfläche, Logik, Sync
   sw.js                 Offline-Cache
   manifest.webmanifest  Name und Icons für die Installation
 worker/    Backend (Cloudflare Worker + D1-Datenbank)
   src/index.js          API: Haushalt anlegen, Code prüfen, Aufgaben synchronisieren
-  wrangler.toml         Worker-Name, Datenbank-Verknüpfung, Ordner der App
-.github/workflows/deploy-worker.yml   veröffentlicht App und Backend automatisch bei Änderungen auf main
+  wrangler.toml         Worker-Name und Datenbank-Verknüpfung
+.github/workflows/deploy-worker.yml   veröffentlicht das Backend automatisch bei Änderungen auf main
 ```
 
-**App-Adresse:** <https://putzplan-api.n-kudenholdt2000.workers.dev/>
-
-Anpassen ohne Programmieren: oben im `<script>`-Teil von `docs/index.html` stehen Namen, Kategorien und das Abfrage-Intervall.
+Anpassen ohne Programmieren: oben im `<script>`-Teil von `docs/index.html` stehen Backend-Adresse, Namen, Kategorien und das Abfrage-Intervall.
