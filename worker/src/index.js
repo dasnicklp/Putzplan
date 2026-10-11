@@ -1,7 +1,7 @@
 // Putzplan-Backend (Cloudflare Worker + D1)
 // - Liefert außerdem die App (docs/) als statische Dateien aus, siehe [assets] in wrangler.toml
 // - Zugang über einen 6-stelligen Haushaltscode, kein Konto
-// - Sync: Geräte schicken Aufgaben, Notizen und Einkaufsliste, der Server führt sie zusammen (neueste Änderung gewinnt pro Eintrag)
+// - Sync: Geräte schicken Aufgaben, Notizen, Einkaufsliste und Rezepte, der Server führt sie zusammen (neueste Änderung gewinnt pro Eintrag)
 // - Nach 5 falschen Codes von einer IP wird diese IP 15 Minuten gesperrt
 // - Erinnerungen: Geräte melden sich für Web Push an, ein Zeitplan (alle 15 Minuten) schickt einmal am Tag die offenen Aufgaben
 
@@ -13,6 +13,7 @@ const MAX_BODY = 1024 * 1024;
 const MAX_TASKS = 2000;
 const MAX_NOTES = 1000;
 const MAX_SHOP = 1000;
+const MAX_RECIPES = 300;
 const MAX_DATA = 1500 * 1024; // D1 erlaubt ca. 2 MB pro Zeile
 const TOMBSTONE_MS = 60 * 864e5; // gelöschte Aufgaben 60 Tage merken, damit andere Geräte sie auch löschen
 const MAX_FAILS = 5;
@@ -141,12 +142,34 @@ function cleanShopItem(it) {
   return {
     id: it.id,
     name,
-    qty: clampStr(it.qty, 30),
+    qty: clampStr(it.qty, 60),
+    from: clampStr(it.from, 100), // Rezept, für das der Eintrag auf der Liste steht
     cat: clampStr(it.cat, 40),
     done: it.done === true,
     doneAt: Number.isFinite(it.doneAt) ? it.doneAt : null,
     createdAt: Number.isFinite(it.createdAt) ? it.createdAt : it.updatedAt,
     updatedAt: it.updatedAt,
+    deleted,
+  };
+}
+
+function cleanRecipe(r) {
+  if (!r || typeof r !== 'object') return null;
+  if (typeof r.id !== 'string' || !/^[\w-]{1,64}$/.test(r.id)) return null;
+  if (!Number.isFinite(r.updatedAt)) return null;
+  const deleted = r.deleted === true;
+  const title = clampStr(r.title, 200);
+  if (!deleted && !title) return null;
+  const link = clampStr(r.link, 500);
+  return {
+    id: r.id,
+    title,
+    servings: Number.isInteger(r.servings) && r.servings >= 1 && r.servings <= 50 ? r.servings : 2,
+    ingredients: typeof r.ingredients === 'string' ? r.ingredients.slice(0, 5000) : '', // eine Zutat pro Zeile
+    steps: typeof r.steps === 'string' ? r.steps.slice(0, 10000) : '',
+    link: /^https?:\/\//i.test(link) ? link : '',
+    createdAt: Number.isFinite(r.createdAt) ? r.createdAt : r.updatedAt,
+    updatedAt: r.updatedAt,
     deleted,
   };
 }
@@ -175,7 +198,7 @@ function mergeItems(current, incoming, max) {
 }
 
 // Lesen, zusammenführen, schreiben. Bei gleichzeitigem Schreiben wird wiederholt (optimistische Sperre).
-async function sync(env, id, incoming, incomingNotes, incomingShop, incomingSettings) {
+async function sync(env, id, incoming, incomingNotes, incomingShop, incomingRecipes, incomingSettings) {
   for (let i = 0; i < 6; i++) {
     const row = await env.DB.prepare('SELECT data, updated_at FROM households WHERE id = ?').bind(id).first();
     if (!row) return null;
@@ -183,13 +206,15 @@ async function sync(env, id, incoming, incomingNotes, incomingShop, incomingSett
     const merged = mergeItems(cur.tasks || [], incoming, MAX_TASKS);
     const notes = mergeItems(cur.notes || [], incomingNotes, MAX_NOTES);
     const shop = mergeItems(cur.shop || [], incomingShop, MAX_SHOP);
+    const recipes = mergeItems(cur.recipes || [], incomingRecipes, MAX_RECIPES);
     let settings = cur.settings || null;
     if (incomingSettings && (!settings || incomingSettings.updatedAt > settings.updatedAt)) settings = incomingSettings;
-    const out = { tasks: merged, notes, shop, settings };
+    const out = { tasks: merged, notes, shop, recipes, settings };
     // Gespeichert wird nur, was es gibt (alte Datensätze ohne Notizen/Einkaufsliste bleiben unverändert)
     const stored = { tasks: merged };
     if (notes.length || cur.notes) stored.notes = notes;
     if (shop.length || cur.shop) stored.shop = shop;
+    if (recipes.length || cur.recipes) stored.recipes = recipes;
     if (settings) stored.settings = settings;
     const data = JSON.stringify(stored);
     if (data === row.data) return out; // nichts geändert, nichts schreiben
@@ -405,10 +430,11 @@ async function handle(req, env) {
     const incoming = (Array.isArray(body.tasks) ? body.tasks.slice(0, MAX_TASKS) : []).map(cleanTask).filter(Boolean);
     const incomingNotes = (Array.isArray(body.notes) ? body.notes.slice(0, MAX_NOTES) : []).map(cleanNote).filter(Boolean);
     const incomingShop = (Array.isArray(body.shop) ? body.shop.slice(0, MAX_SHOP) : []).map(cleanShopItem).filter(Boolean);
-    const out = await sync(env, auth.id, incoming, incomingNotes, incomingShop, cleanSettings(body.settings));
+    const incomingRecipes = (Array.isArray(body.recipes) ? body.recipes.slice(0, MAX_RECIPES) : []).map(cleanRecipe).filter(Boolean);
+    const out = await sync(env, auth.id, incoming, incomingNotes, incomingShop, incomingRecipes, cleanSettings(body.settings));
     if (!out) return json(req, { error: 'unknown' }, 404);
     if (out.tooBig) return json(req, { error: 'too_big' }, 413);
-    return json(req, { tasks: out.tasks, notes: out.notes, shop: out.shop, settings: out.settings, serverTime: Date.now() });
+    return json(req, { tasks: out.tasks, notes: out.notes, shop: out.shop, recipes: out.recipes, settings: out.settings, serverTime: Date.now() });
   }
 
   // Gerät für Erinnerungen anmelden (oder Einstellungen ändern)

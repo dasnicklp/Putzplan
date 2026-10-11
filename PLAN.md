@@ -36,7 +36,7 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 | POST | `/api/push/subscribe` | Gerät für die tägliche Erinnerung anmelden: Push-Adresse, Person, Uhrzeit, Zeitzone |
 | POST | `/api/push/unsubscribe` | Abmelden |
 | POST | `/api/push/test` | Sofort eine Erinnerung schicken |
-| POST | `/api/sync` | Aufgaben, Notizen, Einkaufsliste und Einstellungen senden, zusammengeführten Stand zurückbekommen |
+| POST | `/api/sync` | Aufgaben, Notizen, Einkaufsliste, Rezepte und Einstellungen senden, zusammengeführten Stand zurückbekommen |
 
 ## Aufgabe (Datenmodell)
 
@@ -100,6 +100,14 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 - **Urlaubsmodus** (`settings.away.until` = Tag der Rückkehr): Offenes rutscht hinter den Urlaub, wiederkehrende Aufgaben im Rhythmus; Erinnerungen und Zähler pausieren
 - **Startpaket** mit 15 typischen Aufgaben, wahlweise abwechselnd zugewiesen
 - **Einkaufsliste:** mehrere Einträge per Komma oder Zeilen (auch beim Einfügen), Teilen-Ziel im Manifest (Android)
+
+## Umgesetzt (Phase 8, 1.9.0)
+
+- **Rezepte** im Reiter „Einkauf“ (Umschalter Liste · Rezepte, damit es bei vier Reitern bleibt): `id, title, servings, ingredients (eine Zutat pro Zeile), steps, link, createdAt, updatedAt, deleted`, synchronisiert wie Notizen
+- Rezept ansehen: Portionen ± rechnet die Mengen am Zeilenanfang um (auch ½, 1/2, Spannen wie 2-3); Zutaten auswählen (Salz, Pfeffer, Wasser und schon gelistete sind abgewählt); „Auf die Einkaufsliste“
+- Einträge aus Rezepten tragen `from` (Rezeptname, „für Lasagne“); steht die Zutat schon drauf, werden die Mengen zusammengefasst („500 g + 200 g“) statt ersetzt
+- Mengenerkennung kennt jetzt auch EL, TL, Prise, Zehen, Scheiben, Dose, Bund, Bruchzahlen
+- Suche ab 6 Rezepten; Beispielrezept zum Ausprobieren
 
 ## Später möglich
 

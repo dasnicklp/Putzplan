@@ -184,6 +184,13 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 .suggs button{flex:0 0 auto;min-height:36px;padding:6px 12px;border-radius:999px;border:1px dashed var(--line);background:var(--surface);color:var(--text);font-size:14px}
 .shop-row .tbody{flex-direction:row;align-items:center;justify-content:space-between;gap:8px;padding-top:10px;padding-bottom:10px;min-height:52px}
 .shop-row .qty{color:var(--muted);font-size:14px;white-space:nowrap}
+.shop-row .ttl small{display:block;color:var(--muted);font-weight:400;font-size:13px}
+.seg.seg2{grid-template-columns:repeat(2,1fr)}
+.servings{display:flex;align-items:center;gap:12px;margin:10px 0 4px}
+.servings span{flex:1;color:var(--muted)}
+.servings b{min-width:28px;text-align:center;font-size:18px}
+.steps{white-space:pre-wrap;word-break:break-word;margin:0}
+.rlink{display:inline-block;margin-top:12px;color:var(--accent);font-weight:600}
 .shop-done{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .shop-done .btn{min-height:40px;padding:6px 12px;font-size:14px}
 .subtitle{color:var(--muted);margin:14px 0 0;font-weight:600}
@@ -287,6 +294,13 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
       </div>
     </div>
     <div class="filters" id="filters" role="group" aria-label="Filter nach Person"></div>
+    <div class="seg seg2" id="shopSeg" role="group" aria-label="Ansicht">
+      <button type="button" data-sview="list">Liste</button>
+      <button type="button" data-sview="recipes">Rezepte</button>
+    </div>
+    <div class="toolbar" id="recipeBar">
+      <input id="recipeSearch" type="search" placeholder="Rezept suchen" autocomplete="off" aria-label="Rezept suchen">
+    </div>
     <div class="toolbar" id="shopBar">
       <form class="quickadd" id="shopAdd" novalidate>
         <input id="shopInput" maxlength="100" placeholder="Was fehlt? z. B. 2 Milch" autocomplete="off" enterkeyhint="done" aria-label="Neuer Eintrag">
@@ -470,6 +484,47 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
   </div>
 </div>
 
+<!-- Rezept ansehen: Portionen, Zutaten auswählen, auf die Einkaufsliste -->
+<div class="overlay" id="recipeSheet" hidden>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2 id="rvTitle"></h2><button class="btn ghost small-btn" id="rvEdit" type="button">Bearbeiten</button></div>
+    <div class="servings">
+      <span>Portionen</span>
+      <button class="icon-btn" id="rvLess" type="button" aria-label="Weniger Portionen">−</button>
+      <b id="rvServ">2</b>
+      <button class="icon-btn" id="rvMore" type="button" aria-label="Mehr Portionen">+</button>
+    </div>
+    <h2>Zutaten</h2>
+    <p class="muted small" style="margin:-4px 0 4px">Was ihr schon dahabt, abwählen.</p>
+    <div id="rvIngr"></div>
+    <button class="btn primary big" id="rvAdd" type="button">Auf die Einkaufsliste</button>
+    <div id="rvSteps"></div>
+    <div class="actions"><button class="btn wide" id="rvClose" type="button">Schließen</button></div>
+  </div>
+</div>
+<div class="overlay" id="recipeEditSheet" hidden>
+  <form class="sheet" id="recipeForm" novalidate>
+    <div class="grab"></div>
+    <div class="sheet-head"><h2 id="reTitle">Neues Rezept</h2></div>
+    <div class="two">
+      <div><label for="rTitle">Name</label><input id="rTitle" maxlength="200" placeholder="z. B. Lasagne" autocomplete="off"></div>
+      <div><label for="rServ">Portionen</label><input id="rServ" type="number" inputmode="numeric" min="1" max="50" value="2"></div>
+    </div>
+    <label for="rIngr">Zutaten, eine pro Zeile</label>
+    <textarea id="rIngr" maxlength="5000" placeholder="500 g Spaghetti&#10;1 Zwiebel&#10;2 EL Olivenöl"></textarea>
+    <label for="rSteps">Zubereitung (optional)</label>
+    <textarea id="rSteps" maxlength="10000" placeholder="1. Zwiebel würfeln …"></textarea>
+    <label for="rLink">Link zum Original (optional)</label>
+    <input id="rLink" type="url" inputmode="url" maxlength="500" placeholder="https://…" autocomplete="off">
+    <div class="actions">
+      <button class="btn danger wide" id="rDelete" type="button" hidden>Rezept löschen</button>
+      <button class="btn" id="rCancel" type="button">Abbrechen</button>
+      <button class="btn primary" type="submit">Speichern</button>
+    </div>
+  </form>
+</div>
+
 <!-- Einkaufs-Eintrag bearbeiten -->
 <div class="overlay" id="shopSheet" hidden>
   <form class="sheet" id="shopForm" novalidate>
@@ -493,7 +548,7 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '1.8.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '1.9.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Haushalt“ änderbar
@@ -521,7 +576,7 @@ const PACK = [
 ];
 
 /* ================= Zustand ================= */
-const LS = { push: 'putzplan.push', code: 'putzplan.code', tasks: 'putzplan.tasks', notes: 'putzplan.notes', shop: 'putzplan.shop', tab: 'putzplan.tab', view: 'putzplan.view', settings: 'putzplan.settings', filter: 'putzplan.filter', noteCat: 'putzplan.noteCat' };
+const LS = { push: 'putzplan.push', code: 'putzplan.code', tasks: 'putzplan.tasks', notes: 'putzplan.notes', shop: 'putzplan.shop', recipes: 'putzplan.recipes', shopView: 'putzplan.shopView', tab: 'putzplan.tab', view: 'putzplan.view', settings: 'putzplan.settings', filter: 'putzplan.filter', noteCat: 'putzplan.noteCat' };
 const TABS = { clean: 'Putzen', shop: 'Einkaufsliste', notes: 'Notizen', home: 'Haushalt' };
 const VIEWS = { today: 'Heute', week: 'Woche', month: 'Monat', stats: 'Bilanz' }; // Unteransichten im Reiter „Putzen“
 const NOTE_CAT_SUGGESTIONS = ['Putztipps', 'Info', 'Ideen'];
@@ -532,9 +587,9 @@ const SHOP_ICON = { 'Obst & Gemüse': '🥦', 'Brot & Backwaren': '🥖', 'Kühl
 const SHOP_WORDS = {
   'Obst & Gemüse': 'apfel äpfel banane birne orange zitrone limette traube beere erdbeer kiwi mango ananas melone obst gemüse tomate gurke paprika zwiebel knoblauch kartoffel möhre karotte salat brokkoli zucchini spinat pilz champignon lauch avocado ingwer kräuter petersilie basilikum radieschen kohl aubergine sellerie',
   'Brot & Backwaren': 'brot brötchen toast baguette croissant brezel laugen kuchen semmel wrap tortilla knäcke',
-  'Kühlregal': 'milch joghurt quark käse butter sahne schmand frischkäse mozzarella feta ei eier wurst schinken salami aufschnitt hähnchen fleisch hack lachs tofu margarine pudding skyr',
+  'Kühlregal': 'parmesan gouda emmentaler crème fraîche speck kochschinken milch joghurt quark käse butter sahne schmand frischkäse mozzarella feta ei eier wurst schinken salami aufschnitt hähnchen fleisch hack lachs tofu margarine pudding skyr',
   'Tiefkühl': 'tiefkühl tk pizza eis pommes fischstäbchen erbsen',
-  'Vorrat': 'nudel pasta spaghetti reis mehl zucker salz pfeffer öl essig müsli haferflocken cornflakes honig marmelade nutella kaffee tee dose konserve linsen bohnen mais tomatenmark ketchup senf mayo gewürz brühe soße sauce chips schokolade keks nüsse backpulver hefe',
+  'Vorrat': 'passiert kokosmilch kichererbsen nudel pasta spaghetti reis mehl zucker salz pfeffer öl essig müsli haferflocken cornflakes honig marmelade nutella kaffee tee dose konserve linsen bohnen mais tomatenmark ketchup senf mayo gewürz brühe soße sauce chips schokolade keks nüsse backpulver hefe',
   'Getränke': 'wasser sprudel saft cola limo bier wein sekt getränk mate',
   'Drogerie': 'zahnpasta zahnbürste shampoo duschgel seife deo creme rasier tampon binde windel taschentuch watte pflaster sonnencreme',
   'Haushalt': 'klopapier toilettenpapier küchenrolle küchenpapier spüli spülmittel tabs spülmaschine waschmittel weichspüler müllbeutel müllsack schwamm putzmittel reiniger entkalker glasreiniger alufolie frischhaltefolie backpapier batterie glühbirne lappen',
@@ -554,6 +609,9 @@ let settings = null;                     // gemeinsame Einstellungen (Namen), we
 try { settings = JSON.parse(lsGet(LS.settings) || 'null'); } catch (e) { settings = null; }
 let shop = [];                           // gemeinsame Einkaufsliste, wird mit synchronisiert
 try { shop = JSON.parse(lsGet(LS.shop) || '[]'); } catch (e) { shop = []; }
+let recipes = [];                        // gemeinsame Rezepte, werden mit synchronisiert
+try { recipes = JSON.parse(lsGet(LS.recipes) || '[]'); } catch (e) { recipes = []; }
+let shopView = lsGet(LS.shopView) === 'recipes' ? 'recipes' : 'list'; // Reiter Einkauf: Liste oder Rezepte
 let filter = ['nick', 'partner', 'none'].includes(lsGet(LS.filter)) ? lsGet(LS.filter) : 'all';
 // Reiter und Unteransicht; bis 1.6 waren Heute/Woche/Monat/Bilanz eigene Reiter, das wird übernommen
 let tab = lsGet(LS.tab), view = lsGet(LS.view);
@@ -615,6 +673,7 @@ function save() {
   lsSet(LS.tasks, JSON.stringify(tasks));
   lsSet(LS.notes, JSON.stringify(notes));
   lsSet(LS.shop, JSON.stringify(shop));
+  lsSet(LS.recipes, JSON.stringify(recipes));
   lsSet(LS.settings, JSON.stringify(settings));
   localVer++;
   scheduleSync();
@@ -964,23 +1023,33 @@ function guessShopCat(name) {
   return best;
 }
 // „2 Milch“, „500 g Mehl“, „3x Joghurt“ → Menge und Name getrennt
+// Zahl am Zeilenanfang: 2 · 1,5 · ½ · 1½ · 1/2, auch als Spanne „2-3“
+const NUM = String.raw`(?:\d+\s?[½¼¾⅓⅔]|\d+\/\d+|\d+(?:[.,]\d+)?|[½¼¾⅓⅔])(?:\s*-\s*\d+(?:[.,]\d+)?)?`;
+const QTY_RE = new RegExp(String.raw`^(${NUM}\s*(?:x|×|stk|stück|g|gr|kg|ml|cl|l|el|tl|msp|prisen?|zehen?|scheiben?|tassen?|pck|päckchen|packungen?|pack|dosen?|flaschen?|becher|gläser|glas|bund|netz|köpfe?|stangen?|zweige?|handvoll|cm)?\.?)\s+(\S.*)$`, 'i');
 function splitQty(raw) {
   const s = String(raw || '').trim().replace(/\s+/g, ' ');
-  const m = /^(\d+(?:[.,]\d+)?\s*(?:x|×|stk\.?|stück|g|kg|ml|l|pck\.?|packungen?|pack|dosen?|flaschen?|becher|gläser|glas|bund|netz)?)\s+(\S.*)$/i.exec(s);
+  const m = QTY_RE.exec(s);
   return m ? { qty: m[1].slice(0, 30), name: m[2].slice(0, 100) } : { qty: '', name: s.slice(0, 100) };
 }
-// Ein Eintrag, ohne zu speichern. Ergebnis: 'added', 'reopened', 'qty', 'exists' oder null
-function putShop(raw) {
+// Ein Eintrag, ohne zu speichern. Ergebnis: 'added', 'reopened', 'qty', 'merged', 'exists' oder null.
+// from = Rezept: Mengen werden dann zusammengezählt statt ersetzt („500 g + 200 g“)
+function putShop(raw, from) {
   const { qty, name } = splitQty(raw);
   if (!name) return null;
   const ex = liveShop().find((i) => nameKey(i.name) === nameKey(name));
   if (ex && !ex.done) {
+    if (from) {
+      if (qty) ex.qty = (ex.qty ? addQty(ex.qty, qty) : qty).slice(0, 60);
+      if (!ex.from) ex.from = from;
+      touch(ex);
+      return { r: 'merged', item: ex };
+    }
     if (qty && qty !== ex.qty) { ex.qty = qty; touch(ex); return { r: 'qty', item: ex }; }
     return { r: 'exists', item: ex };
   }
-  if (ex) { ex.done = false; ex.doneAt = null; if (qty) ex.qty = qty; touch(ex); return { r: 'reopened', item: ex }; }
+  if (ex) { ex.done = false; ex.doneAt = null; ex.qty = qty || (from ? '' : ex.qty); ex.from = from || ''; touch(ex); return { r: 'reopened', item: ex }; }
   const now = Date.now();
-  const item = { id: uid(), name, qty, cat: guessShopCat(name), done: false, doneAt: null, createdAt: now, updatedAt: now, deleted: false };
+  const item = { id: uid(), name, qty, from: from || '', cat: guessShopCat(name), done: false, doneAt: null, createdAt: now, updatedAt: now, deleted: false };
   shop.push(item);
   return { r: 'added', item };
 }
@@ -1030,7 +1099,7 @@ function shopSuggestions() {
 function shopRow(i) {
   return `<div class="task shop-row${i.done ? ' done' : ''}">
     <button class="check" type="button" data-shop-toggle="${i.id}" aria-label="${i.done ? `${esc(i.name)} zurück auf die Liste` : `${esc(i.name)} abhaken`}"><span>${i.done ? '✓' : ''}</span></button>
-    <button class="tbody" type="button" data-shop-edit="${i.id}"><span class="ttl">${esc(i.name)}</span>${i.qty ? `<span class="qty">${esc(i.qty)}</span>` : ''}</button>
+    <button class="tbody" type="button" data-shop-edit="${i.id}"><span class="ttl">${esc(i.name)}${i.from ? `<small>für ${esc(i.from)}</small>` : ''}</span>${i.qty ? `<span class="qty">${esc(i.qty)}</span>` : ''}</button>
   </div>`;
 }
 function shopHtml() {
@@ -1051,7 +1120,7 @@ function shopHtml() {
   return html;
 }
 function renderShopSuggs() {
-  const s = tab === 'shop' ? shopSuggestions() : [];
+  const s = tab === 'shop' && shopView === 'list' ? shopSuggestions() : [];
   $('#shopSuggs').hidden = !s.length;
   $('#shopSuggs').innerHTML = s.map((n) => `<button type="button" data-sugg="${esc(n)}">＋ ${esc(n)}</button>`).join('');
 }
@@ -1103,6 +1172,170 @@ $('#shopAdd').addEventListener('submit', (e) => {
   if (addShop($('#shopInput').value)) $('#shopInput').value = ''; // Fokus bleibt im Feld: gleich das Nächste eintippen
 });
 
+/* Rezepte */
+const liveRecipes = () => recipes.filter((r) => !r.deleted);
+const ingrLines = (r) => String(r.ingredients || '').split(/\r?\n/).map((x) => x.replace(/^\s*(?:[-•*·–]|\[[ x]?\])\s*/, '').trim()).filter(Boolean);
+// Haben die meisten zu Hause: beim Übernehmen erst mal abgewählt
+const STAPLES = ['salz', 'pfeffer', 'wasser', 'salz und pfeffer', 'leitungswasser'];
+
+// Mengen umrechnen, wenn die Portionen geändert werden
+const FRAC = { '½': 1 / 2, '¼': 1 / 4, '¾': 3 / 4, '⅓': 1 / 3, '⅔': 2 / 3 };
+function parseNum(s) {
+  s = s.replace(/\s/g, '');
+  if (FRAC[s]) return FRAC[s];
+  let m = /^(\d+)([½¼¾⅓⅔])$/.exec(s);
+  if (m) return Number(m[1]) + FRAC[m[2]];
+  m = /^(\d+)\/(\d+)$/.exec(s);
+  if (m) return Number(m[1]) / Number(m[2]);
+  return Number(s.replace(',', '.'));
+}
+function fmtNum(n) {
+  const r = n >= 10 ? Math.round(n) : Math.round(n * 4) / 4;
+  return String(r || (n > 0 ? 0.25 : 0)).replace('.', ',');
+}
+// Ab 1000 g bzw. ml in kg bzw. l
+function withUnit(n, unit) {
+  const u = unit.toLowerCase();
+  if ((u === 'g' || u === 'ml') && n >= 1000) return `${fmtNum(n / 1000)} ${u === 'g' ? 'kg' : 'l'}`;
+  return fmtNum(n) + (unit ? ' ' + unit : '');
+}
+const UNIT_RE = new RegExp(String.raw`^(\s*)(${NUM})(?:\s*(g|ml)\b)?`, 'i');
+function scaleLine(line, f) {
+  if (f === 1) return line;
+  return line.replace(UNIT_RE, (all, sp, num, unit) => {
+    const parts = num.split(/\s*-\s*(?=\d)/);
+    if (parts.some((p) => !Number.isFinite(parseNum(p)))) return all;
+    if (parts.length === 1) return sp + withUnit(parseNum(num) * f, unit || '');
+    return sp + parts.map((p) => fmtNum(parseNum(p) * f)).join('-') + (unit ? ' ' + unit : '');
+  });
+}
+// Zwei Mengen zusammenfassen: gleiche Einheit wird addiert (500 g + 1 kg = 1,5 kg), sonst „1 l + 2 Becher“
+const UNITS = { g: ['g', 1], kg: ['g', 1000], ml: ['ml', 1], l: ['ml', 1000] };
+function addQty(a, b) {
+  const p = (q) => {
+    const m = new RegExp(String.raw`^(${NUM})\s*(\S*)$`).exec(q.trim());
+    if (!m || /-/.test(m[1]) || !Number.isFinite(parseNum(m[1]))) return null;
+    const u = m[2].toLowerCase(), base = UNITS[u];
+    return base ? { n: parseNum(m[1]) * base[1], u: base[0], raw: '' } : { n: parseNum(m[1]), u, raw: m[2] };
+  };
+  const x = p(a), y = p(b);
+  if (x && y && x.u === y.u) return withUnit(x.n + y.n, x.raw || x.u);
+  return `${a} + ${b}`;
+}
+
+function recipesHtml() {
+  const all = liveRecipes();
+  if (!all.length) return `<p class="empty" style="margin-top:18px">Noch keine Rezepte. Mit „+“ legt ihr eins an: Zutaten einfach untereinander schreiben. Danach kommen sie mit einem Tipp auf die Einkaufsliste.</p>
+    <button class="btn big" type="button" data-example-recipe>Beispiel anlegen: Spaghetti Bolognese</button>`;
+  const q = $('#recipeBar').hidden ? '' : nameKey($('#recipeSearch').value);
+  const list = all.filter((r) => !q || nameKey(r.title).includes(q) || nameKey(r.ingredients).includes(q))
+    .sort((a, b) => a.title.localeCompare(b.title, 'de'));
+  const onList = new Set(openShop().map((i) => i.from).filter(Boolean));
+  if (!list.length) return '<p class="empty" style="margin-top:18px">Kein Rezept gefunden.</p>';
+  return `<div style="margin-top:14px">${list.map((r) => `<button type="button" class="note" data-recipe="${r.id}">
+    <span class="ttl">${esc(r.title)}</span>
+    <span class="meta"><span class="chip">🍽 ${r.servings} ${r.servings === 1 ? 'Portion' : 'Portionen'}</span><span class="chip">${ingrLines(r).length} Zutaten</span>${onList.has(r.title) ? '<span class="chip">🛒 auf der Liste</span>' : ''}</span>
+  </button>`).join('')}</div>`;
+}
+$('#recipeSearch').addEventListener('input', () => render());
+
+let rv = null; // angezeigtes Rezept: { id, serv, sel: Set der gewählten Zeilen }
+function openRecipe(id) {
+  const r = liveRecipes().find((x) => x.id === id);
+  if (!r) return;
+  const open = new Set(openShop().map((i) => nameKey(i.name)));
+  const sel = new Set();
+  ingrLines(r).forEach((l, i) => { const n = nameKey(splitQty(l).name); if (!STAPLES.includes(n) && !open.has(n)) sel.add(i); });
+  rv = { id, serv: r.servings, sel };
+  renderRecipe();
+  $('#recipeSheet').hidden = false;
+}
+function renderRecipe() {
+  const r = liveRecipes().find((x) => x.id === rv.id);
+  if (!r) return closeRecipe();
+  const f = rv.serv / r.servings, lines = ingrLines(r);
+  const open = new Set(openShop().map((i) => nameKey(i.name)));
+  $('#rvTitle').textContent = r.title;
+  $('#rvServ').textContent = rv.serv;
+  $('#rvIngr').innerHTML = lines.length ? lines.map((l, i) => {
+    const on = rv.sel.has(i), there = open.has(nameKey(splitQty(l).name));
+    return `<button type="button" class="pack-row" data-ing="${i}" aria-pressed="${on}"><span class="pk">${on ? '✓' : ''}</span>
+      <span>${esc(scaleLine(l, f))}${there ? '<small>steht schon auf der Liste</small>' : ''}</span></button>`;
+  }).join('') : '<p class="empty">Noch keine Zutaten eingetragen.</p>';
+  const n = rv.sel.size;
+  $('#rvAdd').textContent = n ? `${n} ${n === 1 ? 'Zutat' : 'Zutaten'} auf die Einkaufsliste` : 'Nichts ausgewählt';
+  $('#rvAdd').disabled = !n;
+  $('#rvSteps').innerHTML = (r.steps.trim() ? `<h2>Zubereitung</h2><p class="steps">${esc(r.steps.trim())}</p>` : '')
+    + (r.link ? `<a class="rlink" href="${esc(r.link)}" target="_blank" rel="noopener">Original-Rezept öffnen ↗</a>` : '');
+}
+function closeRecipe() { $('#recipeSheet').hidden = true; rv = null; }
+$('#rvIngr').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-ing]');
+  if (!b || !rv) return;
+  const i = Number(b.dataset.ing);
+  if (rv.sel.has(i)) rv.sel.delete(i); else rv.sel.add(i);
+  renderRecipe();
+});
+$('#rvLess').addEventListener('click', () => { if (rv && rv.serv > 1) { rv.serv--; renderRecipe(); } });
+$('#rvMore').addEventListener('click', () => { if (rv && rv.serv < 50) { rv.serv++; renderRecipe(); } });
+$('#rvAdd').addEventListener('click', () => {
+  const r = rv && liveRecipes().find((x) => x.id === rv.id);
+  if (!r) return;
+  const f = rv.serv / r.servings;
+  const n = ingrLines(r).filter((_, i) => rv.sel.has(i)).map((l) => putShop(scaleLine(l, f), r.title)).filter(Boolean).length;
+  closeRecipe();
+  shopView = 'list'; lsSet(LS.shopView, shopView);
+  save();
+  window.scrollTo(0, 0);
+  toast(`${n} ${n === 1 ? 'Zutat' : 'Zutaten'} für ${r.title} auf der Liste`);
+});
+$('#rvEdit').addEventListener('click', () => { const id = rv && rv.id; closeRecipe(); if (id) openRecipeEdit(id); });
+$('#rvClose').addEventListener('click', closeRecipe);
+$('#recipeSheet').addEventListener('click', (e) => { if (e.target.id === 'recipeSheet') closeRecipe(); });
+
+let reId = null; // Rezept im Bearbeiten-Fenster (null = neu)
+function openRecipeEdit(id) {
+  const r = id ? liveRecipes().find((x) => x.id === id) : null;
+  reId = r ? r.id : null;
+  $('#reTitle').textContent = r ? 'Rezept bearbeiten' : 'Neues Rezept';
+  $('#rTitle').value = r ? r.title : '';
+  $('#rServ').value = r ? r.servings : 2;
+  $('#rIngr').value = r ? r.ingredients : '';
+  $('#rSteps').value = r ? r.steps : '';
+  $('#rLink').value = r ? r.link : '';
+  $('#rDelete').hidden = !r;
+  $('#recipeEditSheet').hidden = false;
+  if (!r) setTimeout(() => $('#rTitle').focus(), 50);
+}
+function closeRecipeEdit() { $('#recipeEditSheet').hidden = true; reId = null; }
+$('#recipeForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const title = $('#rTitle').value.trim().slice(0, 200);
+  if (!title) { $('#rTitle').focus(); return; }
+  const link = $('#rLink').value.trim().slice(0, 500);
+  const data = { title, servings: Math.max(1, Math.min(50, Math.round(Number($('#rServ').value) || 2))),
+    ingredients: $('#rIngr').value.slice(0, 5000), steps: $('#rSteps').value.slice(0, 10000), link: /^https?:\/\//i.test(link) ? link : '' };
+  const r = reId ? liveRecipes().find((x) => x.id === reId) : null;
+  if (r) { Object.assign(r, data); touch(r); }
+  else { const now = Date.now(); recipes.push({ id: uid(), ...data, createdAt: now, updatedAt: now, deleted: false }); }
+  closeRecipeEdit(); save();
+});
+$('#rDelete').addEventListener('click', () => {
+  const r = liveRecipes().find((x) => x.id === reId);
+  if (!r || !confirm(`Rezept „${r.title}“ löschen?`)) return;
+  r.deleted = true; touch(r);
+  closeRecipeEdit(); save();
+});
+$('#rCancel').addEventListener('click', closeRecipeEdit);
+$('#recipeEditSheet').addEventListener('click', (e) => { if (e.target.id === 'recipeEditSheet') closeRecipeEdit(); });
+function addExampleRecipe() {
+  const now = Date.now();
+  recipes.push({ id: uid(), title: 'Spaghetti Bolognese', servings: 4, link: '', createdAt: now, updatedAt: now, deleted: false,
+    ingredients: '500 g Spaghetti\n500 g Hackfleisch\n1 Zwiebel\n2 Zehen Knoblauch\n1 Möhre\n2 EL Tomatenmark\n800 g passierte Tomaten\n2 EL Olivenöl\nSalz\nPfeffer\n50 g Parmesan',
+    steps: '1. Zwiebel, Knoblauch und Möhre fein würfeln.\n2. Hackfleisch im Olivenöl krümelig braten, Gemüse dazugeben und kurz mitbraten.\n3. Tomatenmark kurz anrösten, passierte Tomaten dazu, salzen, pfeffern und 30 Minuten köcheln lassen.\n4. Spaghetti nach Packung kochen, mit der Soße und geriebenem Parmesan servieren.' });
+  save();
+}
+
 // Heute: Überfälliges, heute, morgen
 function todayHtml(today) {
   const tomorrow = addDays(today, 1);
@@ -1132,7 +1365,7 @@ function todayHtml(today) {
 function render() {
   if (!code) return;
   const today = keyOf(new Date());
-  $('#pageTitle').textContent = TABS[tab];
+  $('#pageTitle').textContent = tab === 'shop' && shopView === 'recipes' ? 'Rezepte' : TABS[tab];
   document.querySelectorAll('[data-tab]').forEach((b) => (b.dataset.tab === tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
   const clean = tab === 'clean';
@@ -1140,9 +1373,13 @@ function render() {
   $('#seg').hidden = !clean;
   $('#navBar').hidden = !(clean && (view === 'week' || view === 'month'));
   $('#filters').hidden = !tasksView;
-  $('#shopBar').hidden = tab !== 'shop';
-  $('#fab').hidden = !(tasksView || tab === 'notes');
-  $('#fab').setAttribute('aria-label', tab === 'notes' ? 'Neue Notiz' : 'Neue Aufgabe');
+  const recipesView = tab === 'shop' && shopView === 'recipes';
+  document.querySelectorAll('[data-sview]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sview === shopView)));
+  $('#shopSeg').hidden = tab !== 'shop';
+  $('#shopBar').hidden = !(tab === 'shop' && shopView === 'list');
+  $('#recipeBar').hidden = !(recipesView && liveRecipes().length > 5);
+  $('#fab').hidden = !(tasksView || tab === 'notes' || recipesView);
+  $('#fab').setAttribute('aria-label', tab === 'notes' ? 'Neue Notiz' : recipesView ? 'Neues Rezept' : 'Neue Aufgabe');
   $('#view').hidden = tab === 'home';
   $('#homePage').hidden = tab !== 'home';
   const openCount = openShop().length;
@@ -1153,7 +1390,7 @@ function render() {
   updateAppBadge();
 
   if (tab === 'home') return;
-  if (tab === 'shop') { $('#view').innerHTML = shopHtml(); return; }
+  if (tab === 'shop') { $('#view').innerHTML = shopView === 'recipes' ? recipesHtml() : shopHtml(); return; }
   if (tab === 'notes') { $('#view').innerHTML = notesHtml(); return; }
   if (view === 'today') { $('#view').innerHTML = todayHtml(today); return; }
   if (view === 'stats') { $('#view').innerHTML = statsHtml(); return; }
@@ -1606,18 +1843,20 @@ async function sync() {
   syncing = true;
   const sentVer = localVer;
   try {
-    const r = await api('/api/sync', settings ? { tasks, notes, shop, settings } : { tasks, notes, shop });
+    const r = await api('/api/sync', settings ? { tasks, notes, shop, recipes, settings } : { tasks, notes, shop, recipes });
     if (localVer === sentVer) {
-      const before = JSON.stringify([tasks, notes, shop, settings]);
+      const before = JSON.stringify([tasks, notes, shop, recipes, settings]);
       tasks = r.tasks;
       if (Array.isArray(r.notes)) notes = r.notes;
       if (Array.isArray(r.shop)) shop = r.shop;
+      if (Array.isArray(r.recipes)) recipes = r.recipes;
       if (r.settings) settings = r.settings;
       lsSet(LS.tasks, JSON.stringify(tasks));
       lsSet(LS.notes, JSON.stringify(notes));
       lsSet(LS.shop, JSON.stringify(shop));
+      lsSet(LS.recipes, JSON.stringify(recipes));
       lsSet(LS.settings, JSON.stringify(settings));
-      if (JSON.stringify([tasks, notes, shop, settings]) !== before) render(); // nur neu zeichnen, wenn sich etwas geändert hat
+      if (JSON.stringify([tasks, notes, shop, recipes, settings]) !== before) render(); // nur neu zeichnen, wenn sich etwas geändert hat
     } else {
       again = true; // während der Anfrage wurde etwas geändert: gleich noch einmal senden
     }
@@ -1673,7 +1912,7 @@ $('#btnNew').addEventListener('click', async () => {
 $('#btnNewDone').addEventListener('click', () => {
   code = pendingCode;
   lsSet(LS.code, code);
-  tasks = []; notes = []; shop = [];
+  tasks = []; notes = []; shop = []; recipes = [];
   startApp();
 });
 $('#joinForm').addEventListener('submit', async (e) => {
@@ -1685,7 +1924,7 @@ $('#joinForm').addEventListener('submit', async (e) => {
     await api('/api/join', {}, c);
     code = c;
     lsSet(LS.code, code);
-    tasks = []; notes = []; shop = [];
+    tasks = []; notes = []; shop = []; recipes = [];
     startApp();
   } catch (err) {
     if (err.status === 401) $('#joinErr').textContent = 'Den Code kenne ich nicht. Bitte nochmal prüfen.';
@@ -1759,8 +1998,8 @@ $('#btnLogout').addEventListener('click', () => {
   if (!confirm('Auf diesem Gerät abmelden? Aufgaben, Einkaufsliste und Notizen bleiben online erhalten und sind mit dem Code wieder da.')) return;
   if (pushPrefs().on) pushOff(code);
   if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
-  code = ''; tasks = []; notes = []; shop = []; settings = null; localVer = 0;
-  lsDel(LS.code); lsDel(LS.tasks); lsDel(LS.notes); lsDel(LS.shop); lsDel(LS.settings);
+  code = ''; tasks = []; notes = []; shop = []; recipes = []; settings = null; localVer = 0;
+  lsDel(LS.code); lsDel(LS.tasks); lsDel(LS.notes); lsDel(LS.shop); lsDel(LS.recipes); lsDel(LS.settings);
   tab = 'clean'; view = 'today'; lsSet(LS.tab, tab); lsSet(LS.view, view);
   showSetup();
 });
@@ -1777,6 +2016,11 @@ document.addEventListener('click', (e) => {
   if (se) return openShopSheet(se.dataset.shopEdit);
   if (e.target.closest('[data-shop-clear]')) return clearShopDone();
   if (e.target.closest('[data-open-pack]')) return openPack();
+  const sv = e.target.closest('[data-sview]');
+  if (sv) { shopView = sv.dataset.sview; lsSet(LS.shopView, shopView); window.scrollTo(0, 0); return render(); }
+  const rc = e.target.closest('[data-recipe]');
+  if (rc) return openRecipe(rc.dataset.recipe);
+  if (e.target.closest('[data-example-recipe]')) return addExampleRecipe();
   const sg = e.target.closest('[data-sugg]');
   if (sg) return addShop(sg.dataset.sugg);
   const tip = e.target.closest('[data-tip]');
@@ -1806,7 +2050,8 @@ document.addEventListener('click', (e) => {
 $('#prev').addEventListener('click', () => move(-1));
 $('#next').addEventListener('click', () => move(1));
 $('#today').addEventListener('click', () => { cursor = new Date(); selected = keyOf(cursor); render(); });
-$('#fab').addEventListener('click', () => (tab === 'notes' ? openNoteSheet(null) : openSheet(null, view === 'today' ? keyOf(new Date()) : selected)));
+$('#fab').addEventListener('click', () => (tab === 'notes' ? openNoteSheet(null) : tab === 'shop' ? openRecipeEdit(null)
+  : openSheet(null, view === 'today' ? keyOf(new Date()) : selected)));
 
 // Nach links/rechts wischen = nächste/vorige Woche bzw. Monat
 let touchStart = null;
