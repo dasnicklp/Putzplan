@@ -16,13 +16,13 @@
 :root{
   --bg:#14161c; --surface:#1d2028; --surface2:#262a35; --text:#eef0f5; --muted:#9aa1b2;
   --accent:#5cc8a0; --accent-ink:#06210f; --ok:#4cd08a; --warn:#ff7a59; --line:#2f3442; --today:#3a4a5e; --radius:16px;
-  --nick:#7cb4ff; --nick-bg:rgba(124,180,255,.16); --partner:#e39cff; --partner-bg:rgba(227,156,255,.16);
+  --nick:#3987e5; --nick-bg:rgba(57,135,229,.18); --partner:#d95926; --partner-bg:rgba(217,89,38,.18);
 }
 @media (prefers-color-scheme: light){
   :root{ --bg:#f5f6fa; --surface:#fff; --surface2:#eceef4; --text:#1a1d26; --muted:#5d6577; --accent:#1f9d6e; --accent-ink:#fff; --ok:#17804a; --warn:#b8371c; --line:#dcdfe8; --today:#dbe6f5;
-    --nick:#1f5fbf; --nick-bg:#e3edfb; --partner:#8a2fa8; --partner-bg:#f3e3f8; }
+    --nick:#2a78d6; --nick-bg:#e6f0fb; --partner:#eb6834; --partner-bg:#fdeee7; }
 }
-:root[data-theme="dark"]{ --bg:#14161c; --surface:#1d2028; --surface2:#262a35; --text:#eef0f5; --muted:#9aa1b2; --accent:#5cc8a0; --accent-ink:#06210f; --ok:#4cd08a; --warn:#ff7a59; --line:#2f3442; --today:#3a4a5e; --nick:#7cb4ff; --nick-bg:rgba(124,180,255,.16); --partner:#e39cff; --partner-bg:rgba(227,156,255,.16); }
+:root[data-theme="dark"]{ --bg:#14161c; --surface:#1d2028; --surface2:#262a35; --text:#eef0f5; --muted:#9aa1b2; --accent:#5cc8a0; --accent-ink:#06210f; --ok:#4cd08a; --warn:#ff7a59; --line:#2f3442; --today:#3a4a5e; --nick:#3987e5; --nick-bg:rgba(57,135,229,.18); --partner:#d95926; --partner-bg:rgba(217,89,38,.18); }
 *{box-sizing:border-box}
 [hidden]{display:none !important}
 html,body{margin:0}
@@ -56,16 +56,13 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute
 .topbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;border-bottom:1px solid var(--line)}
 .topbar .row{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:720px;margin:0 auto}
 .toolbar{max-width:720px;margin:10px auto 0;display:grid;gap:10px}
-.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
-.seg button{min-height:40px;border:0;border-radius:9px;background:transparent;font-weight:600;color:var(--muted)}
-.seg button[aria-pressed="true"]{background:var(--surface2);color:var(--text)}
 .nav{display:grid;grid-template-columns:44px 1fr auto 44px;gap:8px;align-items:center}
 .small-btn{min-height:44px;padding:8px 12px}
 .nav .range{text-align:center;font-weight:600}
 .status{max-width:720px;margin:6px auto 0;font-size:12px;color:var(--muted);min-height:1.2em}
 .status.bad{color:var(--warn)}
 
-main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-inset-bottom))}
+main,.page{max-width:720px;margin:0 auto;padding:0 16px calc(160px + env(safe-area-inset-bottom))}
 
 /* Aufgaben */
 .day{margin-top:18px}
@@ -85,8 +82,11 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
 .meta{display:flex;flex-wrap:wrap;gap:6px}
 .chip{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--muted);white-space:nowrap}
 .chip.who{color:var(--text)}
-.chip.p-nick{background:var(--nick-bg);color:var(--nick);font-weight:600}
-.chip.p-partner{background:var(--partner-bg);color:var(--partner);font-weight:600}
+.chip.p-nick,.chip.p-partner{color:var(--text);font-weight:600}
+.chip.p-nick{background:var(--nick-bg)}
+.chip.p-partner{background:var(--partner-bg)}
+.chip.p-nick::before,.chip.p-partner::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px;background:var(--nick)}
+.chip.p-partner::before{background:var(--partner)}
 .filters{display:flex;gap:6px;overflow-x:auto;max-width:720px;margin:10px auto 0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .filters::-webkit-scrollbar{display:none}
 .filters button{flex:0 0 auto;min-height:36px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-weight:600;font-size:14px}
@@ -116,7 +116,7 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
 .cell .dot{font-style:normal;font-size:11px;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:0 6px;min-width:20px}
 
 /* Schwebender Hinzufügen-Knopf */
-.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);font-size:32px;line-height:1;box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:4}
+.fab{position:fixed;right:18px;bottom:calc(82px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);font-size:32px;line-height:1;box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:4}
 
 /* Bottom-Sheets */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:10}
@@ -135,8 +135,30 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
 .update-info ul{margin:6px 0 0;padding-left:20px;color:var(--muted)}
 .update-info.new{color:var(--accent);font-weight:600}
 
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));background:var(--surface2);border:1px solid var(--line);padding:10px 14px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20;max-width:90vw}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(156px + env(safe-area-inset-bottom));background:var(--surface2);border:1px solid var(--line);padding:10px 14px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20;max-width:90vw}
 .toast.show{opacity:1}
+
+/* Tab-Leiste unten */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
+.tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;padding:4px 0;color:var(--muted);font-size:11px;font-weight:600}
+.tabbar svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar button[aria-current="page"]{color:var(--accent)}
+.subtitle{color:var(--muted);margin:14px 0 0;font-weight:600}
+
+/* Bilanz */
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);margin:0 0 10px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--muted)}
+.sw.p-nick{background:var(--nick)}
+.sw.p-partner{background:var(--partner)}
+.wk-row{display:grid;grid-template-columns:96px 1fr 64px;white-space:nowrap;gap:10px;align-items:center;width:100%;min-height:36px;border:0;background:none;padding:2px 0;text-align:left;font-size:14px}
+.wk-row .tot{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.track{display:block;height:12px}
+.stack{display:flex;gap:2px;height:100%}
+.stack i{display:block;height:100%;border-radius:4px;min-width:4px;background:var(--muted)}
+.stack i.p-nick{background:var(--nick)}
+.stack i.p-partner{background:var(--partner)}
+.bar i.cat{background:var(--accent)}
+.page .bal:first-child{margin-top:14px}
 </style>
 </head>
 <body>
@@ -171,14 +193,9 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
 <div id="app" hidden>
   <div class="topbar">
     <div class="row">
-      <h1>Putzplan</h1>
-      <button class="icon-btn" id="btnSettings" type="button" aria-label="Einstellungen">⚙︎</button>
+      <h1 id="pageTitle">Heute</h1>
     </div>
-    <div class="toolbar">
-      <div class="seg" role="group" aria-label="Ansicht">
-        <button type="button" data-view="week" aria-pressed="true">Woche</button>
-        <button type="button" data-view="month" aria-pressed="false">Monat</button>
-      </div>
+    <div class="toolbar" id="navBar">
       <div class="nav">
         <button class="icon-btn" id="prev" type="button" aria-label="Zurück">‹</button>
         <div class="range" id="range"></div>
@@ -190,7 +207,46 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
     <div class="status" id="status"></div>
   </div>
   <main id="view"></main>
+
+  <!-- Haushalt (Einstellungen) -->
+  <section class="page" id="homePage" hidden>
+    <div class="bal">
+      <div class="setting-row"><span>Haushaltscode</span><span class="code-inline" id="sCode">—</span></div>
+      <div class="setting-row"><span>Synchronisation</span><span id="sStatus" class="muted">—</span></div>
+      <button class="btn big" id="btnSyncNow" type="button">Jetzt synchronisieren</button>
+    </div>
+    <form class="bal" id="namesForm" novalidate>
+      <h3>Namen</h3>
+      <div class="two">
+        <div><label for="sName1">Person 1</label><input id="sName1" maxlength="30" autocomplete="off"></div>
+        <div><label for="sName2">Person 2</label><input id="sName2" maxlength="30" autocomplete="off"></div>
+      </div>
+      <button class="btn big" type="submit">Namen speichern</button>
+      <p class="muted small" style="margin:6px 0 0">Gilt für beide Geräte.</p>
+    </form>
+    <div class="bal">
+      <h3>App</h3>
+      <div class="setting-row"><span>Installierte Version</span><span class="code-inline" id="sVersion">—</span></div>
+      <button class="btn big" id="btnCheckUpdate" type="button">Nach Update suchen</button>
+      <div class="update-info" id="updateInfo" aria-live="polite"></div>
+      <button class="btn primary big" id="btnApplyUpdate" type="button" hidden>Jetzt aktualisieren</button>
+    </div>
+    <div class="bal">
+      <button class="btn danger big" id="btnLogout" type="button">Abmelden</button>
+      <p class="muted small" style="margin:10px 0 0">Zum Wechseln in einen anderen Haushalt. Die Aufgaben bleiben online erhalten.</p>
+      <p class="muted small" style="margin:10px 0 0">iPhone: Teilen-Symbol in Safari, dann „Zum Home-Bildschirm“. Android: Chrome-Menü ⋮, dann „App installieren“.</p>
+    </div>
+  </section>
+
   <button class="fab" id="fab" type="button" aria-label="Neue Aufgabe">+</button>
+
+  <nav class="tabbar" aria-label="Bereiche">
+    <button type="button" data-tab="today"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Heute</button>
+    <button type="button" data-tab="week"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7 14h10M7 17h6"/></svg>Woche</button>
+    <button type="button" data-tab="month"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01"/></svg>Monat</button>
+    <button type="button" data-tab="stats"><svg viewBox="0 0 24 24"><path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/></svg>Bilanz</button>
+    <button type="button" data-tab="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>Haushalt</button>
+  </nav>
 </div>
 
 <!-- Aufgabe anlegen / bearbeiten -->
@@ -240,51 +296,22 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
   </form>
 </div>
 
-<!-- Einstellungen -->
-<div class="overlay" id="settingsSheet" hidden>
-  <div class="sheet">
-    <div class="grab"></div>
-    <div class="sheet-head"><h2>Einstellungen</h2></div>
-    <div class="setting-row"><span>Haushaltscode</span><span class="code-inline" id="sCode">—</span></div>
-    <div class="setting-row"><span>Synchronisation</span><span id="sStatus" class="muted">—</span></div>
-    <form id="namesForm" novalidate>
-      <div class="two">
-        <div><label for="sName1">Name Person 1</label><input id="sName1" maxlength="30" autocomplete="off"></div>
-        <div><label for="sName2">Name Person 2</label><input id="sName2" maxlength="30" autocomplete="off"></div>
-      </div>
-      <button class="btn big" type="submit">Namen speichern</button>
-      <p class="muted small" style="margin:6px 0 0">Gilt für beide Geräte.</p>
-    </form>
-    <div class="update-box">
-      <div class="setting-row"><span>Installierte Version</span><span class="code-inline" id="sVersion">—</span></div>
-      <button class="btn big" id="btnCheckUpdate" type="button">Nach Update suchen</button>
-      <div class="update-info" id="updateInfo" aria-live="polite"></div>
-      <button class="btn primary big" id="btnApplyUpdate" type="button" hidden>Jetzt aktualisieren</button>
-    </div>
-    <div class="actions">
-      <button class="btn wide" id="btnSyncNow" type="button">Jetzt synchronisieren</button>
-      <button class="btn danger wide" id="btnLogout" type="button">Abmelden / anderen Haushalt verbinden</button>
-      <button class="btn ghost wide" id="btnCloseSettings" type="button">Schließen</button>
-    </div>
-    <p class="muted small" style="margin-top:18px">Nur auf dem iPhone: Teilen-Symbol in Safari, dann "Zum Home-Bildschirm". Dann öffnet sich die App ohne Browserleiste.</p>
-  </div>
-</div>
-
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '1.3.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '1.4.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
-const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App unter ⚙︎ änderbar
+const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Haushalt“ änderbar
 const CATS = ['Küche', 'Bad', 'Wohnzimmer', 'Wäsche', 'Sonstiges'];
 const CAT_ICON = { 'Küche': '🍳', 'Bad': '🛁', 'Wohnzimmer': '🛋️', 'Wäsche': '🧺', 'Sonstiges': '📦' };
 const REPEAT_LABEL = { none: '', weekly: '↻ wöchentlich', monthly: '↻ monatlich' };
 const POLL_MS = 12000;
 
 /* ================= Zustand ================= */
-const LS = { code: 'putzplan.code', tasks: 'putzplan.tasks', view: 'putzplan.view', settings: 'putzplan.settings', filter: 'putzplan.filter' };
+const LS = { code: 'putzplan.code', tasks: 'putzplan.tasks', tab: 'putzplan.tab', settings: 'putzplan.settings', filter: 'putzplan.filter' };
+const TABS = { today: 'Heute', week: 'Woche', month: 'Monat', stats: 'Bilanz', home: 'Haushalt' };
 const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const MONTH_SHORT = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 const MONTH_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
@@ -295,7 +322,7 @@ try { tasks = JSON.parse(lsGet(LS.tasks) || '[]'); } catch (e) { tasks = []; }
 let settings = null;                     // gemeinsame Einstellungen (Namen), werden mit synchronisiert
 try { settings = JSON.parse(lsGet(LS.settings) || 'null'); } catch (e) { settings = null; }
 let filter = ['nick', 'partner', 'none'].includes(lsGet(LS.filter)) ? lsGet(LS.filter) : 'all';
-let view = lsGet(LS.view) === 'month' ? 'month' : 'week';
+let tab = TABS[lsGet(LS.tab)] ? lsGet(LS.tab) : 'today';
 let cursor = new Date();                 // Bezugsdatum der angezeigten Woche/Monats
 let editingId = null;
 let localVer = 0, syncing = false, again = false, syncTimer = null;
@@ -430,13 +457,109 @@ function balanceHtml(days) {
     <span class="muted">${g.min} Min · ${g.count}×</span></div>`).join('')}</div>`;
 }
 
+// Kalenderwoche nach ISO 8601
+function isoWeek(k) {
+  const d = fromKey(k);
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  t.setUTCDate(t.getUTCDate() + 3 - ((t.getUTCDay() + 6) % 7));
+  const jan4 = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+  return 1 + Math.round(((t - jan4) / 864e5 - 3 + ((jan4.getUTCDay() + 6) % 7)) / 7);
+}
+// Woche (Montag), in der eine Aufgabe erledigt wurde
+const doneWeek = (t) => (t.doneAt ? weekStart(new Date(t.doneAt)) : t.due ? weekStart(fromKey(t.due)) : null);
+const PERSONS = ['nick', 'partner', 'none'];
+const personOf = (t) => t.assignee || 'none';
+
+function statsHtml() {
+  const n = names();
+  const label = { nick: n.nick, partner: n.partner, none: 'Ohne Zuweisung' };
+  const thisWeek = weekStart(new Date());
+  const weeks = [...Array(8)].map((_, i) => addDays(thisWeek, -7 * i));
+  const done = live().filter((t) => t.done && weeks.includes(doneWeek(t)));
+  const days = [...Array(7)].map((_, i) => addDays(thisWeek, i));
+  let html = balanceHtml(days);
+  if (!done.length) return html + '<div class="bal"><h3>Letzte 8 Wochen</h3><p class="empty" style="padding:0">Noch keine erledigten Aufgaben.</p></div>';
+
+  const shownPersons = PERSONS.filter((p) => p !== 'none' || done.some((t) => !t.assignee));
+  const legend = `<div class="legend">${shownPersons.map((p) => `<span><i class="sw p-${p}"></i>${esc(label[p])}</span>`).join('')}</div>`;
+
+  // Minuten pro Woche und Person, gestapelt
+  const per = weeks.map((w) => {
+    const list = done.filter((t) => doneWeek(t) === w);
+    const by = Object.fromEntries(PERSONS.map((p) => [p, sumMin(list.filter((t) => personOf(t) === p))]));
+    return { w, by, total: sumMin(list) };
+  });
+  const maxW = Math.max(1, ...per.map((x) => x.total));
+  const rows = per.map(({ w, by, total }) => {
+    const tip = `KW ${isoWeek(w)}: ` + shownPersons.map((p) => `${label[p]} ${by[p]} Min`).join(', ');
+    const segs = shownPersons.filter((p) => by[p]).map((p) => `<i class="p-${p}" style="flex:${by[p]}" title="${esc(label[p])}: ${by[p]} Min"></i>`).join('');
+    return `<button type="button" class="wk-row" data-tip="${esc(tip)}">
+      <span>KW ${isoWeek(w)}${w === thisWeek ? ' <span class="muted small">·&nbsp;jetzt</span>' : ''}</span>
+      <span class="track">${total ? `<span class="stack" style="width:${Math.max(4, Math.round((total / maxW) * 100))}%">${segs}</span>` : ''}</span>
+      <span class="tot">${total ? total + ' Min' : '–'}</span></button>`;
+  }).join('');
+  html += `<div class="bal"><h3>Letzte 8 Wochen · Minuten</h3>${legend}${rows}</div>`;
+
+  // Summe pro Person über 8 Wochen
+  const sums = shownPersons.map((p) => {
+    const list = done.filter((t) => personOf(t) === p);
+    return { p, min: sumMin(list), count: list.length };
+  });
+  const all = Math.max(1, sums.reduce((a, x) => a + x.min, 0));
+  const maxP = Math.max(1, ...sums.map((x) => x.min));
+  html += `<div class="bal"><h3>Gesamt · 8 Wochen</h3>${sums.map((x) => `<div class="bal-row">
+    <span>${esc(label[x.p])}</span>
+    <span class="bar"><i class="p-${x.p}" style="width:${Math.round((x.min / maxP) * 100)}%"></i></span>
+    <span class="muted">${x.min} Min · ${Math.round((x.min / all) * 100)} %</span></div>`).join('')}</div>`;
+
+  // Minuten pro Kategorie über 8 Wochen
+  const cats = CATS.map((c) => ({ c, min: sumMin(done.filter((t) => t.category === c)) })).filter((x) => x.min).sort((a, b) => b.min - a.min);
+  const maxC = Math.max(1, ...cats.map((x) => x.min));
+  html += `<div class="bal"><h3>Nach Kategorie · 8 Wochen</h3>${cats.map((x) => `<div class="bal-row">
+    <span>${CAT_ICON[x.c] || ''} ${esc(x.c)}</span>
+    <span class="bar"><i class="cat" style="width:${Math.round((x.min / maxC) * 100)}%"></i></span>
+    <span class="muted">${x.min} Min</span></div>`).join('')}</div>`;
+  return html;
+}
+
+// Heute: Überfälliges, heute, morgen
+function todayHtml(today) {
+  const tomorrow = addDays(today, 1);
+  const overdue = shown().filter((t) => !t.done && t.due && t.due < today).sort((a, b) => a.due.localeCompare(b.due));
+  const block = (k, title) => {
+    const list = onDay(k), o = list.filter((t) => !t.done);
+    return `<section class="day">
+      <div class="dayhead">
+        <span class="dayname${k === today ? ' today' : ''}">${title}</span>
+        <button class="add-day" type="button" data-add="${k}" aria-label="Aufgabe für ${title}">+</button>
+        <span class="sum">${o.length ? `${o.length} offen · ${sumMin(o)} Min` : list.length ? 'alles erledigt' : ''}</span>
+      </div>
+      ${list.length ? list.map((t) => taskRow(t, false)).join('') : '<p class="empty">Nichts geplant</p>'}
+    </section>`;
+  };
+  return `<p class="subtitle">${longDayLabel(today)}</p>`
+    + (overdue.length ? `<h2>Überfällig</h2>${overdue.map((t) => taskRow(t, true)).join('')}` : '')
+    + block(today, 'Heute') + block(tomorrow, 'Morgen');
+}
+
 function render() {
   if (!code) return;
   const today = keyOf(new Date());
-  document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
+  $('#pageTitle').textContent = TABS[tab];
+  document.querySelectorAll('[data-tab]').forEach((b) => (b.dataset.tab === tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
+  const tasksTab = tab === 'today' || tab === 'week' || tab === 'month';
+  $('#navBar').hidden = !(tab === 'week' || tab === 'month');
+  $('#filters').hidden = !tasksTab;
+  $('#fab').hidden = !tasksTab;
+  $('#view').hidden = tab === 'home';
+  $('#homePage').hidden = tab !== 'home';
   renderFilters();
 
-  if (view === 'week') {
+  if (tab === 'home') return;
+  if (tab === 'today') { $('#view').innerHTML = todayHtml(today); return; }
+  if (tab === 'stats') { $('#view').innerHTML = statsHtml(); return; }
+
+  if (tab === 'week') {
     const ws = weekStart(cursor);
     const days = [...Array(7)].map((_, i) => addDays(ws, i));
     $('#range').textContent = `${fromKey(days[0]).getDate()}. – ${fromKey(days[6]).getDate()}. ${MONTH_SHORT[fromKey(days[6]).getMonth()]} ${fromKey(days[6]).getFullYear()}`;
@@ -460,7 +583,6 @@ function render() {
       </section>`;
     });
     html += `<p class="weeksum">Diese Woche: ${open.length} offen · ${sumMin(open)} Min</p>`;
-    html += balanceHtml(days);
     $('#view').innerHTML = html;
   } else {
     const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
@@ -485,13 +607,27 @@ function render() {
   }
 }
 
-function setView(v) {
-  view = v;
-  lsSet(LS.view, v);
+function setTab(t) {
+  if (!TABS[t]) return;
+  const changed = t !== tab;
+  tab = t;
+  lsSet(LS.tab, t);
+  if (t === 'home' && changed) fillHome();
+  if (changed) $('#toast').classList.remove('show');
   render();
+  if (changed) window.scrollTo(0, 0);
+}
+// Haushalt-Seite nur beim Öffnen befüllen, damit ein Sync nicht in laufende Eingaben schreibt
+function fillHome() {
+  const n = names();
+  $('#sName1').value = n.nick;
+  $('#sName2').value = n.partner;
+  $('#sVersion').textContent = APP_VERSION;
+  $('#updateInfo').textContent = '';
+  $('#btnApplyUpdate').hidden = true;
 }
 function move(dir) {
-  if (view === 'week') cursor = fromKey(addDays(weekStart(cursor), dir * 7));
+  if (tab === 'week') cursor = fromKey(addDays(weekStart(cursor), dir * 7));
   else {
     const k = addMonths(keyOf(new Date(cursor.getFullYear(), cursor.getMonth(), 1)), dir);
     cursor = fromKey(k);
@@ -633,6 +769,7 @@ function startApp() {
   $('#setup').hidden = true;
   $('#app').hidden = false;
   $('#sCode').textContent = fmtCode(code);
+  fillHome();
   render();
   sync();
 }
@@ -678,15 +815,6 @@ $('#joinCode').addEventListener('input', (e) => {
   e.target.value = d.length > 3 ? d.slice(0, 3) + ' ' + d.slice(3) : d;
 });
 
-$('#btnSettings').addEventListener('click', () => {
-  const n = names();
-  $('#sName1').value = n.nick;
-  $('#sName2').value = n.partner;
-  $('#sVersion').textContent = APP_VERSION;
-  $('#updateInfo').textContent = '';
-  $('#btnApplyUpdate').hidden = true;
-  $('#settingsSheet').hidden = false;
-});
 /* Version und Updates */
 // Versionen vergleichen: 1.10.0 > 1.9.3
 function cmpVersion(a, b) {
@@ -742,21 +870,21 @@ $('#namesForm').addEventListener('submit', (e) => {
   save();
   toast('Namen gespeichert');
 });
-$('#btnCloseSettings').addEventListener('click', () => { $('#settingsSheet').hidden = true; });
-$('#settingsSheet').addEventListener('click', (e) => { if (e.target.id === 'settingsSheet') $('#settingsSheet').hidden = true; });
 $('#btnSyncNow').addEventListener('click', () => sync());
 $('#btnLogout').addEventListener('click', () => {
   if (!confirm('Auf diesem Gerät abmelden? Die Aufgaben bleiben online erhalten und sind mit dem Code wieder da.')) return;
   code = ''; tasks = []; settings = null; localVer = 0;
   lsDel(LS.code); lsDel(LS.tasks); lsDel(LS.settings);
-  $('#settingsSheet').hidden = true;
+  tab = 'today'; lsSet(LS.tab, tab);
   showSetup();
 });
 
 /* Navigation und Aufgaben (Ereignis-Weiterleitung) */
 document.addEventListener('click', (e) => {
-  const v = e.target.closest('[data-view]');
-  if (v) return setView(v.dataset.view);
+  const tb = e.target.closest('[data-tab]');
+  if (tb) return setTab(tb.dataset.tab);
+  const tip = e.target.closest('[data-tip]');
+  if (tip) return toast(tip.dataset.tip);
   const f = e.target.closest('[data-filter]');
   if (f) { filter = f.dataset.filter; lsSet(LS.filter, filter); return render(); }
   const act = e.target.closest('[data-act]');
@@ -770,14 +898,14 @@ document.addEventListener('click', (e) => {
   const day = e.target.closest('[data-day]');
   if (day) {
     selected = day.dataset.day;
-    if (view === 'month') { cursor = fromKey(selected); }
+    if (tab === 'month') { cursor = fromKey(selected); }
     return render();
   }
 });
 $('#prev').addEventListener('click', () => move(-1));
 $('#next').addEventListener('click', () => move(1));
 $('#today').addEventListener('click', () => { cursor = new Date(); selected = keyOf(cursor); render(); });
-$('#fab').addEventListener('click', () => openSheet(null, selected));
+$('#fab').addEventListener('click', () => openSheet(null, tab === 'today' ? keyOf(new Date()) : selected));
 
 // Nach links/rechts wischen = nächste/vorige Woche bzw. Monat
 let touchStart = null;
@@ -790,7 +918,7 @@ $('#view').addEventListener('touchend', (e) => {
   const t = e.changedTouches[0];
   const dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
   touchStart = null;
-  if (Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(dy)) move(dx < 0 ? 1 : -1);
+  if ((tab === 'week' || tab === 'month') && Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(dy)) move(dx < 0 ? 1 : -1);
 }, { passive: true });
 
 /* ================= Los geht's ================= */

@@ -2,7 +2,9 @@
 
 Gemeinsamer Putzplan für zwei Personen als Web-App (PWA). Läuft auf iPhone und Android über den Homescreen, ohne App Store und ohne Benutzerkonto.
 
-- Wochenansicht und Monatsansicht
+- Reiter unten: Heute, Woche, Monat, Bilanz, Haushalt
+- Heute-Ansicht (Überfälliges, heute, morgen), Wochen- und Monatsansicht
+- Bilanz: wer hat wie viel erledigt, über 8 Wochen und nach Kategorie
 - Aufgaben mit Fälligkeit, Kategorie, Zeitaufwand und Zuweisung
 - Erledigt-Haken, wöchentliche oder monatliche Wiederholung
 - Filter nach Person, Wochenbilanz (wer hat wie viel erledigt), Titelvorschläge beim Eintragen
@@ -26,7 +28,7 @@ worker/    Backend (Cloudflare Worker + D1-Datenbank)
 .github/workflows/deploy-worker.yml   veröffentlicht App und Backend automatisch bei Änderungen auf main
 ```
 
-Namen ändert ihr direkt in der App unter ⚙︎. Dort steht auch die installierte Version, und „Nach Update suchen“ zeigt die aktuellste.
+Namen ändert ihr direkt in der App im Reiter „Haushalt“. Dort steht auch die installierte Version, und „Nach Update suchen“ zeigt die aktuellste.
 
 **Neue Version veröffentlichen:** Versionsnummer an zwei Stellen erhöhen, `APP_VERSION` in `docs/index.html` und `version` in `docs/version.json` (dort auch Datum und Neuerungen eintragen).
 

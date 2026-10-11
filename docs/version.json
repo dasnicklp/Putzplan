@@ -1,8 +1,10 @@
 {
-  "version": "1.3.0",
+  "version": "1.4.0",
   "date": "2026-10-11",
   "notes": [
-    "Eigene Adresse: putzplan-api.n-kudenholdt2000.workers.dev",
-    "Putzplan und Fokus lassen sich in Chrome nebeneinander installieren"
+    "Reiter unten: Heute, Woche, Monat, Bilanz, Haushalt",
+    "Heute-Ansicht mit Überfälligem, heute und morgen",
+    "Bilanz über 8 Wochen, pro Person und nach Kategorie",
+    "Personenfarben Blau und Orange, auch bei Farbschwäche gut unterscheidbar"
   ]
 }

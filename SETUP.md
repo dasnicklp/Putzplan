@@ -87,7 +87,7 @@ Die App-Adresse ist **<https://putzplan-api.n-kudenholdt2000.workers.dev/>**.
 2. Teilen-Symbol (Quadrat mit Pfeil) → **Zum Home-Bildschirm** → Hinzufügen.
 3. App vom Home-Bildschirm öffnen → Code eingeben → **Verbinden**.
 
-Änderungen erscheinen auf dem anderen Gerät nach spätestens etwa 12 Sekunden, solange die App offen ist, und sofort beim Öffnen. Der Code steht jederzeit in der App unter ⚙︎.
+Änderungen erscheinen auf dem anderen Gerät nach spätestens etwa 12 Sekunden, solange die App offen ist, und sofort beim Öffnen. Der Code steht jederzeit in der App im Reiter „Haushalt“.
 
 ---
 
@@ -96,9 +96,9 @@ Die App-Adresse ist **<https://putzplan-api.n-kudenholdt2000.workers.dev/>**.
 Alles, was auf `main` landet, geht automatisch raus:
 
 - **App** (`docs/`) und **Backend** (`worker/`): Die Action „App und Backend veröffentlichen“ läuft von selbst, GitHub Pages aktualisiert sich parallel. Nach 1–2 Minuten ist alles online.
-- Die Handys holen die neue Version beim nächsten Öffnen, oder sofort über ⚙︎ → „Nach Update suchen“.
+- Die Handys holen die neue Version beim nächsten Öffnen, oder sofort über den Reiter „Haushalt“ → „Nach Update suchen“.
 
-Namen anpassen: in der App unter ⚙︎ → „Namen speichern“. Gilt automatisch für beide Geräte.
+Namen anpassen: in der App im Reiter „Haushalt“ → „Namen speichern“. Gilt automatisch für beide Geräte.
 
 ## Wenn etwas nicht geht
 
@@ -108,7 +108,7 @@ Namen anpassen: in der App unter ⚙︎ → „Namen speichern“. Gilt automati
 | Action rot: „workers.dev subdomain“ | Schritt 1, Punkt 2: in Cloudflare *Workers & Pages* öffnen und Subdomain wählen. |
 | Action rot: „Authentication error“ / „D1“ | Token hat zu wenig Rechte: D1 · Edit ergänzen (Schritt 2). |
 | App: „Keine Verbindung zum Server“ | `API_BASE` in `docs/index.html` noch nicht eingetragen oder Worker nicht veröffentlicht. |
-| App: „Den Code kenne ich nicht“ | Tippfehler. Code steht auf dem anderen Gerät unter ⚙︎. |
+| App: „Den Code kenne ich nicht“ | Tippfehler. Code steht auf dem anderen Gerät im Reiter „Haushalt“. |
 | App: „Zu viele Fehlversuche“ | Nach 5 falschen Codes ist die Internetverbindung 15 Minuten gesperrt (Schutz vor Raten). Warten. |
 | App zeigt alte Version | App ganz schließen und neu öffnen. |
 

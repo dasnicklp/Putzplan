@@ -56,6 +56,14 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 - Wischen für vorige/nächste Woche bzw. Monat, kurze Vibration beim Erledigen (Android)
 - Wiederholung: überfällige Aufgaben springen beim Erledigen auf einen Termin ab heute; kein doppelter Folgetermin
 
+## Umgesetzt (Phase 3)
+
+- Tab-Leiste unten: Heute · Woche · Monat · Bilanz · Haushalt (letzter Reiter wird pro Gerät gemerkt)
+- Heute: Überfällig, heute, morgen
+- Bilanz: aktuelle Woche, gestapelte Minuten pro Person für 8 Kalenderwochen (Antippen zeigt Werte), Gesamt mit Anteil, Minuten nach Kategorie
+- Haushalt: Code, Synchronisation, Namen, Version/Update, Abmelden (vorher Einstellungs-Overlay)
+- Personenfarben Blau `#2a78d6`/`#3987e5` und Orange `#eb6834`/`#d95926` (hell/dunkel), mit dem dataviz-Validator geprüft: auch bei Farbschwäche klar unterscheidbar (vorher Blau/Lila, das fiel bei Rot-Grün-Schwäche durch)
+
 ## Später möglich
 
 - **Push-Erinnerungen** (z. B. „Heute ist Bad dran“): Die Fokus-App hat dafür schon VAPID-Push und einen Cron-Zeitplaner, das lässt sich übernehmen. Auf dem iPhone nur in der Homescreen-App.
