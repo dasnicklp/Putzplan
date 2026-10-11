@@ -1,104 +1,59 @@
 # Putzplan einrichten
 
-Das musst du einmal selbst machen. Insgesamt etwa 20 Minuten. Du brauchst dafür deinen Windows-PC.
+Du brauchst **kein Terminal und kein Node.js**. Das Backend veröffentlicht eine GitHub Action automatisch.
+Für dich bleiben ein paar Klicks im Browser, etwa 10 Minuten.
 
-Übersicht:
-
-1. Code auf `main` bringen (GitHub)
-2. Backend auf Cloudflare veröffentlichen
-3. Backend-Adresse in die App eintragen
-4. GitHub Pages einschalten
+1. Cloudflare-Account anlegen
+2. Cloudflare-Schlüssel als GitHub-Secret hinterlegen
+3. GitHub Pages einschalten
+4. Claude Bescheid sagen → Claude startet das Deployment und trägt die Adresse ein
 5. App auf beiden Handys installieren
 
 ---
 
-## 0. Einmalig installieren
+## 1. Cloudflare-Account anlegen
 
-- **Node.js** (Version „LTS“) von <https://nodejs.org> installieren. Danach ein neues Terminal öffnen (PowerShell).
-- **Git** hast du schon, falls nicht: <https://git-scm.com>.
-- **Cloudflare-Account** (kostenlos): <https://dash.cloudflare.com/sign-up>. Der Free-Tarif reicht.
+1. Auf <https://dash.cloudflare.com/sign-up> registrieren (kostenlos) und die E-Mail bestätigen.
+2. Links im Menü **Workers & Pages** einmal öffnen. Falls Cloudflare dort nach einer *workers.dev-Subdomain* fragt, einen Namen wählen (z. B. `dasnicklp`). Ohne diese Subdomain schlägt das Veröffentlichen fehl.
 
-## 1. Code auf `main` bringen
+## 2. Cloudflare-Schlüssel als GitHub-Secret hinterlegen
 
-Der Code liegt im Branch `claude/vigilant-fermat-233lby`. GitHub Pages veröffentlicht von `main`.
+**Account-ID kopieren:** In Cloudflare bei **Workers & Pages** steht rechts „Account ID“ → kopieren.
+(Alternativ: Sie steht in der Browser-Adresse, `dash.cloudflare.com/<Account-ID>/…`.)
 
-Auf GitHub: Repo **Putzplan** → Banner „Compare & pull request“ (oder Reiter *Pull requests* → *New*) → Branch `claude/vigilant-fermat-233lby` nach `main` → **Merge**.
+**API-Token erstellen:**
 
-Dann lokal holen:
+1. <https://dash.cloudflare.com/profile/api-tokens> → **Create Token**
+2. Vorlage **Edit Cloudflare Workers** → **Use template**
+3. Unter *Permissions* auf **+ Add more** und eine Zeile ergänzen: **Account** · **D1** · **Edit**
+4. *Account Resources*: dein Account. *Zone Resources*: so lassen (All zones).
+5. **Continue to summary** → **Create Token** → Token kopieren (wird nur einmal angezeigt).
 
-```powershell
-git clone https://github.com/dasnicklp/Putzplan.git
-cd Putzplan
-```
+**In GitHub eintragen:** Repo **Putzplan** → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**, zweimal:
 
-(Wenn du das Repo schon hast: `git checkout main` und `git pull`.)
+| Name | Wert |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | der Token |
+| `CLOUDFLARE_ACCOUNT_ID` | die Account-ID |
 
-## 2. Backend auf Cloudflare veröffentlichen
+Den Token bitte **nicht** in den Chat kopieren. In den Secrets ist er sicher, Claude braucht ihn nicht zu sehen.
 
-```powershell
-cd worker
-npm install
-npx wrangler login
-```
+## 3. GitHub Pages einschalten
 
-Es öffnet sich der Browser, dort bei Cloudflare zustimmen.
-
-Datenbank anlegen:
-
-```powershell
-npx wrangler d1 create putzplan
-```
-
-Die Ausgabe enthält eine Zeile `database_id = "…"`. Diese ID in `worker/wrangler.toml` statt `HIER-DATENBANK-ID-EINTRAGEN` einsetzen.
-
-Veröffentlichen:
-
-```powershell
-npx wrangler deploy
-```
-
-Falls Wrangler nach einer *workers.dev-Subdomain* fragt: einen Namen wählen (z. B. `dasnicklp`).
-Am Ende steht die Adresse, z. B. `https://putzplan-api.dasnicklp.workers.dev`. **Diese Adresse brauchst du gleich.**
-
-Prüfen: Die Adresse mit `/api` dahinter im Browser öffnen. Es muss `{"ok":true,"name":"putzplan-api"}` erscheinen.
-
-Die Tabellen in der Datenbank legt der Worker beim ersten Aufruf selbst an. Du musst kein SQL ausführen.
-
-## 3. Backend-Adresse in die App eintragen
-
-Datei `docs/index.html` öffnen (z. B. mit Notepad oder VS Code) und nach `API_BASE` suchen:
-
-```js
-const API_BASE = 'https://putzplan-api.DEIN-NAME.workers.dev';
-```
-
-Deine Adresse aus Schritt 2 einsetzen (ohne `/` am Ende).
-
-Direkt darunter kannst du den Namen deiner Freundin eintragen:
-
-```js
-const PEOPLE = { nick: 'Nick', partner: 'Freundin' };
-```
-
-Speichern und hochladen:
-
-```powershell
-cd ..
-git add docs/index.html worker/wrangler.toml
-git commit -m "Backend-Adresse eintragen"
-git push
-```
-
-## 4. GitHub Pages einschalten
-
-Auf GitHub: Repo **Putzplan** → **Settings** → **Pages**
+Repo **Putzplan** → **Settings** → **Pages**
 
 - *Source*: **Deploy from a branch**
 - *Branch*: **main**, Ordner **/docs** → **Save**
 
-Nach 1–2 Minuten steht oben die Adresse, z. B. `https://dasnicklp.github.io/Putzplan/`.
+## 4. Claude Bescheid sagen
+
+Schreib „fertig“. Claude startet dann die Action, liest die Worker-Adresse aus, trägt sie in die App ein und prüft, dass alles erreichbar ist.
+
+(Selbst starten geht auch: Repo → **Actions** → **Backend veröffentlichen** → **Run workflow**, Branch `main`. Die Adresse steht danach in der Zusammenfassung des Laufs.)
 
 ## 5. App auf den Handys installieren
+
+Die App-Adresse ist `https://dasnicklp.github.io/Putzplan/` (sie steht auch unter Settings → Pages).
 
 **Wichtig:** Erst installieren, dann den Code eingeben. Auf dem iPhone hat die Homescreen-App einen eigenen Speicher, getrennt von Safari.
 
@@ -106,8 +61,7 @@ Nach 1–2 Minuten steht oben die Adresse, z. B. `https://dasnicklp.github.io/Pu
 
 1. Adresse in **Chrome** öffnen.
 2. Menü ⋮ → **App installieren** (oder „Zum Startbildschirm hinzufügen“).
-3. App vom Startbildschirm öffnen → **Neuen Haushalt anlegen**.
-4. Den 6-stelligen Code notieren.
+3. App vom Startbildschirm öffnen → **Neuen Haushalt anlegen** → den 6-stelligen Code notieren.
 
 **iPhone (deine Freundin):**
 
@@ -115,36 +69,35 @@ Nach 1–2 Minuten steht oben die Adresse, z. B. `https://dasnicklp.github.io/Pu
 2. Teilen-Symbol (Quadrat mit Pfeil) → **Zum Home-Bildschirm** → Hinzufügen.
 3. App vom Home-Bildschirm öffnen → Code eingeben → **Verbinden**.
 
-Fertig. Änderungen erscheinen auf dem anderen Gerät nach spätestens etwa 12 Sekunden, solange die App offen ist, und sofort beim Öffnen.
-
-Der Code steht jederzeit in der App unter ⚙︎ (Einstellungen).
+Änderungen erscheinen auf dem anderen Gerät nach spätestens etwa 12 Sekunden, solange die App offen ist, und sofort beim Öffnen. Der Code steht jederzeit in der App unter ⚙︎.
 
 ---
 
 ## Später: Änderungen veröffentlichen
 
-- **App (Frontend)** geändert: `git push` reicht. GitHub Pages aktualisiert sich in 1–2 Minuten, die Handys holen die neue Version beim nächsten Öffnen.
-- **Worker (Backend)** geändert: im Ordner `worker` `npx wrangler deploy`.
+Alles, was auf `main` landet, geht automatisch raus:
+
+- **App** (`docs/`): GitHub Pages aktualisiert sich in 1–2 Minuten, die Handys holen die neue Version beim nächsten Öffnen.
+- **Backend** (`worker/`): Die Action „Backend veröffentlichen“ läuft von selbst.
+
+Namen anpassen: In `docs/index.html` oben im Skript `PEOPLE = { nick: 'Nick', partner: 'Freundin' }`.
 
 ## Wenn etwas nicht geht
 
 | Meldung | Ursache / Lösung |
 |---|---|
-| „Keine Verbindung zum Server“ | `API_BASE` in `docs/index.html` falsch oder Worker nicht veröffentlicht. Adresse + `/api` im Browser testen. |
-| „Den Code kenne ich nicht“ | Tippfehler. Code steht auf dem anderen Gerät unter ⚙︎. |
-| „Zu viele Fehlversuche“ | Nach 5 falschen Codes ist die Internetverbindung 15 Minuten gesperrt (Schutz vor Raten). Warten. |
+| Action rot: „Secrets … fehlen“ | Schritt 2 wiederholen, Namen genau so schreiben. |
+| Action rot: „workers.dev subdomain“ | Schritt 1, Punkt 2: in Cloudflare *Workers & Pages* öffnen und Subdomain wählen. |
+| Action rot: „Authentication error“ / „D1“ | Token hat zu wenig Rechte: D1 · Edit ergänzen (Schritt 2). |
+| App: „Keine Verbindung zum Server“ | `API_BASE` in `docs/index.html` noch nicht eingetragen oder Worker nicht veröffentlicht. |
+| App: „Den Code kenne ich nicht“ | Tippfehler. Code steht auf dem anderen Gerät unter ⚙︎. |
+| App: „Zu viele Fehlversuche“ | Nach 5 falschen Codes ist die Internetverbindung 15 Minuten gesperrt (Schutz vor Raten). Warten. |
 | App zeigt alte Version | App ganz schließen und neu öffnen. |
-| Eigene Domain statt github.io | Domain in `worker/src/index.js` bei `ORIGINS` ergänzen und neu deployen. |
 
 ## Kosten
 
-Bei zwei Personen bleibt alles im kostenlosen Rahmen von Cloudflare (100 000 Anfragen pro Tag) und GitHub Pages.
+Bei zwei Personen bleibt alles im kostenlosen Rahmen von Cloudflare (100 000 Anfragen pro Tag) und GitHub.
 
-## Lokal testen (optional)
+## Ohne GitHub Action (manuell, optional)
 
-```powershell
-cd worker
-npx wrangler dev --port 8787
-```
-
-In einem zweiten Terminal im Ordner `docs`: `npx serve -l 8765` (oder `python -m http.server 8765`). Dafür `API_BASE` vorübergehend auf `http://127.0.0.1:8787` setzen und im Browser `http://127.0.0.1:8765` öffnen.
+Mit Node.js im Ordner `worker`: `npm install`, `npx wrangler login`, `npx wrangler d1 create putzplan` (ID in `wrangler.toml` eintragen), `npx wrangler deploy`. Die ausgegebene Adresse in `docs/index.html` bei `API_BASE` eintragen.

@@ -19,6 +19,7 @@ docs/      App (statisch, wird von GitHub Pages ausgeliefert)
 worker/    Backend (Cloudflare Worker + D1-Datenbank)
   src/index.js          API: Haushalt anlegen, Code prüfen, Aufgaben synchronisieren
   wrangler.toml         Worker-Name und Datenbank-Verknüpfung
+.github/workflows/deploy-worker.yml   veröffentlicht das Backend automatisch bei Änderungen auf main
 ```
 
 Anpassen ohne Programmieren: oben im `<script>`-Teil von `docs/index.html` stehen Backend-Adresse, Namen, Kategorien und das Abfrage-Intervall.

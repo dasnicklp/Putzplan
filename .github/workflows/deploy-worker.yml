@@ -1,0 +1,61 @@
+# Veröffentlicht das Backend (worker/) auf Cloudflare.
+# Braucht zwei Repository-Secrets: CLOUDFLARE_API_TOKEN und CLOUDFLARE_ACCOUNT_ID (siehe SETUP.md).
+# Legt die D1-Datenbank "putzplan" beim ersten Lauf selbst an.
+name: Backend veröffentlichen
+
+on:
+  push:
+    branches: [main]
+    paths: ['worker/**', '.github/workflows/deploy-worker.yml']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Secrets prüfen
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Die Secrets CLOUDFLARE_API_TOKEN und CLOUDFLARE_ACCOUNT_ID fehlen. Siehe SETUP.md, Schritt 2."
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - name: D1-Datenbank finden oder anlegen
+        run: |
+          find_db() {
+            npx wrangler d1 list --json | node -e '
+              let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => {
+                const db = JSON.parse(s).find((d) => d.name === "putzplan");
+                process.stdout.write(db ? (db.uuid || db.database_id || db.id || "") : "");
+              });'
+          }
+          ID=$(find_db)
+          if [ -z "$ID" ]; then
+            npx wrangler d1 create putzplan
+            ID=$(find_db)
+          fi
+          if [ -z "$ID" ]; then echo "::error::D1-Datenbank konnte nicht angelegt werden."; exit 1; fi
+          sed -i "s/HIER-DATENBANK-ID-EINTRAGEN/$ID/" wrangler.toml
+          echo "D1-Datenbank: $ID"
+
+      - name: Worker veröffentlichen
+        run: npx wrangler deploy 2>&1 | tee deploy.log
+
+      - name: Adresse anzeigen
+        run: |
+          URL=$(grep -o 'https://[a-z0-9.-]*\.workers\.dev' deploy.log | head -n 1)
+          echo "Worker-Adresse: $URL"
+          echo "### Worker-Adresse: $URL" >> "$GITHUB_STEP_SUMMARY"
