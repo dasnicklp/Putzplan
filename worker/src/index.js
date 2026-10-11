@@ -1,7 +1,7 @@
 // Putzplan-Backend (Cloudflare Worker + D1)
 // - Liefert außerdem die App (docs/) als statische Dateien aus, siehe [assets] in wrangler.toml
 // - Zugang über einen 6-stelligen Haushaltscode, kein Konto
-// - Sync: Geräte schicken Aufgaben und Notizen, der Server führt sie zusammen (neueste Änderung gewinnt pro Eintrag)
+// - Sync: Geräte schicken Aufgaben, Notizen und Einkaufsliste, der Server führt sie zusammen (neueste Änderung gewinnt pro Eintrag)
 // - Nach 5 falschen Codes von einer IP wird diese IP 15 Minuten gesperrt
 
 const ORIGINS = [
@@ -11,6 +11,7 @@ const ORIGINS = [
 const MAX_BODY = 1024 * 1024;
 const MAX_TASKS = 2000;
 const MAX_NOTES = 1000;
+const MAX_SHOP = 1000;
 const MAX_DATA = 1500 * 1024; // D1 erlaubt ca. 2 MB pro Zeile
 const TOMBSTONE_MS = 60 * 864e5; // gelöschte Aufgaben 60 Tage merken, damit andere Geräte sie auch löschen
 const MAX_FAILS = 5;
@@ -119,6 +120,26 @@ function cleanNote(n) {
   };
 }
 
+function cleanShopItem(it) {
+  if (!it || typeof it !== 'object') return null;
+  if (typeof it.id !== 'string' || !/^[\w-]{1,64}$/.test(it.id)) return null;
+  if (!Number.isFinite(it.updatedAt)) return null;
+  const deleted = it.deleted === true;
+  const name = clampStr(it.name, 100);
+  if (!deleted && !name) return null;
+  return {
+    id: it.id,
+    name,
+    qty: clampStr(it.qty, 30),
+    cat: clampStr(it.cat, 40),
+    done: it.done === true,
+    doneAt: Number.isFinite(it.doneAt) ? it.doneAt : null,
+    createdAt: Number.isFinite(it.createdAt) ? it.createdAt : it.updatedAt,
+    updatedAt: it.updatedAt,
+    deleted,
+  };
+}
+
 // Gemeinsame Einstellungen (z. B. Namen): als Ganzes, die neuere Änderung gewinnt
 function cleanSettings(s) {
   if (!s || typeof s !== 'object' || !Number.isFinite(s.updatedAt)) return null;
@@ -126,7 +147,7 @@ function cleanSettings(s) {
   return { names: { nick: clampStr(n.nick, 30), partner: clampStr(n.partner, 30) }, updatedAt: s.updatedAt };
 }
 
-// Pro Eintrag (Aufgabe oder Notiz) gewinnt die neuere Änderung. Alte Löschmarkierungen fallen weg.
+// Pro Eintrag (Aufgabe, Notiz, Einkaufsartikel) gewinnt die neuere Änderung. Alte Löschmarkierungen fallen weg.
 function mergeItems(current, incoming, max) {
   const map = new Map();
   for (const t of current) map.set(t.id, t);
@@ -142,19 +163,21 @@ function mergeItems(current, incoming, max) {
 }
 
 // Lesen, zusammenführen, schreiben. Bei gleichzeitigem Schreiben wird wiederholt (optimistische Sperre).
-async function sync(env, id, incoming, incomingNotes, incomingSettings) {
+async function sync(env, id, incoming, incomingNotes, incomingShop, incomingSettings) {
   for (let i = 0; i < 6; i++) {
     const row = await env.DB.prepare('SELECT data, updated_at FROM households WHERE id = ?').bind(id).first();
     if (!row) return null;
     const cur = JSON.parse(row.data);
     const merged = mergeItems(cur.tasks || [], incoming, MAX_TASKS);
     const notes = mergeItems(cur.notes || [], incomingNotes, MAX_NOTES);
+    const shop = mergeItems(cur.shop || [], incomingShop, MAX_SHOP);
     let settings = cur.settings || null;
     if (incomingSettings && (!settings || incomingSettings.updatedAt > settings.updatedAt)) settings = incomingSettings;
-    const out = { tasks: merged, notes, settings };
-    // Gespeichert wird nur, was es gibt (alte Datensätze ohne Notizen bleiben unverändert)
+    const out = { tasks: merged, notes, shop, settings };
+    // Gespeichert wird nur, was es gibt (alte Datensätze ohne Notizen/Einkaufsliste bleiben unverändert)
     const stored = { tasks: merged };
     if (notes.length || cur.notes) stored.notes = notes;
+    if (shop.length || cur.shop) stored.shop = shop;
     if (settings) stored.settings = settings;
     const data = JSON.stringify(stored);
     if (data === row.data) return out; // nichts geändert, nichts schreiben
@@ -223,10 +246,11 @@ async function handle(req, env) {
     const body = await readJson(req);
     const incoming = (Array.isArray(body.tasks) ? body.tasks.slice(0, MAX_TASKS) : []).map(cleanTask).filter(Boolean);
     const incomingNotes = (Array.isArray(body.notes) ? body.notes.slice(0, MAX_NOTES) : []).map(cleanNote).filter(Boolean);
-    const out = await sync(env, auth.id, incoming, incomingNotes, cleanSettings(body.settings));
+    const incomingShop = (Array.isArray(body.shop) ? body.shop.slice(0, MAX_SHOP) : []).map(cleanShopItem).filter(Boolean);
+    const out = await sync(env, auth.id, incoming, incomingNotes, incomingShop, cleanSettings(body.settings));
     if (!out) return json(req, { error: 'unknown' }, 404);
     if (out.tooBig) return json(req, { error: 'too_big' }, 413);
-    return json(req, { tasks: out.tasks, notes: out.notes, settings: out.settings, serverTime: Date.now() });
+    return json(req, { tasks: out.tasks, notes: out.notes, shop: out.shop, settings: out.settings, serverTime: Date.now() });
   }
 
   return json(req, { error: 'not found' }, 404);

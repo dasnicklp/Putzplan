@@ -1,8 +1,8 @@
 {
-  "version": "1.6.0",
+  "version": "1.7.0",
   "date": "2026-10-11",
   "notes": [
-    "Neuer Reiter „Notizen“: gemeinsame Notizen für euch beide",
-    "Kategorien pro Notiz, Filter nach Kategorie, Notizen oben anheften"
+    "Neu: gemeinsame Einkaufsliste, automatisch nach Bereichen im Laden sortiert",
+    "Nur noch vier Reiter: Putzen (mit Heute, Woche, Monat, Bilanz), Einkauf, Notizen, Haushalt"
   ]
 }

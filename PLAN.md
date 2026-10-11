@@ -32,7 +32,7 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 |---|---|---|
 | POST | `/api/household` | Neuen Haushalt anlegen, gibt einmalig den Code zurück |
 | POST | `/api/join` | Code prüfen (200 / 401 / 429) |
-| POST | `/api/sync` | Aufgaben, Notizen und Einstellungen senden, zusammengeführten Stand zurückbekommen |
+| POST | `/api/sync` | Aufgaben, Notizen, Einkaufsliste und Einstellungen senden, zusammengeführten Stand zurückbekommen |
 
 ## Aufgabe (Datenmodell)
 
@@ -71,8 +71,18 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 ## Umgesetzt (Phase 5)
 
 - Reiter „Notizen“: gemeinsame Notizen (`id, title, body, cat, pinned, createdAt, updatedAt, deleted`), synchronisiert wie Aufgaben (neuere Änderung gewinnt pro Notiz, Löschmarkierung 60 Tage)
-- Kategorien nach dem Muster der Fokus-App: eine pro Notiz, ergeben sich aus den Notizen selbst, Filter-Chips (Alle / Kategorien / Ohne Kategorie), „＋ Neu“, gleiche Schreibweise wird zusammengeführt; Vorschläge Einkaufen, Putztipps, Info
+- Kategorien nach dem Muster der Fokus-App: eine pro Notiz, ergeben sich aus den Notizen selbst, Filter-Chips (Alle / Kategorien / Ohne Kategorie), „＋ Neu“, gleiche Schreibweise wird zusammengeführt; Vorschläge Putztipps, Info, Ideen (seit 1.7 „Einkaufen“ nicht mehr, dafür gibt es die Einkaufsliste)
 - Ältere App-Versionen ohne Notizen löschen beim Synchronisieren keine Notizen (Server behält sie)
+
+## Umgesetzt (Phase 6)
+
+- Reiter unten von sechs auf vier verschlankt: **Putzen** (oben umschaltbar Heute · Woche · Monat · Bilanz), **Einkauf**, **Notizen**, **Haushalt**. Ein gemerkter alter Reiter (z. B. „Woche“) wird beim ersten Start übernommen.
+- Gemeinsame Einkaufsliste (`id, name, qty, cat, done, doneAt, createdAt, updatedAt, deleted`), synchronisiert wie Aufgaben und Notizen
+  - Eingabefeld oben: Enter fügt hinzu, „2 Milch“ / „500 g Mehl“ trennt die Menge ab; doppelter Eintrag wird erkannt
+  - Automatische Einordnung nach Bereichen im Laden (Stichwörter, Treffer am Wortende zählen mehr; sonst wie beim letzten Mal)
+  - Abhaken schiebt den Eintrag nach „Im Wagen“; „Erledigte entfernen“ räumt auf
+  - Vorschläge aus dem Verlauf der letzten 60 Tage, häufigste zuerst; Zahl offener Einträge am Reiter
+- Ältere App-Versionen ohne Einkaufsliste löschen beim Synchronisieren nichts (Server behält sie)
 
 ## Später möglich
 

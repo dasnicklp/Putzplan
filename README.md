@@ -2,7 +2,8 @@
 
 Gemeinsamer Putzplan für zwei Personen als Web-App (PWA). Läuft auf iPhone und Android über den Homescreen, ohne App Store und ohne Benutzerkonto.
 
-- Reiter unten: Heute, Woche, Monat, Notizen, Bilanz, Haushalt
+- Vier Reiter unten: Putzen (umschaltbar Heute · Woche · Monat · Bilanz), Einkauf, Notizen, Haushalt
+- Gemeinsame Einkaufsliste: schnell eintippen („2 Milch“), automatisch nach Bereichen im Laden sortiert, Abhaken, Vorschläge aus dem Verlauf
 - Gemeinsame Notizen mit Kategorien (Filter, eigene Kategorien, Anheften)
 - Heute-Ansicht (Überfälliges, heute, morgen), Monatsansicht und Wochenansicht mit den 7 Tagen nebeneinander, darunter die Aufgaben des gewählten Tags
 - Bilanz: wer hat wie viel erledigt, über 8 Wochen und nach Kategorie
@@ -24,7 +25,7 @@ docs/      App (statisch; ausgeliefert vom Worker und zusätzlich von GitHub Pag
   sw.js                 Offline-Cache
   manifest.webmanifest  Name und Icons für die Installation
 worker/    Backend (Cloudflare Worker + D1-Datenbank)
-  src/index.js          API: Haushalt anlegen, Code prüfen, Aufgaben synchronisieren
+  src/index.js          API: Haushalt anlegen, Code prüfen, Aufgaben/Einkaufsliste/Notizen synchronisieren
   wrangler.toml         Worker-Name, Datenbank-Verknüpfung, Ordner der App
 .github/workflows/deploy-worker.yml   veröffentlicht App und Backend automatisch bei Änderungen auf main
 ```
