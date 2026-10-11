@@ -11,7 +11,11 @@ Für dich bleiben ein paar Klicks im Browser, etwa 10 Minuten.
 
 ---
 
-## 1. Cloudflare-Account anlegen
+## 1. Cloudflare-Account
+
+**Schon vorhanden (z. B. durch die Fokus-App):** Nichts zu tun, einfach denselben Account benutzen. Putzplan läuft als eigener Worker `putzplan-api` mit eigener Datenbank `putzplan` und berührt bestehende Worker und Datenbanken nicht. Beide Apps teilen sich nur das kostenlose Kontingent, das reicht locker.
+
+**Noch keiner:**
 
 1. Auf <https://dash.cloudflare.com/sign-up> registrieren (kostenlos) und die E-Mail bestätigen.
 2. Links im Menü **Workers & Pages** einmal öffnen. Falls Cloudflare dort nach einer *workers.dev-Subdomain* fragt, einen Namen wählen (z. B. `dasnicklp`). Ohne diese Subdomain schlägt das Veröffentlichen fehl.
@@ -22,6 +26,8 @@ Für dich bleiben ein paar Klicks im Browser, etwa 10 Minuten.
 (Alternativ: Sie steht in der Browser-Adresse, `dash.cloudflare.com/<Account-ID>/…`.)
 
 **API-Token erstellen:**
+
+Einen **neuen** Token anlegen. Vorhandene Tokens (z. B. von der Fokus-App) nicht ändern oder neu erzeugen.
 
 1. <https://dash.cloudflare.com/profile/api-tokens> → **Create Token**
 2. Vorlage **Edit Cloudflare Workers** → **Use template**
