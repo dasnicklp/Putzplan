@@ -1,7 +1,8 @@
 // Service Worker: Offline-Cache für die App-Dateien.
 // Netzwerk zuerst (damit Updates ankommen), Cache als Rückfall (damit es offline trotzdem startet).
 // Die Verbindung zum Backend (andere Domain) wird nie zwischengespeichert.
-const CACHE = 'putzplan-v8';
+// Außerdem: tägliche Erinnerungen (Push) anzeigen.
+const CACHE = 'putzplan-v9';
 const SHELL = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -34,4 +35,28 @@ self.addEventListener('fetch', (e) => {
       })
       .catch(() => caches.match(e.request).then((r) => r || caches.match('./')))
   );
+});
+
+/* Erinnerungen: Der Server schickt Titel, Text und die Zahl offener Aufgaben */
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { /* leer */ }
+  e.waitUntil((async () => {
+    if (Number.isInteger(d.count) && self.navigator.setAppBadge) await self.navigator.setAppBadge(d.count).catch(() => {});
+    await self.registration.showNotification(d.title || 'Putzplan', {
+      body: d.body || 'Schau mal in den Putzplan.',
+      tag: d.tag || 'putzplan', renotify: true,
+      icon: './icon-192.png', badge: './icon-192.png',
+      data: { url: './' },
+    });
+  })());
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    if (wins.length) return wins[0].focus();
+    return self.clients.openWindow('./');
+  })());
 });

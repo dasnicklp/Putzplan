@@ -1,8 +1,10 @@
 {
-  "version": "1.7.0",
+  "version": "1.8.0",
   "date": "2026-10-11",
   "notes": [
-    "Neu: gemeinsame Einkaufsliste, automatisch nach Bereichen im Laden sortiert",
-    "Nur noch vier Reiter: Putzen (mit Heute, Woche, Monat, Bilanz), Einkauf, Notizen, Haushalt"
+    "Erinnerungen: jeden Tag eine Mitteilung mit den offenen Aufgaben (im Reiter „Haushalt“ einschalten)",
+    "Abwechselnd zuweisen, flexiblere Wiederholung (z. B. alle 4 Tage ab dem Erledigen) und Verschieben mit einem Tipp",
+    "Zuletzt geputzt pro Bereich, Serie und Konfetti, wenn alles erledigt ist",
+    "Startpaket, Urlaubsmodus, Zahl am App-Symbol, mehrere Einträge auf einmal in der Einkaufsliste"
   ]
 }

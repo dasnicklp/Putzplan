@@ -89,6 +89,8 @@ Die App-Adresse ist **<https://putzplan-api.n-kudenholdt2000.workers.dev/>**.
 
 Änderungen erscheinen auf dem anderen Gerät nach spätestens etwa 12 Sekunden, solange die App offen ist, und sofort beim Öffnen. Der Code steht jederzeit in der App im Reiter „Haushalt“.
 
+**Erinnerungen (optional):** In der App im Reiter „Haushalt“ unter „Erinnerungen“ Person und Uhrzeit wählen, dann „Erinnerungen einschalten“ und Mitteilungen erlauben. Das macht jedes Handy für sich. In Cloudflare ist dafür nichts einzurichten, der Worker legt seine Schlüssel selbst an. Auf dem iPhone geht das nur in der App vom Home-Bildschirm (ab iOS 16.4).
+
 ---
 
 ## Später: Änderungen veröffentlichen

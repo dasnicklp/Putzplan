@@ -32,6 +32,10 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 |---|---|---|
 | POST | `/api/household` | Neuen Haushalt anlegen, gibt einmalig den Code zurück |
 | POST | `/api/join` | Code prüfen (200 / 401 / 429) |
+| GET | `/api/push/key` | Öffentlicher Schlüssel für die Push-Anmeldung (VAPID, wird beim ersten Mal erzeugt und in D1 gespeichert) |
+| POST | `/api/push/subscribe` | Gerät für die tägliche Erinnerung anmelden: Push-Adresse, Person, Uhrzeit, Zeitzone |
+| POST | `/api/push/unsubscribe` | Abmelden |
+| POST | `/api/push/test` | Sofort eine Erinnerung schicken |
 | POST | `/api/sync` | Aufgaben, Notizen, Einkaufsliste und Einstellungen senden, zusammengeführten Stand zurückbekommen |
 
 ## Aufgabe (Datenmodell)
@@ -84,7 +88,19 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
   - Vorschläge aus dem Verlauf der letzten 60 Tage, häufigste zuerst; Zahl offener Einträge am Reiter
 - Ältere App-Versionen ohne Einkaufsliste löschen beim Synchronisieren nichts (Server behält sie)
 
+## Umgesetzt (Phase 7, 1.8.0)
+
+- **Erinnerungen per Web Push:** Gerät meldet sich im Reiter „Haushalt“ an (Person, Uhrzeit). Ein Cron-Trigger (alle 15 Minuten) schickt einmal am Tag die offenen Aufgaben bis heute (Person plus nicht zugewiesene), nur wenn etwas ansteht, bis 3 Stunden nachgeholt. Inhalt verschlüsselt nach RFC 8291 (aes128gcm), signiert mit VAPID; das Schlüsselpaar erzeugt der Worker selbst und legt es in D1 ab (Tabelle `config`), Anmeldungen in `push_subs`. Nur bekannte Push-Dienste (Google, Apple, Mozilla, Microsoft) werden angeschrieben. iPhone: nur in der Homescreen-App, ab iOS 16.4
+- **Zahl am App-Symbol** (Badging API): offene Aufgaben bis heute; Windows/Mac und iPhone (mit erlaubten Mitteilungen), Android zeigt stattdessen einen Punkt bei Mitteilungen
+- **Wiederholung:** `repeat` ('days' | 'weekly' | 'monthly') mit `every` (alle N) und `fromDone` (ab dem Erledigen statt im festen Rhythmus)
+- **Abwechselnd zuweisen** (`rotate`): der Folgetermin geht an die andere Person
+- **Verschieben** über den ↷-Knopf an jeder offenen Aufgabe
+- **Zuletzt geputzt** pro Bereich in der Bilanz; fällig (⚠), wenn länger her als der kürzeste Rhythmus dort, höchstens 14 Tage
+- **Serie** (Putztage in Folge alles erledigt) und Konfetti bei der letzten Aufgabe des Tages (nicht bei „Bewegung reduzieren“)
+- **Urlaubsmodus** (`settings.away.until` = Tag der Rückkehr): Offenes rutscht hinter den Urlaub, wiederkehrende Aufgaben im Rhythmus; Erinnerungen und Zähler pausieren
+- **Startpaket** mit 15 typischen Aufgaben, wahlweise abwechselnd zugewiesen
+- **Einkaufsliste:** mehrere Einträge per Komma oder Zeilen (auch beim Einfügen), Teilen-Ziel im Manifest (Android)
+
 ## Später möglich
 
-- **Push-Erinnerungen** (z. B. „Heute ist Bad dran“): Die Fokus-App hat dafür schon VAPID-Push und einen Cron-Zeitplaner, das lässt sich übernehmen. Auf dem iPhone nur in der Homescreen-App.
-- Statistik (wer hat wie viel Zeit geputzt), eigene Kategorien, komplexere Wiederholungen.
+- Eigene Kategorien für Aufgaben, Erinnerung an einzelne Aufgaben zu einer Uhrzeit

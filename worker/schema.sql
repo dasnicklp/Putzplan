@@ -10,3 +10,17 @@ CREATE TABLE IF NOT EXISTS attempts (
   fails INTEGER NOT NULL,
   locked_until INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS config (
+  k TEXT PRIMARY KEY,           -- z. B. 'vapid': Schlüssel für Push (wird automatisch erzeugt)
+  v TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS push_subs (
+  endpoint TEXT PRIMARY KEY,    -- Push-Adresse des Geräts
+  household TEXT NOT NULL,      -- Haushalts-ID
+  p256dh TEXT NOT NULL, auth TEXT NOT NULL,  -- Schlüssel des Geräts zum Verschlüsseln
+  person TEXT NOT NULL,         -- 'nick', 'partner' oder '' (alle)
+  time TEXT NOT NULL,           -- Uhrzeit HH:MM
+  tz TEXT NOT NULL,             -- Zeitzone des Geräts
+  last_sent TEXT NOT NULL DEFAULT '',  -- Datum der letzten Erinnerung
+  created INTEGER NOT NULL
+);

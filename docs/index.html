@@ -201,6 +201,40 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 .stack i.p-nick{background:var(--nick)}
 .stack i.p-partner{background:var(--partner)}
 .bar i.cat{background:var(--accent)}
+
+/* Ja/Nein-Schalter */
+.btn.toggle{min-width:76px}
+.btn.toggle[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.pin-row small{display:block;font-weight:400}
+
+/* Verschieben */
+.later{flex:0 0 46px;border:0;border-left:1px solid var(--line);background:transparent;color:var(--muted);font-size:20px;padding:0}
+.later-opts{display:grid;gap:8px;margin-top:10px}
+.later-opts .btn{display:flex;justify-content:space-between;align-items:center;width:100%}
+.later-opts .btn span{color:var(--muted);font-weight:500}
+
+/* Zuletzt geputzt */
+.lc-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.lc-row:last-child{border-bottom:0}
+.lc-row small{display:block;color:var(--muted);font-size:13px}
+.lc-state{font-size:13px;font-weight:700;white-space:nowrap;padding:3px 9px;border-radius:999px;background:var(--surface2)}
+.lc-state.ok{color:var(--ok)}
+.lc-state.late{color:var(--warn)}
+
+/* Serie, Urlaub, Startpaket */
+.streak{margin:6px 0 0;font-weight:600}
+.banner{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:14px 0 0;font-size:14px}
+.starter{text-align:center;padding:18px 14px}
+.starter p{margin:0 0 12px;color:var(--muted)}
+.pack-row{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:10px 2px;min-height:56px}
+.pack-row .pk{flex:0 0 26px;height:26px;border-radius:50%;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--accent-ink)}
+.pack-row[aria-pressed="true"] .pk{background:var(--accent);border-color:var(--accent)}
+.pack-row small{display:block;color:var(--muted);font-size:13px}
+.pack-row:disabled{opacity:.5}
+
+/* Konfetti */
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
+.confetti i{position:absolute;top:0;width:8px;height:12px;border-radius:2px}
 .page .bal:first-child{margin-top:14px}
 </style>
 </head>
@@ -280,6 +314,27 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
       <button class="btn big" type="submit">Namen speichern</button>
       <p class="muted small" style="margin:6px 0 0">Gilt für beide Geräte.</p>
     </form>
+    <div class="bal" id="pushBox">
+      <h3>Erinnerungen</h3>
+      <p class="muted small" style="margin:0">Jeden Tag eine Mitteilung mit den offenen Aufgaben, auch wenn die App zu ist. Kommt nur, wenn etwas ansteht.</p>
+      <div class="two">
+        <div><label for="pWho">Für wen?</label><select id="pWho"></select></div>
+        <div><label for="pTime">Uhrzeit</label><select id="pTime"></select></div>
+      </div>
+      <button class="btn primary big" id="btnPushOn" type="button">Erinnerungen einschalten</button>
+      <button class="btn big" id="btnPushTest" type="button" hidden>Test senden</button>
+      <button class="btn big" id="btnPushOff" type="button" hidden>Erinnerungen ausschalten</button>
+      <div class="update-info" id="pushInfo" aria-live="polite"></div>
+    </div>
+    <div class="bal">
+      <h3>Urlaub</h3>
+      <div id="awayBody"></div>
+    </div>
+    <div class="bal">
+      <h3>Startpaket</h3>
+      <p class="muted small" style="margin:0">Typische Putzaufgaben mit passendem Rhythmus auf einmal anlegen.</p>
+      <button class="btn big" type="button" data-open-pack>Startpaket ansehen</button>
+    </div>
     <div class="bal">
       <h3>App</h3>
       <div class="setting-row"><span>Installierte Version</span><span class="code-inline" id="sVersion">—</span></div>
@@ -339,9 +394,23 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
     <label for="fRepeat">Wiederholen</label>
     <select id="fRepeat">
       <option value="none">Nicht wiederholen</option>
-      <option value="weekly">Wöchentlich</option>
-      <option value="monthly">Monatlich</option>
+      <option value="d1">Täglich</option>
+      <option value="w1">Wöchentlich</option>
+      <option value="w2">Alle 2 Wochen</option>
+      <option value="m1">Monatlich</option>
+      <option value="m3">Alle 3 Monate</option>
+      <option value="custom">Alle … Tage</option>
     </select>
+    <div id="fCustomRow" hidden>
+      <label for="fEvery">Alle wie viele Tage?</label>
+      <input id="fEvery" type="number" inputmode="numeric" min="1" max="365" value="3">
+    </div>
+    <div id="fRepeatOpts" hidden>
+      <div class="pin-row"><span>Ab dem Erledigen zählen<small class="muted">z. B. Pflanzen: 4 Tage nach dem letzten Gießen</small></span>
+        <button class="btn toggle" id="fFromDone" type="button" aria-pressed="false">Nein</button></div>
+      <div class="pin-row" id="fRotateRow"><span>Abwechselnd zuweisen<small class="muted">Nach dem Erledigen ist die andere Person dran</small></span>
+        <button class="btn toggle" id="fRotate" type="button" aria-pressed="false">Nein</button></div>
+    </div>
 
     <div class="actions">
       <button class="btn danger wide" id="btnDelete" type="button" hidden>Aufgabe löschen</button>
@@ -375,6 +444,32 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
   </form>
 </div>
 
+<!-- Aufgabe verschieben -->
+<div class="overlay" id="laterSheet" hidden>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2 id="laterTitle">Verschieben</h2></div>
+    <div class="later-opts" id="laterOpts"></div>
+    <div class="actions"><button class="btn wide" id="laterCancel" type="button">Abbrechen</button></div>
+  </div>
+</div>
+
+<!-- Startpaket -->
+<div class="overlay" id="packSheet" hidden>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2>Startpaket</h2></div>
+    <p class="muted small" style="margin:4px 0 6px">Antippen zum Ab- oder Auswählen. Alles lässt sich danach noch ändern.</p>
+    <div id="packList"></div>
+    <div class="pin-row"><span>Abwechselnd zuweisen<small class="muted">Ihr wechselt euch bei jeder Aufgabe ab</small></span>
+      <button class="btn toggle" id="packRotate" type="button" aria-pressed="true">Ja</button></div>
+    <div class="actions">
+      <button class="btn" id="packCancel" type="button">Abbrechen</button>
+      <button class="btn primary" id="packAdd" type="button">Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
 <!-- Einkaufs-Eintrag bearbeiten -->
 <div class="overlay" id="shopSheet" hidden>
   <form class="sheet" id="shopForm" novalidate>
@@ -398,17 +493,35 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '1.7.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '1.8.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Haushalt“ änderbar
 const CATS = ['Küche', 'Bad', 'Wohnzimmer', 'Wäsche', 'Sonstiges'];
 const CAT_ICON = { 'Küche': '🍳', 'Bad': '🛁', 'Wohnzimmer': '🛋️', 'Wäsche': '🧺', 'Sonstiges': '📦' };
-const REPEAT_LABEL = { none: '', weekly: '↻ wöchentlich', monthly: '↻ monatlich' };
 const POLL_MS = 12000;
 
+// Startpaket: [Titel, Kategorie, Minuten, Wiederholung, alle N, ab Erledigung]
+const PACK = [
+  ['Bad putzen', 'Bad', 30, 'weekly', 1, false],
+  ['Toilette putzen', 'Bad', 10, 'weekly', 1, false],
+  ['Handtücher wechseln', 'Wäsche', 5, 'weekly', 1, false],
+  ['Arbeitsflächen und Herd wischen', 'Küche', 15, 'weekly', 1, false],
+  ['Müll rausbringen', 'Küche', 5, 'days', 3, true],
+  ['Kühlschrank auswischen', 'Küche', 20, 'monthly', 1, false],
+  ['Wasserkocher entkalken', 'Küche', 10, 'monthly', 1, false],
+  ['Backofen reinigen', 'Küche', 30, 'monthly', 3, false],
+  ['Staubsaugen', 'Wohnzimmer', 30, 'weekly', 1, false],
+  ['Boden wischen', 'Wohnzimmer', 30, 'weekly', 2, false],
+  ['Staub wischen', 'Wohnzimmer', 20, 'weekly', 2, false],
+  ['Wäsche waschen', 'Wäsche', 30, 'days', 4, true],
+  ['Bettwäsche wechseln', 'Wäsche', 15, 'weekly', 2, false],
+  ['Pflanzen gießen', 'Sonstiges', 5, 'days', 4, true],
+  ['Fenster putzen', 'Sonstiges', 60, 'monthly', 3, false],
+];
+
 /* ================= Zustand ================= */
-const LS = { code: 'putzplan.code', tasks: 'putzplan.tasks', notes: 'putzplan.notes', shop: 'putzplan.shop', tab: 'putzplan.tab', view: 'putzplan.view', settings: 'putzplan.settings', filter: 'putzplan.filter', noteCat: 'putzplan.noteCat' };
+const LS = { push: 'putzplan.push', code: 'putzplan.code', tasks: 'putzplan.tasks', notes: 'putzplan.notes', shop: 'putzplan.shop', tab: 'putzplan.tab', view: 'putzplan.view', settings: 'putzplan.settings', filter: 'putzplan.filter', noteCat: 'putzplan.noteCat' };
 const TABS = { clean: 'Putzen', shop: 'Einkaufsliste', notes: 'Notizen', home: 'Haushalt' };
 const VIEWS = { today: 'Heute', week: 'Woche', month: 'Monat', stats: 'Bilanz' }; // Unteransichten im Reiter „Putzen“
 const NOTE_CAT_SUGGESTIONS = ['Putztipps', 'Info', 'Ideen'];
@@ -508,36 +621,105 @@ function save() {
   render();
 }
 
+const repeats = (t) => t.repeat === 'days' || t.repeat === 'weekly' || t.repeat === 'monthly';
+const other = (p) => (p === 'nick' ? 'partner' : p === 'partner' ? 'nick' : null);
+function repeatLabel(t) {
+  if (!repeats(t)) return '';
+  const n = t.every || 1;
+  const base = t.repeat === 'days' ? (n === 1 ? 'täglich' : `alle ${n} Tage`)
+    : t.repeat === 'weekly' ? (n === 1 ? 'wöchentlich' : `alle ${n} Wochen`)
+    : (n === 1 ? 'monatlich' : `alle ${n} Monate`);
+  return '↻ ' + base + (t.fromDone ? ' ab Erledigung' : '');
+}
+// Abstand in Tagen (ungefähr, für „Zuletzt geputzt“)
+const intervalDays = (t) => (t.every || 1) * (t.repeat === 'days' ? 1 : t.repeat === 'weekly' ? 7 : 30);
+// i-ter Termin ab einem Startdatum (vom Start aus gerechnet, damit Monatsenden nicht wandern)
+const stepFrom = (t, k, i) => (t.repeat === 'monthly' ? addMonths(k, (t.every || 1) * i) : addDays(k, intervalDays(t) * i));
+
+// Nächster Termin: ab Erledigung (heute + Abstand) oder im Rhythmus, frühestens heute (falls überfällig)
+function nextDue(t) {
+  const today = keyOf(new Date());
+  if (t.fromDone || !t.due) return stepFrom(t, today, 1);
+  let i = 1, n = stepFrom(t, t.due, 1);
+  while (n < today && i < 2000) n = stepFrom(t, t.due, ++i);
+  return n;
+}
+
 function toggleDone(id) {
   const t = live().find((x) => x.id === id);
   if (!t) return;
+  const today = keyOf(new Date());
   if (!t.done) {
     t.done = true; t.doneAt = Date.now(); touch(t);
     if (navigator.vibrate) navigator.vibrate(12);
-    if (t.repeat !== 'none' && t.due) {
+    let msg = '';
+    if (repeats(t)) {
       const next = nextDue(t);
+      const who = t.rotate && t.assignee ? other(t.assignee) : t.assignee;
       const exists = live().some((x) => !x.done && x.title === t.title && x.repeat === t.repeat && x.due === next);
       if (!exists) {
         const now = Date.now();
-        tasks.push({ id: uid(), title: t.title, due: next, category: t.category, minutes: t.minutes, assignee: t.assignee,
-          repeat: t.repeat, done: false, doneAt: null, createdAt: now, updatedAt: now, deleted: false });
+        tasks.push({ id: uid(), title: t.title, due: next, category: t.category, minutes: t.minutes, assignee: who,
+          repeat: t.repeat, every: t.every || 1, fromDone: !!t.fromDone, rotate: !!t.rotate,
+          done: false, doneAt: null, createdAt: now, updatedAt: now, deleted: false });
       }
-      toast(`Nächster Termin: ${dayLabel(next)}`);
+      msg = `Nächster Termin: ${dayLabel(next)}` + (t.rotate && who ? ` · ${names()[who]} ist dran` : '');
     }
+    // Letzte offene Aufgabe für heute erledigt: kleine Feier
+    const todays = live().filter((x) => x.due && x.due <= today && (x.due === today || !x.done));
+    if (t.due && t.due <= today && todays.length && todays.every((x) => x.done)) {
+      confetti();
+      msg = 'Alles erledigt für heute! 🎉' + (msg ? ' ' + msg : '');
+    }
+    if (msg) toast(msg);
   } else {
     t.done = false; t.doneAt = null; touch(t);
   }
   save();
 }
 
-// Nächster Termin einer wiederkehrenden Aufgabe, frühestens heute (falls sie überfällig war)
-function nextDue(t) {
+function confetti() {
+  if (!document.body.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const colors = ['#5cc8a0', '#3987e5', '#eb6834', '#f2c94c', '#e85d9a'];
+  const box = document.createElement('div');
+  box.className = 'confetti';
+  document.body.appendChild(box);
+  for (let i = 0; i < 70; i++) {
+    const p = document.createElement('i');
+    p.style.background = colors[i % colors.length];
+    p.style.left = Math.random() * 100 + 'vw';
+    box.appendChild(p);
+    p.animate([{ transform: 'translate(0,-20px) rotate(0deg)' },
+      { transform: `translate(${(Math.random() - 0.5) * 40}vw,105vh) rotate(${Math.random() * 900}deg)` }],
+      { duration: 1500 + Math.random() * 1000, delay: Math.random() * 250, easing: 'cubic-bezier(.25,.6,.45,1)', fill: 'forwards' });
+  }
+  setTimeout(() => box.remove(), 3000);
+}
+
+// Wie viele Putztage in Folge alles erledigt war (Tage ohne Aufgaben zählen nicht und unterbrechen nicht)
+function streak() {
   const today = keyOf(new Date());
-  const at = (i) => (t.repeat === 'weekly' ? addDays(t.due, 7 * i) : addMonths(t.due, i));
-  let i = 1, n = at(1);
-  while (n < today && i < 1000) n = at(++i);
+  const days = new Map();
+  for (const t of live()) {
+    if (!t.due || t.due > today) continue;
+    const d = days.get(t.due) || { open: 0 };
+    if (!t.done) d.open++;
+    days.set(t.due, d);
+  }
+  let n = 0;
+  const first = days.get(today);
+  if (first && !first.open) n++;
+  for (let k = addDays(today, -1), i = 0; i < 400; i++, k = addDays(k, -1)) {
+    const d = days.get(k);
+    if (!d) continue;
+    if (d.open) break;
+    n++;
+  }
   return n;
 }
+
+// Urlaub: settings.away.until = Tag der Rückkehr
+const awayUntil = () => (settings && settings.away && settings.away.until > keyOf(new Date()) ? settings.away.until : null);
 
 function taskRow(t, showDue) {
   const who = t.assignee ? `<span class="chip p-${t.assignee}">${esc(names()[t.assignee])}</span>` : '<span class="chip">offen</span>';
@@ -550,9 +732,11 @@ function taskRow(t, showDue) {
         <span class="chip">${CAT_ICON[t.category] || ''} ${esc(t.category)}</span>
         <span class="chip">${t.minutes ? t.minutes + ' Min' : 'ohne Zeit'}</span>
         ${who}
-        ${REPEAT_LABEL[t.repeat] ? `<span class="chip">${REPEAT_LABEL[t.repeat]}</span>` : ''}
+        ${repeats(t) ? `<span class="chip">${repeatLabel(t)}</span>` : ''}
+        ${repeats(t) && t.rotate ? '<span class="chip">⇄ abwechselnd</span>' : ''}
       </span>
     </button>
+    ${!t.done && t.due ? `<button class="later" type="button" data-act="later" data-id="${t.id}" aria-label="${esc(t.title)} verschieben">↷</button>` : ''}
   </div>`;
 }
 
@@ -597,6 +781,24 @@ const doneWeek = (t) => (t.doneAt ? weekStart(new Date(t.doneAt)) : t.due ? week
 const PERSONS = ['nick', 'partner', 'none'];
 const personOf = (t) => t.assignee || 'none';
 
+// Pro Bereich: wann zuletzt etwas erledigt wurde. Fällig, wenn länger her als der kürzeste Rhythmus dort (sonst 14 Tage).
+function lastCleanHtml() {
+  const today = fromKey(keyOf(new Date()));
+  const rows = CATS.map((c) => {
+    const list = live().filter((t) => t.category === c);
+    if (!list.length) return '';
+    const last = list.filter((t) => t.done && t.doneAt).sort((a, b) => b.doneAt - a.doneAt)[0];
+    const limit = Math.min(14, ...list.filter(repeats).map(intervalDays));
+    const days = last ? Math.round((today - fromKey(keyOf(new Date(last.doneAt)))) / 864e5) : null;
+    const when = days === null ? 'noch nie' : days === 0 ? 'heute' : days === 1 ? 'gestern' : `vor ${days} Tagen`;
+    const ok = days !== null && days <= limit;
+    const who = last && last.assignee ? ` · ${esc(names()[last.assignee])}` : '';
+    return `<div class="lc-row"><span>${CAT_ICON[c]} ${esc(c)}${last ? `<small>${esc(last.title)}${who}</small>` : ''}</span>
+      <span class="lc-state${days === null ? '' : ok ? ' ok' : ' late'}">${days === null ? '' : ok ? '✓ ' : '⚠ '}${when}</span></div>`;
+  }).join('');
+  return rows ? `<div class="bal"><h3>Zuletzt geputzt</h3>${rows}</div>` : '';
+}
+
 function statsHtml() {
   const n = names();
   const label = { nick: n.nick, partner: n.partner, none: 'Ohne Zuweisung' };
@@ -604,7 +806,7 @@ function statsHtml() {
   const weeks = [...Array(8)].map((_, i) => addDays(thisWeek, -7 * i));
   const done = live().filter((t) => t.done && weeks.includes(doneWeek(t)));
   const days = [...Array(7)].map((_, i) => addDays(thisWeek, i));
-  let html = balanceHtml(days);
+  let html = lastCleanHtml() + balanceHtml(days);
   if (!done.length) return html + '<div class="bal"><h3>Letzte 8 Wochen</h3><p class="empty" style="padding:0">Noch keine erledigten Aufgaben.</p></div>';
 
   const shownPersons = PERSONS.filter((p) => p !== 'none' || done.some((t) => !t.assignee));
@@ -767,19 +969,36 @@ function splitQty(raw) {
   const m = /^(\d+(?:[.,]\d+)?\s*(?:x|×|stk\.?|stück|g|kg|ml|l|pck\.?|packungen?|pack|dosen?|flaschen?|becher|gläser|glas|bund|netz)?)\s+(\S.*)$/i.exec(s);
   return m ? { qty: m[1].slice(0, 30), name: m[2].slice(0, 100) } : { qty: '', name: s.slice(0, 100) };
 }
-function addShop(raw) {
+// Ein Eintrag, ohne zu speichern. Ergebnis: 'added', 'reopened', 'qty', 'exists' oder null
+function putShop(raw) {
   const { qty, name } = splitQty(raw);
-  if (!name) return false;
+  if (!name) return null;
   const ex = liveShop().find((i) => nameKey(i.name) === nameKey(name));
   if (ex && !ex.done) {
-    if (qty && qty !== ex.qty) { ex.qty = qty; touch(ex); save(); toast(`Menge geändert: ${ex.name} ${qty}`); }
-    else toast(`„${ex.name}“ steht schon drauf`);
-    return true;
+    if (qty && qty !== ex.qty) { ex.qty = qty; touch(ex); return { r: 'qty', item: ex }; }
+    return { r: 'exists', item: ex };
   }
-  if (ex) { ex.done = false; ex.doneAt = null; if (qty) ex.qty = qty; touch(ex); save(); return true; }
+  if (ex) { ex.done = false; ex.doneAt = null; if (qty) ex.qty = qty; touch(ex); return { r: 'reopened', item: ex }; }
   const now = Date.now();
-  shop.push({ id: uid(), name, qty, cat: guessShopCat(name), done: false, doneAt: null, createdAt: now, updatedAt: now, deleted: false });
-  save();
+  const item = { id: uid(), name, qty, cat: guessShopCat(name), done: false, doneAt: null, createdAt: now, updatedAt: now, deleted: false };
+  shop.push(item);
+  return { r: 'added', item };
+}
+// Mehrere Einträge auf einmal: eine Zeile oder ein Komma pro Eintrag („1,5 l Milch“ bleibt ganz), Aufzählungszeichen fallen weg
+const splitItems = (text) => String(text || '').split(/\r?\n|;|,(?!\d)/)
+  .map((x) => x.replace(/^\s*(?:[-•*·–]|\[[ x]?\]|\d+[.)])\s+/i, '').trim()).filter(Boolean);
+function addShop(text) {
+  const res = splitItems(text).map(putShop).filter(Boolean);
+  if (!res.length) return false;
+  if (res.some((x) => x.r !== 'exists')) save();
+  if (res.length === 1) {
+    const { r, item } = res[0];
+    if (r === 'exists') toast(`„${item.name}“ steht schon drauf`);
+    else if (r === 'qty') toast(`Menge geändert: ${item.name} ${item.qty}`);
+  } else {
+    const n = res.filter((x) => x.r === 'added' || x.r === 'reopened').length, dup = res.filter((x) => x.r === 'exists').length;
+    toast(`${n} ${n === 1 ? 'Eintrag' : 'Einträge'} hinzugefügt` + (dup ? `, ${dup} ${dup === 1 ? 'stand' : 'standen'} schon drauf` : ''));
+  }
   return true;
 }
 function toggleShop(id) {
@@ -872,6 +1091,13 @@ $('#sDelete').addEventListener('click', () => {
 });
 $('#sCancel').addEventListener('click', closeShopSheet);
 $('#shopSheet').addEventListener('click', (e) => { if (e.target.id === 'shopSheet') closeShopSheet(); });
+// Eingefügter Text mit mehreren Zeilen (z. B. Zutatenliste): jede Zeile ein Eintrag
+$('#shopInput').addEventListener('paste', (e) => {
+  const text = (e.clipboardData || window.clipboardData).getData('text');
+  if (!/\n/.test(text.trim())) return;
+  e.preventDefault();
+  addShop(text);
+});
 $('#shopAdd').addEventListener('submit', (e) => {
   e.preventDefault();
   if (addShop($('#shopInput').value)) $('#shopInput').value = ''; // Fokus bleibt im Feld: gleich das Nächste eintippen
@@ -892,7 +1118,13 @@ function todayHtml(today) {
       ${list.length ? list.map((t) => taskRow(t, false)).join('') : '<p class="empty">Nichts geplant</p>'}
     </section>`;
   };
+  const s = streak(), away = awayUntil();
+  const starter = live().length ? '' : `<div class="bal starter"><p>Noch keine Aufgaben. Mit „+“ legt ihr eine an, oder ihr startet mit typischen Putzaufgaben.</p>
+    <button class="btn primary" type="button" data-open-pack>Startpaket ansehen</button></div>`;
   return `<p class="subtitle">${longDayLabel(today)}</p>`
+    + (s >= 2 ? `<p class="streak">🔥 ${s} Putztage in Folge alles geschafft</p>` : '')
+    + (away ? `<p class="banner">🏖 Urlaub bis ${dayLabel(addDays(away, -1))}. Erinnerungen sind pausiert.</p>` : '')
+    + starter
     + (overdue.length ? `<h2>Überfällig</h2>${overdue.map((t) => taskRow(t, true)).join('')}` : '')
     + block(today, 'Heute') + block(tomorrow, 'Morgen');
 }
@@ -918,6 +1150,7 @@ function render() {
   $('#shopBadge').textContent = openCount > 99 ? '99+' : openCount || '';
   renderFilters();
   renderShopSuggs();
+  updateAppBadge();
 
   if (tab === 'home') return;
   if (tab === 'shop') { $('#view').innerHTML = shopHtml(); return; }
@@ -1005,6 +1238,8 @@ function fillHome() {
   $('#sVersion').textContent = APP_VERSION;
   $('#updateInfo').textContent = '';
   $('#btnApplyUpdate').hidden = true;
+  renderAway();
+  renderPush();
 }
 function move(dir) {
   if (view === 'week') {
@@ -1020,6 +1255,34 @@ function move(dir) {
 }
 
 /* ================= Formular ================= */
+// Auswahl im Formular <-> gespeicherte Wiederholung
+const REPEAT_KEYS = { none: ['none', 1], d1: ['days', 1], w1: ['weekly', 1], w2: ['weekly', 2], m1: ['monthly', 1], m3: ['monthly', 3] };
+function repeatKey(t) {
+  if (!repeats(t)) return 'none';
+  const k = Object.keys(REPEAT_KEYS).find((x) => REPEAT_KEYS[x][0] === t.repeat && REPEAT_KEYS[x][1] === (t.every || 1));
+  return k || 'custom';
+}
+function setToggle(el, on) { el.setAttribute('aria-pressed', String(!!on)); el.textContent = on ? 'Ja' : 'Nein'; }
+const toggled = (el) => el.getAttribute('aria-pressed') === 'true';
+function setRepeatForm(t) {
+  const k = t ? repeatKey(t) : 'none';
+  $('#fRepeat').value = k;
+  $('#fEvery').value = k === 'custom' ? intervalDays(t) : 3;
+  setToggle($('#fFromDone'), t && t.fromDone);
+  setToggle($('#fRotate'), t && t.rotate);
+  updateRepeatForm();
+}
+function updateRepeatForm() {
+  const r = $('#fRepeat').value;
+  $('#fCustomRow').hidden = r !== 'custom';
+  $('#fRepeatOpts').hidden = r === 'none';
+  $('#fRotateRow').hidden = !$('#fWho').value;
+}
+$('#fRepeat').addEventListener('change', updateRepeatForm);
+$('#fWho').addEventListener('change', updateRepeatForm);
+$('#fFromDone').addEventListener('click', (e) => setToggle(e.currentTarget, !toggled(e.currentTarget)));
+$('#fRotate').addEventListener('click', (e) => setToggle(e.currentTarget, !toggled(e.currentTarget)));
+
 function openSheet(id, dueKey) {
   editingId = id;
   const t = id ? live().find((x) => x.id === id) : null;
@@ -1034,7 +1297,7 @@ function openSheet(id, dueKey) {
   $('#fCat').value = t ? t.category : 'Küche';
   $('#fMin').value = t ? t.minutes : 15;
   $('#fWho').value = t && t.assignee ? t.assignee : '';
-  $('#fRepeat').value = t ? t.repeat : 'none';
+  setRepeatForm(t);
   $('#btnDelete').hidden = !t;
   $('#taskSheet').hidden = false;
   if (!t) setTimeout(() => $('#fTitle').focus(), 50);
@@ -1050,7 +1313,7 @@ $('#fTitle').addEventListener('input', () => {
   $('#fCat').value = prev.category;
   $('#fMin').value = prev.minutes;
   $('#fWho').value = prev.assignee || '';
-  $('#fRepeat').value = prev.repeat;
+  setRepeatForm(prev);
 });
 
 $('#taskForm').addEventListener('submit', (e) => {
@@ -1064,8 +1327,11 @@ $('#taskForm').addEventListener('submit', (e) => {
     category: $('#fCat').value,
     minutes: Math.max(0, Math.min(1440, Math.round(Number($('#fMin').value) || 0))),
     assignee: $('#fWho').value || null,
-    repeat: $('#fRepeat').value,
   };
+  const rk = $('#fRepeat').value;
+  const [repeat, every] = rk === 'custom' ? ['days', Math.max(1, Math.min(365, Math.round(Number($('#fEvery').value) || 1)))] : REPEAT_KEYS[rk];
+  Object.assign(data, { repeat, every, fromDone: repeat !== 'none' && toggled($('#fFromDone')),
+    rotate: repeat !== 'none' && !!data.assignee && toggled($('#fRotate')) });
   const t = editingId ? live().find((x) => x.id === editingId) : null;
   if (t) {
     Object.assign(t, data);
@@ -1085,6 +1351,234 @@ $('#btnDelete').addEventListener('click', () => {
 });
 $('#btnCancel').addEventListener('click', closeSheet);
 $('#taskSheet').addEventListener('click', (e) => { if (e.target.id === 'taskSheet') closeSheet(); });
+
+/* ================= Verschieben ================= */
+let laterId = null;
+function openLater(id) {
+  const t = live().find((x) => x.id === id);
+  if (!t) return;
+  laterId = id;
+  const today = keyOf(new Date()), wd = (fromKey(today).getDay() + 6) % 7; // 0 = Montag
+  const opts = [['Morgen', addDays(today, 1)], ['Übermorgen', addDays(today, 2)],
+    ['Am Wochenende', addDays(today, wd < 5 ? 5 - wd : 7 - wd + 5)], ['Nächste Woche', addDays(today, 7 - wd)]];
+  const seen = new Set();
+  $('#laterTitle').textContent = `„${t.title}“ verschieben`;
+  $('#laterOpts').innerHTML = opts.filter(([, k]) => k !== t.due && !seen.has(k) && seen.add(k))
+    .map(([label, k]) => `<button class="btn" type="button" data-later="${k}">${label} <span>${dayLabel(k)}</span></button>`).join('');
+  $('#laterSheet').hidden = false;
+}
+function closeLater() { $('#laterSheet').hidden = true; laterId = null; }
+$('#laterOpts').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-later]');
+  const t = b && live().find((x) => x.id === laterId);
+  if (!t) return;
+  t.due = b.dataset.later; touch(t);
+  closeLater(); save();
+  toast(`Verschoben auf ${dayLabel(t.due)}`);
+});
+$('#laterCancel').addEventListener('click', closeLater);
+$('#laterSheet').addEventListener('click', (e) => { if (e.target.id === 'laterSheet') closeLater(); });
+
+/* ================= Startpaket ================= */
+let packSel = null;
+const hasTitle = (title) => live().some((t) => t.title.toLowerCase() === title.toLowerCase());
+function renderPack() {
+  $('#packList').innerHTML = PACK.map(([title, cat, min, repeat, every, fromDone], i) => {
+    const there = hasTitle(title);
+    return `<button type="button" class="pack-row" data-pack="${i}" aria-pressed="${!there && packSel.has(i)}"${there ? ' disabled' : ''}>
+      <span class="pk">${!there && packSel.has(i) ? '✓' : ''}</span>
+      <span><b>${esc(title)}</b><small>${CAT_ICON[cat]} ${esc(cat)} · ${repeatLabel({ repeat, every, fromDone }).slice(2)} · ${min} Min${there ? ' · schon da' : ''}</small></span></button>`;
+  }).join('');
+  const n = [...packSel].filter((i) => !hasTitle(PACK[i][0])).length;
+  $('#packAdd').textContent = n ? `${n} hinzufügen` : 'Hinzufügen';
+  $('#packAdd').disabled = !n;
+}
+function openPack() {
+  packSel = new Set(PACK.map((_, i) => i));
+  setToggle($('#packRotate'), true);
+  renderPack();
+  $('#packSheet').hidden = false;
+}
+function closePack() { $('#packSheet').hidden = true; }
+$('#packList').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pack]');
+  if (!b || b.disabled) return;
+  const i = Number(b.dataset.pack);
+  if (packSel.has(i)) packSel.delete(i); else packSel.add(i);
+  renderPack();
+});
+$('#packRotate').addEventListener('click', (e) => setToggle(e.currentTarget, !toggled(e.currentTarget)));
+$('#packAdd').addEventListener('click', () => {
+  const rotate = toggled($('#packRotate'));
+  const today = keyOf(new Date()), now = Date.now();
+  let n = 0;
+  PACK.forEach(([title, category, minutes, repeat, every, fromDone], i) => {
+    if (!packSel.has(i) || hasTitle(title)) return;
+    // Über die Woche verteilt, beim Abwechseln startet jede zweite Aufgabe bei der anderen Person
+    tasks.push({ id: uid(), title, due: addDays(today, n % 7), category, minutes, assignee: rotate ? (n % 2 ? 'partner' : 'nick') : null,
+      repeat, every, fromDone, rotate, done: false, doneAt: null, createdAt: now, updatedAt: now + n, deleted: false });
+    n++;
+  });
+  closePack();
+  if (n) { setTab('clean'); setView('week'); save(); toast(`${n} Aufgaben angelegt`); }
+});
+$('#packCancel').addEventListener('click', closePack);
+$('#packSheet').addEventListener('click', (e) => { if (e.target.id === 'packSheet') closePack(); });
+
+/* ================= Urlaub ================= */
+function renderAway() {
+  const until = awayUntil();
+  $('#awayBody').innerHTML = until
+    ? `<p style="margin:0">🏖 Zurück am <b>${longDayLabel(until)}</b>. Erinnerungen und der Zähler am App-Symbol sind bis dahin pausiert.</p>
+       <button class="btn big" type="button" id="btnAwayEnd">Urlaub beenden</button>`
+    : `<p class="muted small" style="margin:0">Aufgaben, die in der Zeit fällig wären, rutschen auf die Zeit danach. Wiederkehrende behalten ihren Rhythmus.</p>
+       <label for="awayDate">Zurück am</label><input id="awayDate" type="date" min="${addDays(keyOf(new Date()), 1)}">
+       <button class="btn big" type="button" id="btnAwayStart">Urlaub eintragen</button>`;
+}
+function setSettings(patch) {
+  settings = { names: (settings && settings.names) || { nick: '', partner: '' }, away: (settings && settings.away) || null, ...patch, updatedAt: Date.now() };
+}
+// Alles Offene vor der Rückkehr auf danach schieben: wiederkehrende in ihrem Rhythmus, einmalige auf den Rückkehrtag
+function shiftForAway(back) {
+  let n = 0;
+  for (const t of live()) {
+    if (t.done || !t.due || t.due >= back) continue;
+    let d = back;
+    if (repeats(t) && !t.fromDone) {
+      let i = 0;
+      d = t.due;
+      while (d < back && i < 2000) d = stepFrom(t, t.due, ++i);
+    }
+    t.due = d; touch(t); n++;
+  }
+  return n;
+}
+$('#awayBody').addEventListener('click', (e) => {
+  if (e.target.id === 'btnAwayStart') {
+    const back = $('#awayDate').value;
+    if (!back || back <= keyOf(new Date())) { $('#awayDate').focus(); return toast('Bitte den Tag der Rückkehr wählen'); }
+    const n = shiftForAway(back);
+    setSettings({ away: { until: back } });
+    save(); renderAway();
+    toast(`Schönen Urlaub! ${n} Aufgaben verschoben.`);
+  } else if (e.target.id === 'btnAwayEnd') {
+    setSettings({ away: null });
+    save(); renderAway();
+    toast('Willkommen zurück!');
+  }
+});
+
+/* ================= Zähler am App-Symbol ================= */
+// Offene Aufgaben bis heute; mit gewählter Person nur ihre und nicht zugewiesene (wie bei den Erinnerungen)
+function updateAppBadge() {
+  if (!('setAppBadge' in navigator)) return;
+  const today = keyOf(new Date()), p = pushPrefs().person;
+  const n = awayUntil() ? 0 : live().filter((t) => !t.done && t.due && t.due <= today && (!p || !t.assignee || t.assignee === p)).length;
+  (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {});
+}
+
+/* ================= Erinnerungen (Push) ================= */
+function pushPrefs() {
+  let p = null;
+  try { p = JSON.parse(lsGet(LS.push)); } catch (e) { /* leer */ }
+  return { on: false, person: '', time: '08:00', ...(p || {}) };
+}
+const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const urlB64 = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+
+function renderPush(msg) {
+  const p = pushPrefs(), n = names();
+  $('#pWho').innerHTML = [['', 'Alle Aufgaben'], ['nick', n.nick], ['partner', n.partner]]
+    .map(([v, l]) => `<option value="${v}">${esc(l)}${v ? ' + offene' : ''}</option>`).join('');
+  $('#pWho').value = p.person;
+  const times = [];
+  for (let h = 6; h <= 22; h++) for (const m of ['00', '30']) times.push(`${pad(h)}:${m}`);
+  $('#pTime').innerHTML = times.map((t) => `<option>${t}</option>`).join('');
+  $('#pTime').value = p.time;
+  const on = p.on && pushSupported() && Notification.permission === 'granted';
+  $('#btnPushOn').hidden = on;
+  $('#btnPushTest').hidden = $('#btnPushOff').hidden = !on;
+  let info = msg || '';
+  if (!msg) {
+    if (!pushSupported()) info = isIos && !standalone()
+      ? 'Auf dem iPhone gehen Erinnerungen nur in der App vom Home-Bildschirm (ab iOS 16.4). Öffne Putzplan dort und schalte sie hier ein.'
+      : 'Dieser Browser kann leider keine Mitteilungen empfangen.';
+    else if (Notification.permission === 'denied') info = 'Mitteilungen sind für Putzplan blockiert. Bitte in den Einstellungen des Geräts erlauben.';
+    else if (on) info = `Eingeschaltet: täglich um ${p.time} Uhr, wenn etwas ansteht.`;
+  }
+  $('#btnPushOn').disabled = !pushSupported() || Notification.permission === 'denied';
+  $('#pushInfo').textContent = info;
+}
+
+async function pushSubscribe(prefs) {
+  const reg = await navigator.serviceWorker.ready;
+  const { publicKey } = await api('/api/push/key');
+  let sub = await reg.pushManager.getSubscription();
+  // Anderer Server-Schlüssel (z. B. neue Datenbank): neu anmelden
+  const cur = sub && sub.options && sub.options.applicationServerKey;
+  if (sub && cur && btoa(String.fromCharCode(...new Uint8Array(cur))) !== btoa(String.fromCharCode(...urlB64(publicKey)))) { await sub.unsubscribe(); sub = null; }
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(publicKey) });
+  await api('/api/push/subscribe', { subscription: sub.toJSON(), person: prefs.person, time: prefs.time, tz: Intl.DateTimeFormat().resolvedOptions().timeZone });
+  return sub;
+}
+$('#btnPushOn').addEventListener('click', async () => {
+  try {
+    const perm = await Notification.requestPermission(); // muss direkt nach dem Antippen kommen (iPhone)
+    if (perm !== 'granted') return renderPush('Ohne Erlaubnis für Mitteilungen geht es leider nicht. Bitte in den Einstellungen des Geräts erlauben.');
+    renderPush('Einen Moment …');
+    const prefs = { ...pushPrefs(), on: true, person: $('#pWho').value, time: $('#pTime').value };
+    await pushSubscribe(prefs);
+    lsSet(LS.push, JSON.stringify(prefs));
+    renderPush(); updateAppBadge();
+  } catch (e) {
+    renderPush('Einschalten hat nicht geklappt. Bitte später nochmal versuchen.');
+  }
+});
+async function pushSettingChanged() {
+  const prefs = { ...pushPrefs(), person: $('#pWho').value, time: $('#pTime').value };
+  lsSet(LS.push, JSON.stringify(prefs));
+  updateAppBadge();
+  if (!prefs.on || Notification.permission !== 'granted') return;
+  try { await pushSubscribe(prefs); renderPush(); } catch (e) { renderPush('Keine Verbindung. Die Änderung wird beim nächsten Öffnen übernommen.'); }
+}
+$('#pWho').addEventListener('change', pushSettingChanged);
+$('#pTime').addEventListener('change', pushSettingChanged);
+$('#btnPushTest').addEventListener('click', async () => {
+  renderPush('Sende Test …');
+  try {
+    const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    if (!sub) throw new Error('keine Anmeldung');
+    await api('/api/push/test', { endpoint: sub.endpoint });
+    renderPush('Gesendet. Die Mitteilung sollte gleich erscheinen.');
+  } catch (e) {
+    renderPush('Test hat nicht geklappt. Schalte die Erinnerungen aus und wieder ein.');
+  }
+});
+async function pushOff(c = code) {
+  try {
+    const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    if (sub) { await api('/api/push/unsubscribe', { endpoint: sub.endpoint }, c).catch(() => {}); await sub.unsubscribe(); }
+  } catch (e) { /* egal */ }
+  lsSet(LS.push, JSON.stringify({ ...pushPrefs(), on: false }));
+}
+$('#btnPushOff').addEventListener('click', async () => { await pushOff(); renderPush('Ausgeschaltet.'); });
+// Beim Start: Anmeldung beim Server auffrischen (falls die Push-Adresse sich geändert hat)
+function pushRefresh() {
+  const p = pushPrefs();
+  if (p.on && pushSupported() && Notification.permission === 'granted') pushSubscribe(p).catch(() => {});
+}
+
+/* ================= Teilen an Putzplan (Android) ================= */
+function handleShare() {
+  const q = new URLSearchParams(location.search);
+  const text = [q.get('title'), q.get('text')].filter(Boolean).join('\n');
+  if (!text) return;
+  history.replaceState(null, '', location.pathname);
+  setTab('shop');
+  addShop(text);
+}
 
 /* ================= Sync ================= */
 function setStatus(text, bad) {
@@ -1159,6 +1653,8 @@ function startApp() {
   fillHome();
   render();
   sync();
+  pushRefresh();
+  handleShare();
 }
 
 $('#btnNew').addEventListener('click', async () => {
@@ -1253,13 +1749,16 @@ $('#btnApplyUpdate').addEventListener('click', async () => {
 
 $('#namesForm').addEventListener('submit', (e) => {
   e.preventDefault();
-  settings = { names: { nick: $('#sName1').value.trim().slice(0, 30), partner: $('#sName2').value.trim().slice(0, 30) }, updatedAt: Date.now() };
+  setSettings({ names: { nick: $('#sName1').value.trim().slice(0, 30), partner: $('#sName2').value.trim().slice(0, 30) } });
   save();
+  renderPush();
   toast('Namen gespeichert');
 });
 $('#btnSyncNow').addEventListener('click', () => sync());
 $('#btnLogout').addEventListener('click', () => {
   if (!confirm('Auf diesem Gerät abmelden? Aufgaben, Einkaufsliste und Notizen bleiben online erhalten und sind mit dem Code wieder da.')) return;
+  if (pushPrefs().on) pushOff(code);
+  if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
   code = ''; tasks = []; notes = []; shop = []; settings = null; localVer = 0;
   lsDel(LS.code); lsDel(LS.tasks); lsDel(LS.notes); lsDel(LS.shop); lsDel(LS.settings);
   tab = 'clean'; view = 'today'; lsSet(LS.tab, tab); lsSet(LS.view, view);
@@ -1277,6 +1776,7 @@ document.addEventListener('click', (e) => {
   const se = e.target.closest('[data-shop-edit]');
   if (se) return openShopSheet(se.dataset.shopEdit);
   if (e.target.closest('[data-shop-clear]')) return clearShopDone();
+  if (e.target.closest('[data-open-pack]')) return openPack();
   const sg = e.target.closest('[data-sugg]');
   if (sg) return addShop(sg.dataset.sugg);
   const tip = e.target.closest('[data-tip]');
@@ -1290,6 +1790,7 @@ document.addEventListener('click', (e) => {
   const act = e.target.closest('[data-act]');
   if (act) {
     if (act.dataset.act === 'toggle') toggleDone(act.dataset.id);
+    else if (act.dataset.act === 'later') openLater(act.dataset.id);
     else openSheet(act.dataset.id);
     return;
   }

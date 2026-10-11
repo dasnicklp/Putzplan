@@ -6,9 +6,14 @@ Gemeinsamer Putzplan für zwei Personen als Web-App (PWA). Läuft auf iPhone und
 - Gemeinsame Einkaufsliste: schnell eintippen („2 Milch“), automatisch nach Bereichen im Laden sortiert, Abhaken, Vorschläge aus dem Verlauf
 - Gemeinsame Notizen mit Kategorien (Filter, eigene Kategorien, Anheften)
 - Heute-Ansicht (Überfälliges, heute, morgen), Monatsansicht und Wochenansicht mit den 7 Tagen nebeneinander, darunter die Aufgaben des gewählten Tags
-- Bilanz: wer hat wie viel erledigt, über 8 Wochen und nach Kategorie
+- Bilanz: zuletzt geputzt pro Bereich, wer hat wie viel erledigt, über 8 Wochen und nach Kategorie
 - Aufgaben mit Fälligkeit, Kategorie, Zeitaufwand und Zuweisung
-- Erledigt-Haken, wöchentliche oder monatliche Wiederholung
+- Erledigt-Haken; Wiederholung täglich, wöchentlich, alle 2 Wochen, monatlich, alle 3 Monate oder alle N Tage, wahlweise ab dem Erledigen
+- Abwechselnd zuweisen: nach dem Erledigen ist die andere Person dran
+- Verschieben mit einem Tipp (morgen, übermorgen, Wochenende, nächste Woche)
+- Tägliche Erinnerung per Mitteilung (Web Push), Zahl offener Aufgaben am App-Symbol
+- Urlaubsmodus, Startpaket mit typischen Putzaufgaben, Serie und Konfetti, wenn alles erledigt ist
+- Einkaufsliste: mehrere Einträge auf einmal (Komma oder Zeilen), auf Android über „Teilen → Putzplan“
 - Filter nach Person, Wochenbilanz (wer hat wie viel erledigt), Titelvorschläge beim Eintragen
 - Wischen nach links/rechts wechselt Woche bzw. Monat
 - Beide Geräte sind über einen 6-stelligen Haushaltscode verbunden und gleichen sich automatisch ab, auch die Namen

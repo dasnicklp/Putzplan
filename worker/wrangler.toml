@@ -12,3 +12,7 @@ directory = "../docs"
 binding = "DB"
 database_name = "putzplan"
 database_id = "HIER-DATENBANK-ID-EINTRAGEN"
+
+# Erinnerungen: alle 15 Minuten nachsehen, wer seine tägliche Push-Nachricht bekommt
+[triggers]
+crons = ["*/15 * * * *"]
