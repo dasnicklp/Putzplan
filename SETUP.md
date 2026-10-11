@@ -1,13 +1,15 @@
 # Putzplan einrichten
 
-Du brauchst **kein Terminal und kein Node.js**. Das Backend veröffentlicht eine GitHub Action automatisch.
-Für dich bleiben ein paar Klicks im Browser, etwa 10 Minuten.
+Du brauchst **kein Terminal und kein Node.js**. Eine GitHub Action veröffentlicht App und Backend automatisch auf Cloudflare.
+Der Cloudflare-Worker liefert die App gleich mit aus, deshalb braucht es kein GitHub Pages und das Repo kann privat bleiben.
 
-1. Cloudflare-Account anlegen
+**Status:** Schritte 1–3 sind erledigt. Die App läuft unter
+**<https://putzplan-api.n-kudenholdt2000.workers.dev/>** – weiter mit Schritt 4.
+
+1. Cloudflare-Account
 2. Cloudflare-Schlüssel als GitHub-Secret hinterlegen
-3. GitHub Pages einschalten
-4. Claude Bescheid sagen → Claude startet das Deployment und trägt die Adresse ein
-5. App auf beiden Handys installieren
+3. Action starten
+4. App auf beiden Handys installieren
 
 ---
 
@@ -44,22 +46,14 @@ Einen **neuen** Token anlegen. Vorhandene Tokens (z. B. von der Fokus-App) nicht
 
 Den Token bitte **nicht** in den Chat kopieren. In den Secrets ist er sicher, Claude braucht ihn nicht zu sehen.
 
-## 3. GitHub Pages einschalten
+## 3. Action starten
 
-Repo **Putzplan** → **Settings** → **Pages**
+Läuft bei jeder Änderung auf `main` von selbst. Von Hand: Repo → **Actions** → **App und Backend veröffentlichen** → **Run workflow**, Branch `main`.
+Die Action legt beim ersten Lauf die Datenbank an, veröffentlicht alles und prüft am Ende, dass App und Backend antworten. Die Adresse steht in der Zusammenfassung des Laufs.
 
-- *Source*: **Deploy from a branch**
-- *Branch*: **main**, Ordner **/docs** → **Save**
+## 4. App auf den Handys installieren
 
-## 4. Claude Bescheid sagen
-
-Schreib „fertig“. Claude startet dann die Action, liest die Worker-Adresse aus, trägt sie in die App ein und prüft, dass alles erreichbar ist.
-
-(Selbst starten geht auch: Repo → **Actions** → **Backend veröffentlichen** → **Run workflow**, Branch `main`. Die Adresse steht danach in der Zusammenfassung des Laufs.)
-
-## 5. App auf den Handys installieren
-
-Die App-Adresse ist `https://dasnicklp.github.io/Putzplan/` (sie steht auch unter Settings → Pages).
+Die App-Adresse ist **<https://putzplan-api.n-kudenholdt2000.workers.dev/>**.
 
 **Wichtig:** Erst installieren, dann den Code eingeben. Auf dem iPhone hat die Homescreen-App einen eigenen Speicher, getrennt von Safari.
 
@@ -83,8 +77,8 @@ Die App-Adresse ist `https://dasnicklp.github.io/Putzplan/` (sie steht auch unte
 
 Alles, was auf `main` landet, geht automatisch raus:
 
-- **App** (`docs/`): GitHub Pages aktualisiert sich in 1–2 Minuten, die Handys holen die neue Version beim nächsten Öffnen.
-- **Backend** (`worker/`): Die Action „Backend veröffentlichen“ läuft von selbst.
+- App (`docs/`) und Backend (`worker/`): Die Action „App und Backend veröffentlichen“ läuft von selbst, nach etwa einer Minute ist alles online.
+- Die Handys holen die neue Version beim nächsten Öffnen der App.
 
 Namen anpassen: In `docs/index.html` oben im Skript `PEOPLE = { nick: 'Nick', partner: 'Freundin' }`.
 
@@ -95,7 +89,7 @@ Namen anpassen: In `docs/index.html` oben im Skript `PEOPLE = { nick: 'Nick', pa
 | Action rot: „Secrets … fehlen“ | Schritt 2 wiederholen, Namen genau so schreiben. |
 | Action rot: „workers.dev subdomain“ | Schritt 1, Punkt 2: in Cloudflare *Workers & Pages* öffnen und Subdomain wählen. |
 | Action rot: „Authentication error“ / „D1“ | Token hat zu wenig Rechte: D1 · Edit ergänzen (Schritt 2). |
-| App: „Keine Verbindung zum Server“ | `API_BASE` in `docs/index.html` noch nicht eingetragen oder Worker nicht veröffentlicht. |
+| App: „Keine Verbindung zum Server“ | Kein Internet, oder die letzte Action ist rot (Repo → Actions). |
 | App: „Den Code kenne ich nicht“ | Tippfehler. Code steht auf dem anderen Gerät unter ⚙︎. |
 | App: „Zu viele Fehlversuche“ | Nach 5 falschen Codes ist die Internetverbindung 15 Minuten gesperrt (Schutz vor Raten). Warten. |
 | App zeigt alte Version | App ganz schließen und neu öffnen. |
@@ -106,4 +100,10 @@ Bei zwei Personen bleibt alles im kostenlosen Rahmen von Cloudflare (100 000 Anf
 
 ## Ohne GitHub Action (manuell, optional)
 
-Mit Node.js im Ordner `worker`: `npm install`, `npx wrangler login`, `npx wrangler d1 create putzplan` (ID in `wrangler.toml` eintragen), `npx wrangler deploy`. Die ausgegebene Adresse in `docs/index.html` bei `API_BASE` eintragen.
+Mit Node.js im Ordner `worker`: `npm install`, `npx wrangler login`, `npx wrangler d1 create putzplan` (ID in `wrangler.toml` eintragen), `npx wrangler deploy`.
+
+Lokal testen: im Ordner `worker` `npx wrangler dev --port 8787`, dann <http://127.0.0.1:8787> öffnen (App und Backend mit lokaler Datenbank).
+
+## GitHub Pages statt Cloudflare (optional)
+
+Geht nur, wenn das Repo öffentlich ist (oder mit bezahltem GitHub-Tarif). Dann Settings → Pages → Branch `main`, Ordner `/docs`. Die App erkennt `github.io` selbst und spricht dann den Worker unter seiner vollen Adresse an.

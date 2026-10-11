@@ -2,7 +2,7 @@
   "name": "Putzplan",
   "short_name": "Putzplan",
   "description": "Gemeinsamer Putzplan für zwei Personen: Wochen- und Monatsansicht, Aufgaben mit Zeit und Zuweisung",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

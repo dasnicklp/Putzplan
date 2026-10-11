@@ -1,4 +1,5 @@
 // Putzplan-Backend (Cloudflare Worker + D1)
+// - Liefert außerdem die App (docs/) als statische Dateien aus, siehe [assets] in wrangler.toml
 // - Zugang über einen 6-stelligen Haushaltscode, kein Konto
 // - Sync: Geräte schicken ihre Aufgaben, der Server führt sie zusammen (neueste Änderung gewinnt pro Aufgabe)
 // - Nach 5 falschen Codes von einer IP wird diese IP 15 Minuten gesperrt
@@ -21,6 +22,9 @@ async function sha256hex(s) {
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Erlaubt: die eigene Adresse (App wird vom Worker ausgeliefert) und die Einträge in ORIGINS
+const allowedOrigin = (req, o) => ORIGINS.includes(o) || o === new URL(req.url).origin;
+
 function corsHeaders(req) {
   const o = req.headers.get('Origin');
   const h = {
@@ -29,7 +33,7 @@ function corsHeaders(req) {
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin',
   };
-  if (o && ORIGINS.includes(o)) h['Access-Control-Allow-Origin'] = o;
+  if (o && allowedOrigin(req, o)) h['Access-Control-Allow-Origin'] = o;
   return h;
 }
 const json = (req, data, status = 200) =>
@@ -156,7 +160,7 @@ async function handle(req, env) {
   const path = new URL(req.url).pathname;
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(req) });
   const origin = req.headers.get('Origin');
-  if (origin && !ORIGINS.includes(origin)) return json(req, { error: 'origin' }, 403);
+  if (origin && !allowedOrigin(req, origin)) return json(req, { error: 'origin' }, 403);
 
   await init(env);
 
