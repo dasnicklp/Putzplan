@@ -130,6 +130,10 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
 .setting-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
 .setting-row:last-child{border-bottom:0}
 .code-inline{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:.08em}
+.update-box{margin-top:16px;padding-top:6px;border-top:1px solid var(--line)}
+.update-info{font-size:14px;margin:10px 0 0}
+.update-info ul{margin:6px 0 0;padding-left:20px;color:var(--muted)}
+.update-info.new{color:var(--accent);font-weight:600}
 
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));background:var(--surface2);border:1px solid var(--line);padding:10px 14px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20;max-width:90vw}
 .toast.show{opacity:1}
@@ -251,6 +255,12 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
       <button class="btn big" type="submit">Namen speichern</button>
       <p class="muted small" style="margin:6px 0 0">Gilt für beide Geräte.</p>
     </form>
+    <div class="update-box">
+      <div class="setting-row"><span>Installierte Version</span><span class="code-inline" id="sVersion">—</span></div>
+      <button class="btn big" id="btnCheckUpdate" type="button">Nach Update suchen</button>
+      <div class="update-info" id="updateInfo" aria-live="polite"></div>
+      <button class="btn primary big" id="btnApplyUpdate" type="button" hidden>Jetzt aktualisieren</button>
+    </div>
     <div class="actions">
       <button class="btn wide" id="btnSyncNow" type="button">Jetzt synchronisieren</button>
       <button class="btn danger wide" id="btnLogout" type="button">Abmelden / anderen Haushalt verbinden</button>
@@ -264,6 +274,7 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
+const APP_VERSION = '1.2.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 const API_BASE = 'https://putzplan-api.n-kudenholdt2000.workers.dev'; // Adresse des Workers (aus der Action "Backend veröffentlichen")
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App unter ⚙︎ änderbar
 const CATS = ['Küche', 'Bad', 'Wohnzimmer', 'Wäsche', 'Sonstiges'];
@@ -670,8 +681,60 @@ $('#btnSettings').addEventListener('click', () => {
   const n = names();
   $('#sName1').value = n.nick;
   $('#sName2').value = n.partner;
+  $('#sVersion').textContent = APP_VERSION;
+  $('#updateInfo').textContent = '';
+  $('#btnApplyUpdate').hidden = true;
   $('#settingsSheet').hidden = false;
 });
+/* Version und Updates */
+// Versionen vergleichen: 1.10.0 > 1.9.3
+function cmpVersion(a, b) {
+  const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d) return d > 0 ? 1 : -1;
+  }
+  return 0;
+}
+function fmtDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  return m ? `${+m[3]}.${+m[2]}.${m[1]}` : '';
+}
+let latestVersion = null;
+async function checkUpdate() {
+  const info = $('#updateInfo');
+  $('#btnApplyUpdate').hidden = true;
+  info.className = 'update-info';
+  info.textContent = 'Suche nach Updates …';
+  try {
+    const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error('http ' + r.status);
+    const v = await r.json();
+    latestVersion = v.version;
+    const date = fmtDate(v.date);
+    const notes = Array.isArray(v.notes) && v.notes.length ? `<ul>${v.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : '';
+    if (cmpVersion(v.version, APP_VERSION) > 0) {
+      info.className = 'update-info new';
+      info.innerHTML = `Neue Version ${esc(v.version)} verfügbar${date ? ` (vom ${date})` : ''}.${notes}`;
+      $('#btnApplyUpdate').hidden = false;
+    } else {
+      info.innerHTML = `Du hast die aktuellste Version: ${esc(v.version)}${date ? ` vom ${date}` : ''}.${notes}`;
+    }
+  } catch (e) {
+    info.textContent = 'Keine Verbindung. Bitte später nochmal versuchen.';
+  }
+}
+$('#btnCheckUpdate').addEventListener('click', checkUpdate);
+$('#btnApplyUpdate').addEventListener('click', async () => {
+  $('#updateInfo').textContent = 'Lade neue Version …';
+  try {
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if (reg) await reg.update();
+  } catch (e) { /* egal, neu laden reicht */ }
+  // Neue Adresse umgeht den Browser-Zwischenspeicher, der Service Worker holt dann die frische Seite
+  location.replace('./?v=' + encodeURIComponent(latestVersion || Date.now()));
+});
+
 $('#namesForm').addEventListener('submit', (e) => {
   e.preventDefault();
   settings = { names: { nick: $('#sName1').value.trim().slice(0, 30), partner: $('#sName2').value.trim().slice(0, 30) }, updatedAt: Date.now() };

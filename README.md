@@ -24,4 +24,8 @@ worker/    Backend (Cloudflare Worker + D1-Datenbank)
 .github/workflows/deploy-worker.yml   veröffentlicht das Backend automatisch bei Änderungen auf main
 ```
 
-Namen ändert ihr direkt in der App unter ⚙︎. Oben im `<script>`-Teil von `docs/index.html` stehen außerdem Backend-Adresse, Kategorien (mit Symbolen) und das Abfrage-Intervall.
+Namen ändert ihr direkt in der App unter ⚙︎. Dort steht auch die installierte Version, und „Nach Update suchen“ zeigt die aktuellste.
+
+**Neue Version veröffentlichen:** Versionsnummer an zwei Stellen erhöhen, `APP_VERSION` in `docs/index.html` und `version` in `docs/version.json` (dort auch Datum und Neuerungen eintragen).
+
+Oben im `<script>`-Teil von `docs/index.html` stehen außerdem Backend-Adresse, Kategorien (mit Symbolen) und das Abfrage-Intervall.
