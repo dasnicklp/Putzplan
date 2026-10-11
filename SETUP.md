@@ -3,7 +3,10 @@
 Du brauchst **kein Terminal und kein Node.js**. Das Backend veröffentlicht eine GitHub Action automatisch.
 Für dich bleiben ein paar Klicks im Browser, etwa 10 Minuten.
 
-**Status:** Schritte 1, 2 und 4 sind erledigt. Das Backend läuft unter `https://putzplan-api.n-kudenholdt2000.workers.dev` und ist in der App eingetragen.
+**Status:** Alles eingerichtet. Die App läuft unter zwei Adressen mit denselben Daten:
+
+- **<https://putzplan-api.n-kudenholdt2000.workers.dev/>** – empfohlen, vor allem auf Android. Eigene Adresse, daher lässt sie sich neben anderen Apps auf `dasnicklp.github.io` (z. B. Fokus) installieren.
+- <https://dasnicklp.github.io/Putzplan/> – GitHub Pages, funktioniert weiterhin (z. B. für ein bereits eingerichtetes iPhone).
 
 1. Cloudflare-Account anlegen
 2. Cloudflare-Schlüssel als GitHub-Secret hinterlegen
@@ -58,15 +61,17 @@ GitHub Pages gibt es im kostenlosen GitHub-Tarif nur für öffentliche Repos.
 - *Source*: **Deploy from a branch**
 - *Branch*: **main**, Ordner **/docs** → **Save**
 
-## 4. Backend veröffentlichen und Adresse eintragen
+## 4. App und Backend veröffentlichen
 
-Erledigt. Die Action hat das Backend veröffentlicht, die Adresse steht in `docs/index.html` bei `API_BASE`.
+Erledigt. Die Action „App und Backend veröffentlichen“ läuft bei jeder Änderung auf `main` von selbst: Der Cloudflare-Worker liefert das Backend (`/api/…`) und die App (Ordner `docs/`) aus und prüft am Ende, dass beides antwortet.
 
-(Selbst starten geht auch: Repo → **Actions** → **Backend veröffentlichen** → **Run workflow**, Branch `main`. Die Adresse steht danach in der Zusammenfassung des Laufs.)
+(Selbst starten geht auch: Repo → **Actions** → **App und Backend veröffentlichen** → **Run workflow**, Branch `main`. Die Adresse steht danach in der Zusammenfassung des Laufs.)
 
 ## 5. App auf den Handys installieren
 
-Die App-Adresse ist `https://dasnicklp.github.io/Putzplan/` (sie steht auch unter Settings → Pages).
+Die App-Adresse ist **<https://putzplan-api.n-kudenholdt2000.workers.dev/>**.
+
+(Die GitHub-Pages-Adresse `https://dasnicklp.github.io/Putzplan/` geht auch, teilt sich aber die Domain mit Fokus. Chrome auf Android installiert dann nur eine der beiden Apps.)
 
 **Wichtig:** Erst installieren, dann den Code eingeben. Auf dem iPhone hat die Homescreen-App einen eigenen Speicher, getrennt von Safari.
 
@@ -90,8 +95,8 @@ Die App-Adresse ist `https://dasnicklp.github.io/Putzplan/` (sie steht auch unte
 
 Alles, was auf `main` landet, geht automatisch raus:
 
-- **App** (`docs/`): GitHub Pages aktualisiert sich in 1–2 Minuten, die Handys holen die neue Version beim nächsten Öffnen.
-- **Backend** (`worker/`): Die Action „Backend veröffentlichen“ läuft von selbst.
+- **App** (`docs/`) und **Backend** (`worker/`): Die Action „App und Backend veröffentlichen“ läuft von selbst, GitHub Pages aktualisiert sich parallel. Nach 1–2 Minuten ist alles online.
+- Die Handys holen die neue Version beim nächsten Öffnen, oder sofort über ⚙︎ → „Nach Update suchen“.
 
 Namen anpassen: in der App unter ⚙︎ → „Namen speichern“. Gilt automatisch für beide Geräte.
 

@@ -6,8 +6,10 @@ Eine PWA für zwei Personen (Nick: Android/Windows, Freundin: iPhone). Installat
 ## Architektur
 
 ```
-Browser (Android / iPhone)  ──HTTPS──>  Cloudflare Worker (API)  ──>  D1 (SQLite)
-  GitHub Pages (docs/)                    worker/src/index.js
+Browser (Android / iPhone)  ──HTTPS──>  Cloudflare Worker  ──>  D1 (SQLite)
+                                          /api/*  → worker/src/index.js
+                                          sonst   → Dateien aus docs/ (Static Assets)
+                          (zusätzlich: GitHub Pages liefert docs/ aus und ruft den Worker per CORS auf)
 ```
 
 Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` ohne Build-Schritt, Service Worker „Netzwerk zuerst“, Worker mit Bearer-Code und „neueste Änderung gewinnt“.
@@ -15,7 +17,7 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 | Teil | Entscheidung | Begründung |
 |---|---|---|
 | Frontend | Eine `docs/index.html` mit HTML/CSS/JS, kein Build | Wie Fokus; nur eine Datei zum Anpassen |
-| Hosting | GitHub Pages, Branch `main`, Ordner `/docs` | Keine Workflow-Datei nötig |
+| Hosting | Hauptadresse: der Worker liefert `docs/` als Static Assets mit aus. Zusätzlich GitHub Pages (`main`, `/docs`) | Eigene Domain für Putzplan: Chrome auf Android installierte Putzplan und Fokus auf derselben github.io-Domain nicht nebeneinander |
 | Backend | Cloudflare Worker + D1 | Wie Fokus, Free-Tarif reicht |
 | Haushalt | 6-stelliger Code, als `Authorization: Bearer <code>` gesendet, serverseitig nur als SHA-256 gespeichert | Kein Login; Code liegt im `localStorage` |
 | Schutz | 5 falsche Codes pro IP → 15 Minuten Sperre | 6 Ziffern sind sonst in Kürze durchprobierbar |

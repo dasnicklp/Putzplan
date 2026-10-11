@@ -2,6 +2,11 @@ name = "putzplan-api"
 main = "src/index.js"
 compatibility_date = "2025-09-01"
 
+# Die App (Ordner docs/) wird vom Worker mit ausgeliefert: /api/... geht an src/index.js, alles andere sind Dateien.
+# So hat Putzplan eine eigene Adresse und kommt sich in Chrome nicht mit anderen Apps auf github.io in die Quere.
+[assets]
+directory = "../docs"
+
 # Vor dem ersten Deploy: Datenbank-ID aus "npx wrangler d1 create putzplan" hier eintragen (siehe SETUP.md)
 [[d1_databases]]
 binding = "DB"

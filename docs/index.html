@@ -274,8 +274,9 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '1.2.0'; // bei jeder neuen Version hier UND in version.json erhöhen
-const API_BASE = 'https://putzplan-api.n-kudenholdt2000.workers.dev'; // Adresse des Workers (aus der Action "Backend veröffentlichen")
+const APP_VERSION = '1.3.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+// Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
+const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App unter ⚙︎ änderbar
 const CATS = ['Küche', 'Bad', 'Wohnzimmer', 'Wäsche', 'Sonstiges'];
 const CAT_ICON = { 'Küche': '🍳', 'Bad': '🛁', 'Wohnzimmer': '🛋️', 'Wäsche': '🧺', 'Sonstiges': '📦' };

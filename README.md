@@ -9,19 +9,21 @@ Gemeinsamer Putzplan für zwei Personen als Web-App (PWA). Läuft auf iPhone und
 - Wischen nach links/rechts wechselt Woche bzw. Monat
 - Beide Geräte sind über einen 6-stelligen Haushaltscode verbunden und gleichen sich automatisch ab, auch die Namen
 
+**App öffnen:** <https://putzplan-api.n-kudenholdt2000.workers.dev/> (alternativ <https://dasnicklp.github.io/Putzplan/>, gleiche Daten)
+
 **Einrichtung:** siehe [SETUP.md](SETUP.md).
 
 ## Aufbau
 
 ```
-docs/      App (statisch, wird von GitHub Pages ausgeliefert)
+docs/      App (statisch; ausgeliefert vom Worker und zusätzlich von GitHub Pages)
   index.html            die ganze App: Oberfläche, Logik, Sync
   sw.js                 Offline-Cache
   manifest.webmanifest  Name und Icons für die Installation
 worker/    Backend (Cloudflare Worker + D1-Datenbank)
   src/index.js          API: Haushalt anlegen, Code prüfen, Aufgaben synchronisieren
-  wrangler.toml         Worker-Name und Datenbank-Verknüpfung
-.github/workflows/deploy-worker.yml   veröffentlicht das Backend automatisch bei Änderungen auf main
+  wrangler.toml         Worker-Name, Datenbank-Verknüpfung, Ordner der App
+.github/workflows/deploy-worker.yml   veröffentlicht App und Backend automatisch bei Änderungen auf main
 ```
 
 Namen ändert ihr direkt in der App unter ⚙︎. Dort steht auch die installierte Version, und „Nach Update suchen“ zeigt die aktuellste.
