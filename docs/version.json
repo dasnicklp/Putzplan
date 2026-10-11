@@ -1,10 +1,8 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "date": "2026-10-11",
   "notes": [
-    "Reiter unten: Heute, Woche, Monat, Bilanz, Haushalt",
-    "Heute-Ansicht mit Überfälligem, heute und morgen",
-    "Bilanz über 8 Wochen, pro Person und nach Kategorie",
-    "Personenfarben Blau und Orange, auch bei Farbschwäche gut unterscheidbar"
+    "Woche: die 7 Tage stehen nebeneinander, darunter die Aufgaben des gewählten Tags",
+    "Beim Wochenwechsel bleibt der Wochentag ausgewählt"
   ]
 }

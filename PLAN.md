@@ -64,6 +64,10 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 - Haushalt: Code, Synchronisation, Namen, Version/Update, Abmelden (vorher Einstellungs-Overlay)
 - Personenfarben Blau `#2a78d6`/`#3987e5` und Orange `#eb6834`/`#d95926` (hell/dunkel), mit dem dataviz-Validator geprüft: auch bei Farbschwäche klar unterscheidbar (vorher Blau/Lila, das fiel bei Rot-Grün-Schwäche durch)
 
+## Umgesetzt (Phase 4)
+
+- Woche: Tagesleiste mit 7 Tagen nebeneinander (Wochentag, Datum, Anzahl offener Aufgaben bzw. ✓), darunter die Aufgaben des gewählten Tags, danach Überfälliges; beim Wochenwechsel bleibt der Wochentag ausgewählt
+
 ## Später möglich
 
 - **Push-Erinnerungen** (z. B. „Heute ist Bad dran“): Die Fokus-App hat dafür schon VAPID-Push und einen Cron-Zeitplaner, das lässt sich übernehmen. Auf dem iPhone nur in der Homescreen-App.

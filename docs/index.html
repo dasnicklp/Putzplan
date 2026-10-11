@@ -105,6 +105,19 @@ main,.page{max-width:720px;margin:0 auto;padding:0 16px calc(160px + env(safe-ar
 .empty{color:var(--muted);font-size:14px;padding:6px 2px 10px}
 .weeksum{text-align:center;color:var(--muted);font-size:14px;margin:20px 0 0}
 
+/* Wochenleiste: Tage nebeneinander */
+.wstrip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:14px}
+.wday{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:70px;padding:7px 0 6px;border-radius:12px;border:1px solid var(--line);background:var(--surface)}
+.wday .wd-n{font-size:12px;font-weight:600;color:var(--muted)}
+.wday .num{font-size:18px;font-weight:700;line-height:1.1}
+.wday.today .num,.wday.today .wd-n{color:var(--accent)}
+.wday .cnt{font-size:11px;font-weight:600;min-width:20px;height:18px;line-height:18px;padding:0 6px;border-radius:999px;background:var(--surface2);color:var(--text)}
+.wday .cnt.ok{background:transparent;color:var(--ok)}
+.wday .cnt.none{visibility:hidden}
+.wday.sel{background:var(--accent);border-color:var(--accent)}
+.wday.sel .wd-n,.wday.sel .num{color:var(--accent-ink)}
+.wday.sel .cnt{background:rgba(255,255,255,.28);color:var(--accent-ink)}
+
 /* Monatsraster */
 .mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:14px}
 .wd{font-size:12px;color:var(--muted);text-align:center;padding:4px 0}
@@ -300,7 +313,7 @@ main,.page{max-width:720px;margin:0 auto;padding:0 16px calc(160px + env(safe-ar
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '1.4.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '1.5.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Haushalt“ änderbar
@@ -562,26 +575,31 @@ function render() {
   if (tab === 'week') {
     const ws = weekStart(cursor);
     const days = [...Array(7)].map((_, i) => addDays(ws, i));
+    if (!days.includes(selected)) selected = days.includes(today) ? today : days[0];
     $('#range').textContent = `${fromKey(days[0]).getDate()}. – ${fromKey(days[6]).getDate()}. ${MONTH_SHORT[fromKey(days[6]).getMonth()]} ${fromKey(days[6]).getFullYear()}`;
 
-    const overdue = shown().filter((t) => !t.done && t.due && t.due < today).sort((a, b) => a.due.localeCompare(b.due));
-    let html = '';
-    if (overdue.length) html += `<h2>Überfällig</h2>` + overdue.map((t) => taskRow(t, true)).join('');
+    // Tage nebeneinander: Wochentag, Datum, Anzahl offener Aufgaben (✓ wenn alles erledigt)
+    const strip = days.map((k, i) => {
+      const list = onDay(k), o = list.filter((t) => !t.done).length;
+      const badge = o ? `<span class="cnt">${o}</span>` : list.length ? '<span class="cnt ok">✓</span>' : '<span class="cnt none"></span>';
+      return `<button type="button" class="wday${k === today ? ' today' : ''}${k === selected ? ' sel' : ''}" data-day="${k}"
+        aria-label="${longDayLabel(k)}, ${o} offen" aria-pressed="${k === selected}">
+        <span class="wd-n">${WD[i]}</span><span class="num">${fromKey(k).getDate()}</span>${badge}</button>`;
+    }).join('');
 
+    const list = onDay(selected), o = list.filter((t) => !t.done);
+    const overdue = shown().filter((t) => !t.done && t.due && t.due < today).sort((a, b) => a.due.localeCompare(b.due));
     const open = days.flatMap((k) => openOnDay(k));
-    days.forEach((k) => {
-      const list = onDay(k);
-      const o = list.filter((t) => !t.done);
-      const isToday = k === today;
-      html += `<section class="day${list.length ? '' : ' empty-day'}">
+    let html = `<div class="wstrip">${strip}</div>
+      <section class="day">
         <div class="dayhead">
-          <button class="dayname${isToday ? ' today' : ''}" type="button" data-day="${k}">${dayLabel(k)}</button>
-          <button class="add-day" type="button" data-add="${k}" aria-label="Aufgabe für ${dayLabel(k)}">+</button>
+          <span class="dayname${selected === today ? ' today' : ''}">${longDayLabel(selected)}</span>
+          <button class="add-day" type="button" data-add="${selected}" aria-label="Aufgabe für ${longDayLabel(selected)}">+</button>
           <span class="sum">${o.length ? `${o.length} offen · ${sumMin(o)} Min` : list.length ? 'alles erledigt' : ''}</span>
         </div>
-        ${list.map((t) => taskRow(t, false)).join('')}
+        ${list.length ? list.map((t) => taskRow(t, false)).join('') : '<p class="empty">Nichts geplant</p>'}
       </section>`;
-    });
+    if (overdue.length) html += `<h2>Überfällig</h2>` + overdue.map((t) => taskRow(t, true)).join('');
     html += `<p class="weeksum">Diese Woche: ${open.length} offen · ${sumMin(open)} Min</p>`;
     $('#view').innerHTML = html;
   } else {
@@ -627,7 +645,10 @@ function fillHome() {
   $('#btnApplyUpdate').hidden = true;
 }
 function move(dir) {
-  if (tab === 'week') cursor = fromKey(addDays(weekStart(cursor), dir * 7));
+  if (tab === 'week') {
+    cursor = fromKey(addDays(weekStart(cursor), dir * 7));
+    selected = addDays(selected, dir * 7);
+  }
   else {
     const k = addMonths(keyOf(new Date(cursor.getFullYear(), cursor.getMonth(), 1)), dir);
     cursor = fromKey(k);
