@@ -95,6 +95,13 @@ function cleanTask(t) {
   };
 }
 
+// Gemeinsame Einstellungen (z. B. Namen): als Ganzes, die neuere Änderung gewinnt
+function cleanSettings(s) {
+  if (!s || typeof s !== 'object' || !Number.isFinite(s.updatedAt)) return null;
+  const n = s.names && typeof s.names === 'object' ? s.names : {};
+  return { names: { nick: clampStr(n.nick, 30), partner: clampStr(n.partner, 30) }, updatedAt: s.updatedAt };
+}
+
 // Pro Aufgabe gewinnt die neuere Änderung. Alte Löschmarkierungen fallen weg.
 function mergeTasks(current, incoming) {
   const map = new Map();
@@ -111,19 +118,22 @@ function mergeTasks(current, incoming) {
 }
 
 // Lesen, zusammenführen, schreiben. Bei gleichzeitigem Schreiben wird wiederholt (optimistische Sperre).
-async function sync(env, id, incoming) {
+async function sync(env, id, incoming, incomingSettings) {
   for (let i = 0; i < 6; i++) {
     const row = await env.DB.prepare('SELECT data, updated_at FROM households WHERE id = ?').bind(id).first();
     if (!row) return null;
-    const current = JSON.parse(row.data).tasks || [];
-    const merged = mergeTasks(current, incoming);
-    const data = JSON.stringify({ tasks: merged });
-    if (data === row.data) return merged; // nichts geändert, nichts schreiben
+    const cur = JSON.parse(row.data);
+    const merged = mergeTasks(cur.tasks || [], incoming);
+    let settings = cur.settings || null;
+    if (incomingSettings && (!settings || incomingSettings.updatedAt > settings.updatedAt)) settings = incomingSettings;
+    const out = { tasks: merged, settings };
+    const data = JSON.stringify(settings ? out : { tasks: merged });
+    if (data === row.data) return out; // nichts geändert, nichts schreiben
     if (data.length > MAX_DATA) return { tooBig: true };
     const v = Math.max(Date.now(), row.updated_at + 1);
     const r = await env.DB.prepare('UPDATE households SET data = ?, updated_at = ? WHERE id = ? AND updated_at = ?')
       .bind(data, v, id, row.updated_at).run();
-    if (r.meta.changes === 1) return merged;
+    if (r.meta.changes === 1) return out;
   }
   throw new Error('Konflikt beim Speichern');
 }
@@ -183,10 +193,10 @@ async function handle(req, env) {
   if (path === '/api/sync' && req.method === 'POST') {
     const body = await readJson(req);
     const incoming = (Array.isArray(body.tasks) ? body.tasks.slice(0, MAX_TASKS) : []).map(cleanTask).filter(Boolean);
-    const out = await sync(env, auth.id, incoming);
+    const out = await sync(env, auth.id, incoming, cleanSettings(body.settings));
     if (!out) return json(req, { error: 'unknown' }, 404);
     if (out.tooBig) return json(req, { error: 'too_big' }, 413);
-    return json(req, { tasks: out, serverTime: Date.now() });
+    return json(req, { tasks: out.tasks, settings: out.settings, serverTime: Date.now() });
   }
 
   return json(req, { error: 'not found' }, 404);

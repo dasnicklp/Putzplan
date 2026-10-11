@@ -16,11 +16,13 @@
 :root{
   --bg:#14161c; --surface:#1d2028; --surface2:#262a35; --text:#eef0f5; --muted:#9aa1b2;
   --accent:#5cc8a0; --accent-ink:#06210f; --ok:#4cd08a; --warn:#ff7a59; --line:#2f3442; --today:#3a4a5e; --radius:16px;
+  --nick:#7cb4ff; --nick-bg:rgba(124,180,255,.16); --partner:#e39cff; --partner-bg:rgba(227,156,255,.16);
 }
 @media (prefers-color-scheme: light){
-  :root{ --bg:#f5f6fa; --surface:#fff; --surface2:#eceef4; --text:#1a1d26; --muted:#5d6577; --accent:#1f9d6e; --accent-ink:#fff; --ok:#17804a; --warn:#b8371c; --line:#dcdfe8; --today:#dbe6f5; }
+  :root{ --bg:#f5f6fa; --surface:#fff; --surface2:#eceef4; --text:#1a1d26; --muted:#5d6577; --accent:#1f9d6e; --accent-ink:#fff; --ok:#17804a; --warn:#b8371c; --line:#dcdfe8; --today:#dbe6f5;
+    --nick:#1f5fbf; --nick-bg:#e3edfb; --partner:#8a2fa8; --partner-bg:#f3e3f8; }
 }
-:root[data-theme="dark"]{ --bg:#14161c; --surface:#1d2028; --surface2:#262a35; --text:#eef0f5; --muted:#9aa1b2; --accent:#5cc8a0; --accent-ink:#06210f; --ok:#4cd08a; --warn:#ff7a59; --line:#2f3442; --today:#3a4a5e; }
+:root[data-theme="dark"]{ --bg:#14161c; --surface:#1d2028; --surface2:#262a35; --text:#eef0f5; --muted:#9aa1b2; --accent:#5cc8a0; --accent-ink:#06210f; --ok:#4cd08a; --warn:#ff7a59; --line:#2f3442; --today:#3a4a5e; --nick:#7cb4ff; --nick-bg:rgba(124,180,255,.16); --partner:#e39cff; --partner-bg:rgba(227,156,255,.16); }
 *{box-sizing:border-box}
 [hidden]{display:none !important}
 html,body{margin:0}
@@ -83,6 +85,23 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
 .meta{display:flex;flex-wrap:wrap;gap:6px}
 .chip{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--muted);white-space:nowrap}
 .chip.who{color:var(--text)}
+.chip.p-nick{background:var(--nick-bg);color:var(--nick);font-weight:600}
+.chip.p-partner{background:var(--partner-bg);color:var(--partner);font-weight:600}
+.filters{display:flex;gap:6px;overflow-x:auto;max-width:720px;margin:10px auto 0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.filters::-webkit-scrollbar{display:none}
+.filters button{flex:0 0 auto;min-height:36px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-weight:600;font-size:14px}
+.filters button[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.day.empty-day{margin-top:4px}
+.day.empty-day .dayhead{margin-bottom:0}
+.day.empty-day .dayname{color:var(--muted);font-weight:600;font-size:15px}
+.day.empty-day .dayname.today{color:var(--accent)}
+.bal{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:22px}
+.bal h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.bal-row{display:grid;grid-template-columns:minmax(70px,auto) 1fr auto;gap:10px;align-items:center;font-size:14px;margin:6px 0}
+.bar{height:8px;border-radius:4px;background:var(--surface2);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px;background:var(--muted)}
+.bar i.p-nick{background:var(--nick)}
+.bar i.p-partner{background:var(--partner)}
 .empty{color:var(--muted);font-size:14px;padding:6px 2px 10px}
 .weeksum{text-align:center;color:var(--muted);font-size:14px;margin:20px 0 0}
 
@@ -163,6 +182,7 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
         <button class="icon-btn" id="next" type="button" aria-label="Weiter">›</button>
       </div>
     </div>
+    <div class="filters" id="filters" role="group" aria-label="Filter nach Person"></div>
     <div class="status" id="status"></div>
   </div>
   <main id="view"></main>
@@ -176,7 +196,8 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
     <div class="sheet-head"><h2 id="sheetTitle">Neue Aufgabe</h2></div>
 
     <label for="fTitle">Was ist zu tun?</label>
-    <input id="fTitle" required maxlength="200" placeholder="z.B. Badezimmer wischen" autocomplete="off">
+    <input id="fTitle" required maxlength="200" placeholder="z.B. Badezimmer wischen" autocomplete="off" list="titleList">
+    <datalist id="titleList"></datalist>
 
     <div class="two">
       <div>
@@ -222,6 +243,14 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
     <div class="sheet-head"><h2>Einstellungen</h2></div>
     <div class="setting-row"><span>Haushaltscode</span><span class="code-inline" id="sCode">—</span></div>
     <div class="setting-row"><span>Synchronisation</span><span id="sStatus" class="muted">—</span></div>
+    <form id="namesForm" novalidate>
+      <div class="two">
+        <div><label for="sName1">Name Person 1</label><input id="sName1" maxlength="30" autocomplete="off"></div>
+        <div><label for="sName2">Name Person 2</label><input id="sName2" maxlength="30" autocomplete="off"></div>
+      </div>
+      <button class="btn big" type="submit">Namen speichern</button>
+      <p class="muted small" style="margin:6px 0 0">Gilt für beide Geräte.</p>
+    </form>
     <div class="actions">
       <button class="btn wide" id="btnSyncNow" type="button">Jetzt synchronisieren</button>
       <button class="btn danger wide" id="btnLogout" type="button">Abmelden / anderen Haushalt verbinden</button>
@@ -236,13 +265,14 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
 const API_BASE = 'https://putzplan-api.n-kudenholdt2000.workers.dev'; // Adresse des Workers (aus der Action "Backend veröffentlichen")
-const PEOPLE = { nick: 'Nick', partner: 'Freundin' };          // Anzeigenamen
+const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App unter ⚙︎ änderbar
 const CATS = ['Küche', 'Bad', 'Wohnzimmer', 'Wäsche', 'Sonstiges'];
+const CAT_ICON = { 'Küche': '🍳', 'Bad': '🛁', 'Wohnzimmer': '🛋️', 'Wäsche': '🧺', 'Sonstiges': '📦' };
 const REPEAT_LABEL = { none: '', weekly: '↻ wöchentlich', monthly: '↻ monatlich' };
 const POLL_MS = 12000;
 
 /* ================= Zustand ================= */
-const LS = { code: 'putzplan.code', tasks: 'putzplan.tasks', view: 'putzplan.view' };
+const LS = { code: 'putzplan.code', tasks: 'putzplan.tasks', view: 'putzplan.view', settings: 'putzplan.settings', filter: 'putzplan.filter' };
 const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const MONTH_SHORT = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 const MONTH_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
@@ -250,6 +280,9 @@ const MONTH_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli'
 let code = lsGet(LS.code) || '';
 let tasks = [];
 try { tasks = JSON.parse(lsGet(LS.tasks) || '[]'); } catch (e) { tasks = []; }
+let settings = null;                     // gemeinsame Einstellungen (Namen), werden mit synchronisiert
+try { settings = JSON.parse(lsGet(LS.settings) || 'null'); } catch (e) { settings = null; }
+let filter = ['nick', 'partner', 'none'].includes(lsGet(LS.filter)) ? lsGet(LS.filter) : 'all';
 let view = lsGet(LS.view) === 'month' ? 'month' : 'week';
 let cursor = new Date();                 // Bezugsdatum der angezeigten Woche/Monats
 let editingId = null;
@@ -290,13 +323,20 @@ function toast(msg) {
 }
 
 /* ================= Aufgaben-Logik ================= */
+function names() {
+  const n = (settings && settings.names) || {};
+  return { nick: n.nick || DEFAULT_NAMES.nick, partner: n.partner || DEFAULT_NAMES.partner };
+}
 const live = () => tasks.filter((t) => !t.deleted);
-const onDay = (k) => live().filter((t) => t.due === k).sort((a, b) => (a.done - b.done) || a.title.localeCompare(b.title, 'de'));
+const visible = (t) => filter === 'all' || (filter === 'none' ? !t.assignee : t.assignee === filter);
+const shown = () => live().filter(visible);
+const onDay = (k) => shown().filter((t) => t.due === k).sort((a, b) => (a.done - b.done) || a.title.localeCompare(b.title, 'de'));
 const openOnDay = (k) => onDay(k).filter((t) => !t.done);
 const sumMin = (list) => list.reduce((s, t) => s + (t.minutes || 0), 0);
 
 function save() {
   lsSet(LS.tasks, JSON.stringify(tasks));
+  lsSet(LS.settings, JSON.stringify(settings));
   localVer++;
   scheduleSync();
   render();
@@ -307,11 +347,15 @@ function toggleDone(id) {
   if (!t) return;
   if (!t.done) {
     t.done = true; t.doneAt = Date.now(); touch(t);
+    if (navigator.vibrate) navigator.vibrate(12);
     if (t.repeat !== 'none' && t.due) {
-      const next = t.repeat === 'weekly' ? addDays(t.due, 7) : addMonths(t.due, 1);
-      const now = Date.now();
-      tasks.push({ id: uid(), title: t.title, due: next, category: t.category, minutes: t.minutes, assignee: t.assignee,
-        repeat: t.repeat, done: false, doneAt: null, createdAt: now, updatedAt: now, deleted: false });
+      const next = nextDue(t);
+      const exists = live().some((x) => !x.done && x.title === t.title && x.repeat === t.repeat && x.due === next);
+      if (!exists) {
+        const now = Date.now();
+        tasks.push({ id: uid(), title: t.title, due: next, category: t.category, minutes: t.minutes, assignee: t.assignee,
+          repeat: t.repeat, done: false, doneAt: null, createdAt: now, updatedAt: now, deleted: false });
+      }
       toast(`Nächster Termin: ${dayLabel(next)}`);
     }
   } else {
@@ -320,15 +364,24 @@ function toggleDone(id) {
   save();
 }
 
+// Nächster Termin einer wiederkehrenden Aufgabe, frühestens heute (falls sie überfällig war)
+function nextDue(t) {
+  const today = keyOf(new Date());
+  const at = (i) => (t.repeat === 'weekly' ? addDays(t.due, 7 * i) : addMonths(t.due, i));
+  let i = 1, n = at(1);
+  while (n < today && i < 1000) n = at(++i);
+  return n;
+}
+
 function taskRow(t, showDue) {
-  const who = t.assignee ? `<span class="chip who">${esc(PEOPLE[t.assignee])}</span>` : '<span class="chip">offen</span>';
+  const who = t.assignee ? `<span class="chip p-${t.assignee}">${esc(names()[t.assignee])}</span>` : '<span class="chip">offen</span>';
   return `<div class="task${t.done ? ' done' : ''}">
     <button class="check" type="button" data-act="toggle" data-id="${t.id}" aria-label="${t.done ? 'Nicht erledigt' : 'Erledigt'}"><span>${t.done ? '✓' : ''}</span></button>
     <button class="tbody" type="button" data-act="edit" data-id="${t.id}">
       <span class="ttl">${esc(t.title)}</span>
       <span class="meta">
         ${showDue && t.due ? `<span class="chip">${dayLabel(t.due)}</span>` : ''}
-        <span class="chip">${esc(t.category)}</span>
+        <span class="chip">${CAT_ICON[t.category] || ''} ${esc(t.category)}</span>
         <span class="chip">${t.minutes ? t.minutes + ' Min' : 'ohne Zeit'}</span>
         ${who}
         ${REPEAT_LABEL[t.repeat] ? `<span class="chip">${REPEAT_LABEL[t.repeat]}</span>` : ''}
@@ -338,17 +391,45 @@ function taskRow(t, showDue) {
 }
 
 /* ================= Anzeige ================= */
+function renderFilters() {
+  const n = names();
+  const opts = [['all', 'Alle'], ['nick', n.nick], ['partner', n.partner], ['none', 'Offen']];
+  $('#filters').innerHTML = opts.map(([k, label]) =>
+    `<button type="button" data-filter="${k}" aria-pressed="${filter === k}">${esc(label)}</button>`).join('');
+}
+
+// Wer hat diese Woche wie viel erledigt (nach Erledigt-Zeitpunkt, über alle Aufgaben, unabhängig vom Filter)
+function balanceHtml(days) {
+  const from = fromKey(days[0]).getTime(), to = fromKey(addDays(days[6], 1)).getTime();
+  const inWeek = (t) => (t.doneAt ? t.doneAt >= from && t.doneAt < to : t.due >= days[0] && t.due <= days[6]);
+  const done = live().filter((t) => t.done && inWeek(t));
+  if (!done.length) return '<div class="bal"><h3>Wochenbilanz</h3><p class="empty" style="padding:0">Diese Woche ist noch nichts erledigt.</p></div>';
+  const n = names();
+  const groups = [['nick', n.nick], ['partner', n.partner], ['none', 'Ohne Zuweisung']]
+    .map(([k, label]) => {
+      const list = done.filter((t) => (k === 'none' ? !t.assignee : t.assignee === k));
+      return { k, label, min: sumMin(list), count: list.length };
+    })
+    .filter((g) => g.count || g.k !== 'none');
+  const max = Math.max(1, ...groups.map((g) => g.min));
+  return `<div class="bal"><h3>Wochenbilanz · erledigt</h3>${groups.map((g) => `<div class="bal-row">
+    <span>${esc(g.label)}</span>
+    <span class="bar"><i class="p-${g.k}" style="width:${Math.round((g.min / max) * 100)}%"></i></span>
+    <span class="muted">${g.min} Min · ${g.count}×</span></div>`).join('')}</div>`;
+}
+
 function render() {
   if (!code) return;
   const today = keyOf(new Date());
   document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
+  renderFilters();
 
   if (view === 'week') {
     const ws = weekStart(cursor);
     const days = [...Array(7)].map((_, i) => addDays(ws, i));
     $('#range').textContent = `${fromKey(days[0]).getDate()}. – ${fromKey(days[6]).getDate()}. ${MONTH_SHORT[fromKey(days[6]).getMonth()]} ${fromKey(days[6]).getFullYear()}`;
 
-    const overdue = live().filter((t) => !t.done && t.due && t.due < today).sort((a, b) => a.due.localeCompare(b.due));
+    const overdue = shown().filter((t) => !t.done && t.due && t.due < today).sort((a, b) => a.due.localeCompare(b.due));
     let html = '';
     if (overdue.length) html += `<h2>Überfällig</h2>` + overdue.map((t) => taskRow(t, true)).join('');
 
@@ -357,16 +438,17 @@ function render() {
       const list = onDay(k);
       const o = list.filter((t) => !t.done);
       const isToday = k === today;
-      html += `<section class="day">
+      html += `<section class="day${list.length ? '' : ' empty-day'}">
         <div class="dayhead">
           <button class="dayname${isToday ? ' today' : ''}" type="button" data-day="${k}">${dayLabel(k)}</button>
           <button class="add-day" type="button" data-add="${k}" aria-label="Aufgabe für ${dayLabel(k)}">+</button>
           <span class="sum">${o.length ? `${o.length} offen · ${sumMin(o)} Min` : list.length ? 'alles erledigt' : ''}</span>
         </div>
-        ${list.length ? list.map((t) => taskRow(t, false)).join('') : '<p class="empty">Nichts geplant</p>'}
+        ${list.map((t) => taskRow(t, false)).join('')}
       </section>`;
     });
     html += `<p class="weeksum">Diese Woche: ${open.length} offen · ${sumMin(open)} Min</p>`;
+    html += balanceHtml(days);
     $('#view').innerHTML = html;
   } else {
     const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
@@ -414,7 +496,10 @@ function openSheet(id, dueKey) {
   $('#fTitle').value = t ? t.title : '';
   $('#fDue').value = t ? t.due : (dueKey || selected);
   $('#fCat').innerHTML = CATS.map((c) => `<option>${esc(c)}</option>`).join('');
-  $('#fWho').innerHTML = '<option value="">Offen</option>' + Object.entries(PEOPLE).map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join('');
+  $('#fWho').innerHTML = '<option value="">Offen</option>' + Object.entries(names()).map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join('');
+  // Vorschläge: bisherige Titel, zuletzt benutzte zuerst
+  const titles = [...new Set(live().slice().sort((a, b) => b.updatedAt - a.updatedAt).map((x) => x.title))].slice(0, 40);
+  $('#titleList').innerHTML = titles.map((x) => `<option value="${esc(x)}"></option>`).join('');
   $('#fCat').value = t ? t.category : 'Küche';
   $('#fMin').value = t ? t.minutes : 15;
   $('#fWho').value = t && t.assignee ? t.assignee : '';
@@ -424,6 +509,18 @@ function openSheet(id, dueKey) {
   if (!t) setTimeout(() => $('#fTitle').focus(), 50);
 }
 function closeSheet() { $('#taskSheet').hidden = true; editingId = null; }
+
+// Bekannter Titel bei neuer Aufgabe: Kategorie, Minuten, Zuweisung und Wiederholung übernehmen
+$('#fTitle').addEventListener('input', () => {
+  if (editingId) return;
+  const v = $('#fTitle').value.trim().toLowerCase();
+  const prev = live().filter((x) => x.title.toLowerCase() === v).sort((a, b) => b.updatedAt - a.updatedAt)[0];
+  if (!prev) return;
+  $('#fCat').value = prev.category;
+  $('#fMin').value = prev.minutes;
+  $('#fWho').value = prev.assignee || '';
+  $('#fRepeat').value = prev.repeat;
+});
 
 $('#taskForm').addEventListener('submit', (e) => {
   e.preventDefault();
@@ -484,12 +581,14 @@ async function sync() {
   syncing = true;
   const sentVer = localVer;
   try {
-    const r = await api('/api/sync', { tasks });
+    const r = await api('/api/sync', settings ? { tasks, settings } : { tasks });
     if (localVer === sentVer) {
-      const before = JSON.stringify(tasks);
+      const before = JSON.stringify([tasks, settings]);
       tasks = r.tasks;
+      if (r.settings) settings = r.settings;
       lsSet(LS.tasks, JSON.stringify(tasks));
-      if (JSON.stringify(tasks) !== before) render(); // nur neu zeichnen, wenn sich etwas geändert hat
+      lsSet(LS.settings, JSON.stringify(settings));
+      if (JSON.stringify([tasks, settings]) !== before) render(); // nur neu zeichnen, wenn sich etwas geändert hat
     } else {
       again = true; // während der Anfrage wurde etwas geändert: gleich noch einmal senden
     }
@@ -567,14 +666,25 @@ $('#joinCode').addEventListener('input', (e) => {
   e.target.value = d.length > 3 ? d.slice(0, 3) + ' ' + d.slice(3) : d;
 });
 
-$('#btnSettings').addEventListener('click', () => { $('#settingsSheet').hidden = false; });
+$('#btnSettings').addEventListener('click', () => {
+  const n = names();
+  $('#sName1').value = n.nick;
+  $('#sName2').value = n.partner;
+  $('#settingsSheet').hidden = false;
+});
+$('#namesForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  settings = { names: { nick: $('#sName1').value.trim().slice(0, 30), partner: $('#sName2').value.trim().slice(0, 30) }, updatedAt: Date.now() };
+  save();
+  toast('Namen gespeichert');
+});
 $('#btnCloseSettings').addEventListener('click', () => { $('#settingsSheet').hidden = true; });
 $('#settingsSheet').addEventListener('click', (e) => { if (e.target.id === 'settingsSheet') $('#settingsSheet').hidden = true; });
 $('#btnSyncNow').addEventListener('click', () => sync());
 $('#btnLogout').addEventListener('click', () => {
   if (!confirm('Auf diesem Gerät abmelden? Die Aufgaben bleiben online erhalten und sind mit dem Code wieder da.')) return;
-  code = ''; tasks = []; localVer = 0;
-  lsDel(LS.code); lsDel(LS.tasks);
+  code = ''; tasks = []; settings = null; localVer = 0;
+  lsDel(LS.code); lsDel(LS.tasks); lsDel(LS.settings);
   $('#settingsSheet').hidden = true;
   showSetup();
 });
@@ -583,6 +693,8 @@ $('#btnLogout').addEventListener('click', () => {
 document.addEventListener('click', (e) => {
   const v = e.target.closest('[data-view]');
   if (v) return setView(v.dataset.view);
+  const f = e.target.closest('[data-filter]');
+  if (f) { filter = f.dataset.filter; lsSet(LS.filter, filter); return render(); }
   const act = e.target.closest('[data-act]');
   if (act) {
     if (act.dataset.act === 'toggle') toggleDone(act.dataset.id);
@@ -602,6 +714,20 @@ $('#prev').addEventListener('click', () => move(-1));
 $('#next').addEventListener('click', () => move(1));
 $('#today').addEventListener('click', () => { cursor = new Date(); selected = keyOf(cursor); render(); });
 $('#fab').addEventListener('click', () => openSheet(null, selected));
+
+// Nach links/rechts wischen = nächste/vorige Woche bzw. Monat
+let touchStart = null;
+$('#view').addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  touchStart = e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null;
+}, { passive: true });
+$('#view').addEventListener('touchend', (e) => {
+  if (!touchStart) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
+  touchStart = null;
+  if (Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(dy)) move(dx < 0 ? 1 : -1);
+}, { passive: true });
 
 /* ================= Los geht's ================= */
 if (code) startApp(); else showSetup();

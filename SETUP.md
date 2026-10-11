@@ -93,7 +93,7 @@ Alles, was auf `main` landet, geht automatisch raus:
 - **App** (`docs/`): GitHub Pages aktualisiert sich in 1–2 Minuten, die Handys holen die neue Version beim nächsten Öffnen.
 - **Backend** (`worker/`): Die Action „Backend veröffentlichen“ läuft von selbst.
 
-Namen anpassen: In `docs/index.html` oben im Skript `PEOPLE = { nick: 'Nick', partner: 'Freundin' }`.
+Namen anpassen: in der App unter ⚙︎ → „Namen speichern“. Gilt automatisch für beide Geräte.
 
 ## Wenn etwas nicht geht
 

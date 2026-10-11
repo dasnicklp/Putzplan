@@ -44,6 +44,16 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 4. Wiederholung (einfach): Beim Erledigen entsteht die nächste Aufgabe (+7 Tage bzw. +1 Monat)
 5. iPhone: Safe-Areas, 16 px in Eingabefeldern (kein Zoom), `100dvh`, Apple-Touch-Icon, Homescreen-Hinweis
 
+## Umgesetzt (Phase 2)
+
+- Filter nach Person (Alle / Person 1 / Person 2 / Offen), pro Gerät gemerkt
+- Wochenbilanz: erledigte Minuten und Anzahl pro Person (nach Erledigt-Zeitpunkt)
+- Namen in der App änderbar, über den Server synchronisiert (`settings` im Haushalts-Datensatz, neuere Änderung gewinnt)
+- Kategorie-Symbole, Farben pro Person, kompakte leere Tage
+- Titelvorschläge; bekannter Titel übernimmt Kategorie, Minuten, Zuweisung, Wiederholung
+- Wischen für vorige/nächste Woche bzw. Monat, kurze Vibration beim Erledigen (Android)
+- Wiederholung: überfällige Aufgaben springen beim Erledigen auf einen Termin ab heute; kein doppelter Folgetermin
+
 ## Später möglich
 
 - **Push-Erinnerungen** (z. B. „Heute ist Bad dran“): Die Fokus-App hat dafür schon VAPID-Push und einen Cron-Zeitplaner, das lässt sich übernehmen. Auf dem iPhone nur in der Homescreen-App.
