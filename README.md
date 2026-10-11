@@ -2,7 +2,8 @@
 
 Gemeinsamer Putzplan für zwei Personen als Web-App (PWA). Läuft auf iPhone und Android über den Homescreen, ohne App Store und ohne Benutzerkonto.
 
-- Reiter unten: Heute, Woche, Monat, Bilanz, Haushalt
+- Reiter unten: Heute, Woche, Monat, Notizen, Bilanz, Haushalt
+- Gemeinsame Notizen mit Kategorien (Filter, eigene Kategorien, Anheften)
 - Heute-Ansicht (Überfälliges, heute, morgen), Monatsansicht und Wochenansicht mit den 7 Tagen nebeneinander, darunter die Aufgaben des gewählten Tags
 - Bilanz: wer hat wie viel erledigt, über 8 Wochen und nach Kategorie
 - Aufgaben mit Fälligkeit, Kategorie, Zeitaufwand und Zuweisung

@@ -1,8 +1,8 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.0",
   "date": "2026-10-11",
   "notes": [
-    "Woche: die 7 Tage stehen nebeneinander, darunter die Aufgaben des gewählten Tags",
-    "Beim Wochenwechsel bleibt der Wochentag ausgewählt"
+    "Neuer Reiter „Notizen“: gemeinsame Notizen für euch beide",
+    "Kategorien pro Notiz, Filter nach Kategorie, Notizen oben anheften"
   ]
 }

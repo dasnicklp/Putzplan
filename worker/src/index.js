@@ -1,15 +1,16 @@
 // Putzplan-Backend (Cloudflare Worker + D1)
 // - Liefert außerdem die App (docs/) als statische Dateien aus, siehe [assets] in wrangler.toml
 // - Zugang über einen 6-stelligen Haushaltscode, kein Konto
-// - Sync: Geräte schicken ihre Aufgaben, der Server führt sie zusammen (neueste Änderung gewinnt pro Aufgabe)
+// - Sync: Geräte schicken Aufgaben und Notizen, der Server führt sie zusammen (neueste Änderung gewinnt pro Eintrag)
 // - Nach 5 falschen Codes von einer IP wird diese IP 15 Minuten gesperrt
 
 const ORIGINS = [
   'https://dasnicklp.github.io',
   'http://localhost:8765', 'http://127.0.0.1:8765',
 ];
-const MAX_BODY = 256 * 1024;
+const MAX_BODY = 1024 * 1024;
 const MAX_TASKS = 2000;
+const MAX_NOTES = 1000;
 const MAX_DATA = 1500 * 1024; // D1 erlaubt ca. 2 MB pro Zeile
 const TOMBSTONE_MS = 60 * 864e5; // gelöschte Aufgaben 60 Tage merken, damit andere Geräte sie auch löschen
 const MAX_FAILS = 5;
@@ -99,6 +100,25 @@ function cleanTask(t) {
   };
 }
 
+function cleanNote(n) {
+  if (!n || typeof n !== 'object') return null;
+  if (typeof n.id !== 'string' || !/^[\w-]{1,64}$/.test(n.id)) return null;
+  if (!Number.isFinite(n.updatedAt)) return null;
+  const deleted = n.deleted === true;
+  const title = clampStr(n.title, 200), body = typeof n.body === 'string' ? n.body.slice(0, 5000) : '';
+  if (!deleted && !title && !body.trim()) return null;
+  return {
+    id: n.id,
+    title,
+    body,
+    cat: clampStr(n.cat, 40),
+    pinned: n.pinned === true,
+    createdAt: Number.isFinite(n.createdAt) ? n.createdAt : n.updatedAt,
+    updatedAt: n.updatedAt,
+    deleted,
+  };
+}
+
 // Gemeinsame Einstellungen (z. B. Namen): als Ganzes, die neuere Änderung gewinnt
 function cleanSettings(s) {
   if (!s || typeof s !== 'object' || !Number.isFinite(s.updatedAt)) return null;
@@ -106,8 +126,8 @@ function cleanSettings(s) {
   return { names: { nick: clampStr(n.nick, 30), partner: clampStr(n.partner, 30) }, updatedAt: s.updatedAt };
 }
 
-// Pro Aufgabe gewinnt die neuere Änderung. Alte Löschmarkierungen fallen weg.
-function mergeTasks(current, incoming) {
+// Pro Eintrag (Aufgabe oder Notiz) gewinnt die neuere Änderung. Alte Löschmarkierungen fallen weg.
+function mergeItems(current, incoming, max) {
   const map = new Map();
   for (const t of current) map.set(t.id, t);
   for (const t of incoming) {
@@ -118,20 +138,25 @@ function mergeTasks(current, incoming) {
   return [...map.values()]
     .filter((t) => !(t.deleted && t.updatedAt < cutoff))
     .sort((a, b) => b.updatedAt - a.updatedAt)
-    .slice(0, MAX_TASKS);
+    .slice(0, max);
 }
 
 // Lesen, zusammenführen, schreiben. Bei gleichzeitigem Schreiben wird wiederholt (optimistische Sperre).
-async function sync(env, id, incoming, incomingSettings) {
+async function sync(env, id, incoming, incomingNotes, incomingSettings) {
   for (let i = 0; i < 6; i++) {
     const row = await env.DB.prepare('SELECT data, updated_at FROM households WHERE id = ?').bind(id).first();
     if (!row) return null;
     const cur = JSON.parse(row.data);
-    const merged = mergeTasks(cur.tasks || [], incoming);
+    const merged = mergeItems(cur.tasks || [], incoming, MAX_TASKS);
+    const notes = mergeItems(cur.notes || [], incomingNotes, MAX_NOTES);
     let settings = cur.settings || null;
     if (incomingSettings && (!settings || incomingSettings.updatedAt > settings.updatedAt)) settings = incomingSettings;
-    const out = { tasks: merged, settings };
-    const data = JSON.stringify(settings ? out : { tasks: merged });
+    const out = { tasks: merged, notes, settings };
+    // Gespeichert wird nur, was es gibt (alte Datensätze ohne Notizen bleiben unverändert)
+    const stored = { tasks: merged };
+    if (notes.length || cur.notes) stored.notes = notes;
+    if (settings) stored.settings = settings;
+    const data = JSON.stringify(stored);
     if (data === row.data) return out; // nichts geändert, nichts schreiben
     if (data.length > MAX_DATA) return { tooBig: true };
     const v = Math.max(Date.now(), row.updated_at + 1);
@@ -197,10 +222,11 @@ async function handle(req, env) {
   if (path === '/api/sync' && req.method === 'POST') {
     const body = await readJson(req);
     const incoming = (Array.isArray(body.tasks) ? body.tasks.slice(0, MAX_TASKS) : []).map(cleanTask).filter(Boolean);
-    const out = await sync(env, auth.id, incoming, cleanSettings(body.settings));
+    const incomingNotes = (Array.isArray(body.notes) ? body.notes.slice(0, MAX_NOTES) : []).map(cleanNote).filter(Boolean);
+    const out = await sync(env, auth.id, incoming, incomingNotes, cleanSettings(body.settings));
     if (!out) return json(req, { error: 'unknown' }, 404);
     if (out.tooBig) return json(req, { error: 'too_big' }, 413);
-    return json(req, { tasks: out.tasks, settings: out.settings, serverTime: Date.now() });
+    return json(req, { tasks: out.tasks, notes: out.notes, settings: out.settings, serverTime: Date.now() });
   }
 
   return json(req, { error: 'not found' }, 404);

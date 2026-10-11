@@ -32,7 +32,7 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 |---|---|---|
 | POST | `/api/household` | Neuen Haushalt anlegen, gibt einmalig den Code zurück |
 | POST | `/api/join` | Code prüfen (200 / 401 / 429) |
-| POST | `/api/sync` | Aufgaben senden, zusammengeführten Stand zurückbekommen |
+| POST | `/api/sync` | Aufgaben, Notizen und Einstellungen senden, zusammengeführten Stand zurückbekommen |
 
 ## Aufgabe (Datenmodell)
 
@@ -67,6 +67,12 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 ## Umgesetzt (Phase 4)
 
 - Woche: Tagesleiste mit 7 Tagen nebeneinander (Wochentag, Datum, Anzahl offener Aufgaben bzw. ✓), darunter die Aufgaben des gewählten Tags, danach Überfälliges; beim Wochenwechsel bleibt der Wochentag ausgewählt
+
+## Umgesetzt (Phase 5)
+
+- Reiter „Notizen“: gemeinsame Notizen (`id, title, body, cat, pinned, createdAt, updatedAt, deleted`), synchronisiert wie Aufgaben (neuere Änderung gewinnt pro Notiz, Löschmarkierung 60 Tage)
+- Kategorien nach dem Muster der Fokus-App: eine pro Notiz, ergeben sich aus den Notizen selbst, Filter-Chips (Alle / Kategorien / Ohne Kategorie), „＋ Neu“, gleiche Schreibweise wird zusammengeführt; Vorschläge Einkaufen, Putztipps, Info
+- Ältere App-Versionen ohne Notizen löschen beim Synchronisieren keine Notizen (Server behält sie)
 
 ## Später möglich
 

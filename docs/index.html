@@ -105,6 +105,20 @@ main,.page{max-width:720px;margin:0 auto;padding:0 16px calc(160px + env(safe-ar
 .empty{color:var(--muted);font-size:14px;padding:6px 2px 10px}
 .weeksum{text-align:center;color:var(--muted);font-size:14px;margin:20px 0 0}
 
+/* Notizen */
+textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);resize:vertical;-webkit-appearance:none;appearance:none}
+.note{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+.note .ttl{display:block}
+.note .nbody{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;word-break:break-word;color:var(--muted);font-size:15px;margin-top:4px}
+.note .meta{margin-top:8px}
+.note.pinned{border-color:var(--accent)}
+.catpick{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.catpick button{min-height:36px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface2);font-size:14px;font-weight:600;color:var(--text)}
+.catpick button[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.catpick button.sugg{color:var(--muted);border-style:dashed}
+#nCatNew{margin-top:8px}
+.pin-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
+
 /* Wochenleiste: Tage nebeneinander */
 .wstrip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:14px}
 .wday{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:70px;padding:7px 0 6px;border-radius:12px;border:1px solid var(--line);background:var(--surface)}
@@ -152,8 +166,8 @@ main,.page{max-width:720px;margin:0 auto;padding:0 16px calc(160px + env(safe-ar
 .toast.show{opacity:1}
 
 /* Tab-Leiste unten */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
-.tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;padding:4px 0;color:var(--muted);font-size:11px;font-weight:600}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(6,1fr);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
+.tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;padding:4px 0;color:var(--muted);font-size:10.5px;font-weight:600;min-width:0}
 .tabbar svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tabbar button[aria-current="page"]{color:var(--accent)}
 .subtitle{color:var(--muted);margin:14px 0 0;font-weight:600}
@@ -257,6 +271,7 @@ main,.page{max-width:720px;margin:0 auto;padding:0 16px calc(160px + env(safe-ar
     <button type="button" data-tab="today"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Heute</button>
     <button type="button" data-tab="week"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7 14h10M7 17h6"/></svg>Woche</button>
     <button type="button" data-tab="month"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01"/></svg>Monat</button>
+    <button type="button" data-tab="notes"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h5"/></svg>Notizen</button>
     <button type="button" data-tab="stats"><svg viewBox="0 0 24 24"><path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/></svg>Bilanz</button>
     <button type="button" data-tab="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>Haushalt</button>
   </nav>
@@ -309,11 +324,35 @@ main,.page{max-width:720px;margin:0 auto;padding:0 16px calc(160px + env(safe-ar
   </form>
 </div>
 
+<!-- Notiz anlegen / bearbeiten -->
+<div class="overlay" id="noteSheet" hidden>
+  <form class="sheet" id="noteForm" novalidate>
+    <div class="grab"></div>
+    <div class="sheet-head"><h2 id="noteSheetTitle">Neue Notiz</h2></div>
+    <label for="nTitle">Titel</label>
+    <input id="nTitle" maxlength="200" placeholder="z. B. Putzmittel kaufen" autocomplete="off">
+    <label for="nBody">Notiz</label>
+    <textarea id="nBody" maxlength="5000" placeholder="Text …"></textarea>
+    <label>Kategorie</label>
+    <div class="catpick" id="nCatPick" role="group" aria-label="Kategorie"></div>
+    <input id="nCatNew" maxlength="40" placeholder="Neue Kategorie, z. B. Garten" autocomplete="off" enterkeyhint="done" hidden>
+    <div class="pin-row">
+      <span>Oben anheften</span>
+      <button class="btn" id="nPin" type="button" aria-pressed="false">📌 Nein</button>
+    </div>
+    <div class="actions">
+      <button class="btn danger wide" id="nDelete" type="button" hidden>Notiz löschen</button>
+      <button class="btn" id="nCancel" type="button">Abbrechen</button>
+      <button class="btn primary" type="submit">Speichern</button>
+    </div>
+  </form>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '1.5.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '1.6.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Haushalt“ änderbar
@@ -323,8 +362,9 @@ const REPEAT_LABEL = { none: '', weekly: '↻ wöchentlich', monthly: '↻ monat
 const POLL_MS = 12000;
 
 /* ================= Zustand ================= */
-const LS = { code: 'putzplan.code', tasks: 'putzplan.tasks', tab: 'putzplan.tab', settings: 'putzplan.settings', filter: 'putzplan.filter' };
-const TABS = { today: 'Heute', week: 'Woche', month: 'Monat', stats: 'Bilanz', home: 'Haushalt' };
+const LS = { code: 'putzplan.code', tasks: 'putzplan.tasks', notes: 'putzplan.notes', tab: 'putzplan.tab', settings: 'putzplan.settings', filter: 'putzplan.filter', noteCat: 'putzplan.noteCat' };
+const TABS = { today: 'Heute', week: 'Woche', month: 'Monat', notes: 'Notizen', stats: 'Bilanz', home: 'Haushalt' };
+const NOTE_CAT_SUGGESTIONS = ['Einkaufen', 'Putztipps', 'Info'];
 const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const MONTH_SHORT = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 const MONTH_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
@@ -332,6 +372,10 @@ const MONTH_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli'
 let code = lsGet(LS.code) || '';
 let tasks = [];
 try { tasks = JSON.parse(lsGet(LS.tasks) || '[]'); } catch (e) { tasks = []; }
+let notes = [];                          // gemeinsame Notizen, werden mit synchronisiert
+try { notes = JSON.parse(lsGet(LS.notes) || '[]'); } catch (e) { notes = []; }
+// Notiz-Filter: null = alle, '' = ohne Kategorie, sonst der Name
+let noteFilter = (() => { try { const v = JSON.parse(lsGet(LS.noteCat)); return typeof v === 'string' ? v : null; } catch (e) { return null; } })();
 let settings = null;                     // gemeinsame Einstellungen (Namen), werden mit synchronisiert
 try { settings = JSON.parse(lsGet(LS.settings) || 'null'); } catch (e) { settings = null; }
 let filter = ['nick', 'partner', 'none'].includes(lsGet(LS.filter)) ? lsGet(LS.filter) : 'all';
@@ -388,6 +432,7 @@ const sumMin = (list) => list.reduce((s, t) => s + (t.minutes || 0), 0);
 
 function save() {
   lsSet(LS.tasks, JSON.stringify(tasks));
+  lsSet(LS.notes, JSON.stringify(notes));
   lsSet(LS.settings, JSON.stringify(settings));
   localVer++;
   scheduleSync();
@@ -535,6 +580,96 @@ function statsHtml() {
   return html;
 }
 
+/* Notizen */
+const liveNotes = () => notes.filter((n) => !n.deleted);
+const catNorm = (s) => String(s || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+// Kategorien ergeben sich aus den Notizen selbst, eine pro Notiz; leer = ohne Kategorie
+const noteCats = () => [...new Set(liveNotes().map((n) => n.cat).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
+// Vorhandene Schreibweise übernehmen, damit aus „einkaufen“ und „Einkaufen“ keine zwei Kategorien werden
+const catCanon = (s) => { s = catNorm(s); return s && (noteCats().find((c) => c.toLowerCase() === s.toLowerCase()) || s); };
+function fmtShort(ts) { const d = new Date(ts); return `${d.getDate()}.${d.getMonth() + 1}.`; }
+
+function notesHtml() {
+  const cats = noteCats(), hasNone = liveNotes().some((n) => !n.cat);
+  if (noteFilter !== null && noteFilter !== '' && !cats.includes(noteFilter)) noteFilter = null;
+  const chip = (v, label) => `<button type="button" data-ncat="${v === null ? '*' : esc(v)}" aria-pressed="${noteFilter === v}">${esc(label)}</button>`;
+  const bar = cats.length ? `<div class="filters" style="margin:14px 0 4px">${chip(null, 'Alle')}${cats.map((c) => chip(c, c)).join('')}${hasNone ? chip('', 'Ohne Kategorie') : ''}</div>` : '';
+  const list = liveNotes()
+    .filter((n) => noteFilter === null || (n.cat || '') === noteFilter)
+    .sort((a, b) => (b.pinned - a.pinned) || b.updatedAt - a.updatedAt);
+  if (!liveNotes().length) return `<p class="empty" style="margin-top:18px">Noch keine Notizen. Mit „+“ legt ihr eine an, z. B. eine Einkaufsliste für Putzmittel oder Tipps gegen Kalk.</p>`;
+  return bar + `<div style="margin-top:10px">${list.map((n) => `<button type="button" class="note${n.pinned ? ' pinned' : ''}" data-note="${n.id}">
+      <span class="ttl">${n.pinned ? '📌 ' : ''}${esc(n.title || 'Ohne Titel')}</span>
+      ${n.body.trim() ? `<span class="nbody">${esc(n.body.trim())}</span>` : ''}
+      <span class="meta">${n.cat ? `<span class="chip">🏷 ${esc(n.cat)}</span>` : ''}<span class="chip">geändert ${fmtShort(n.updatedAt)}</span></span>
+    </button>`).join('')}</div>`;
+}
+
+let noteDraft = null; // { id, cat, pinned } während das Notiz-Fenster offen ist
+function renderNoteCatPick() {
+  const used = noteCats();
+  const cur = noteDraft.cat;
+  const all = [...used];
+  if (cur && !all.includes(cur)) all.push(cur);
+  const sugg = NOTE_CAT_SUGGESTIONS.filter((c) => !all.some((x) => x.toLowerCase() === c.toLowerCase()));
+  $('#nCatPick').innerHTML = all.map((c) => `<button type="button" data-pcat="${esc(c)}" aria-pressed="${c === cur}">${esc(c)}</button>`).join('')
+    + sugg.map((c) => `<button type="button" class="sugg" data-pcat="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('')
+    + '<button type="button" data-pcat="__new">＋ Neu</button>';
+}
+function renderPin() {
+  $('#nPin').setAttribute('aria-pressed', String(noteDraft.pinned));
+  $('#nPin').textContent = noteDraft.pinned ? '📌 Ja' : '📌 Nein';
+}
+function openNoteSheet(id) {
+  const n = id ? liveNotes().find((x) => x.id === id) : null;
+  noteDraft = { id: n ? n.id : null, cat: n ? n.cat : (noteFilter || ''), pinned: n ? n.pinned : false };
+  $('#noteSheetTitle').textContent = n ? 'Notiz bearbeiten' : 'Neue Notiz';
+  $('#nTitle').value = n ? n.title : '';
+  $('#nBody').value = n ? n.body : '';
+  $('#nCatNew').value = ''; $('#nCatNew').hidden = true;
+  $('#nDelete').hidden = !n;
+  renderNoteCatPick(); renderPin();
+  $('#noteSheet').hidden = false;
+  if (!n) setTimeout(() => $('#nTitle').focus(), 50);
+}
+function closeNoteSheet() { $('#noteSheet').hidden = true; noteDraft = null; }
+function acceptNewCat() {
+  const v = catCanon($('#nCatNew').value);
+  if (v && noteDraft) noteDraft.cat = v;
+  $('#nCatNew').value = ''; $('#nCatNew').hidden = true;
+  if (noteDraft) renderNoteCatPick();
+}
+$('#nCatPick').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pcat]');
+  if (!b || !noteDraft) return;
+  if (b.dataset.pcat === '__new') { $('#nCatNew').hidden = false; $('#nCatNew').focus(); return; }
+  noteDraft.cat = noteDraft.cat === b.dataset.pcat ? '' : b.dataset.pcat; // nochmal tippen = keine Kategorie
+  renderNoteCatPick();
+});
+$('#nCatNew').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); acceptNewCat(); } });
+$('#nCatNew').addEventListener('change', acceptNewCat);
+$('#nPin').addEventListener('click', () => { if (noteDraft) { noteDraft.pinned = !noteDraft.pinned; renderPin(); } });
+$('#noteForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (!$('#nCatNew').hidden && $('#nCatNew').value.trim()) acceptNewCat();
+  const title = $('#nTitle').value.trim().slice(0, 200), body = $('#nBody').value.slice(0, 5000);
+  if (!title && !body.trim()) { $('#nTitle').focus(); return; }
+  const n = noteDraft.id ? liveNotes().find((x) => x.id === noteDraft.id) : null;
+  const data = { title, body, cat: catCanon(noteDraft.cat), pinned: noteDraft.pinned };
+  if (n) { Object.assign(n, data); touch(n); }
+  else { const now = Date.now(); notes.push({ id: uid(), ...data, createdAt: now, updatedAt: now, deleted: false }); }
+  closeNoteSheet();
+  save();
+});
+$('#nDelete').addEventListener('click', () => {
+  const n = liveNotes().find((x) => x.id === noteDraft.id);
+  if (!n || !confirm(`Notiz „${n.title || 'Ohne Titel'}“ löschen?`)) return;
+  n.deleted = true; touch(n);
+  closeNoteSheet(); save();
+});
+$('#nCancel').addEventListener('click', closeNoteSheet);
+$('#noteSheet').addEventListener('click', (e) => { if (e.target.id === 'noteSheet') closeNoteSheet(); });
+
 // Heute: Überfälliges, heute, morgen
 function todayHtml(today) {
   const tomorrow = addDays(today, 1);
@@ -563,7 +698,8 @@ function render() {
   const tasksTab = tab === 'today' || tab === 'week' || tab === 'month';
   $('#navBar').hidden = !(tab === 'week' || tab === 'month');
   $('#filters').hidden = !tasksTab;
-  $('#fab').hidden = !tasksTab;
+  $('#fab').hidden = !(tasksTab || tab === 'notes');
+  $('#fab').setAttribute('aria-label', tab === 'notes' ? 'Neue Notiz' : 'Neue Aufgabe');
   $('#view').hidden = tab === 'home';
   $('#homePage').hidden = tab !== 'home';
   renderFilters();
@@ -571,6 +707,7 @@ function render() {
   if (tab === 'home') return;
   if (tab === 'today') { $('#view').innerHTML = todayHtml(today); return; }
   if (tab === 'stats') { $('#view').innerHTML = statsHtml(); return; }
+  if (tab === 'notes') { $('#view').innerHTML = notesHtml(); return; }
 
   if (tab === 'week') {
     const ws = weekStart(cursor);
@@ -750,14 +887,16 @@ async function sync() {
   syncing = true;
   const sentVer = localVer;
   try {
-    const r = await api('/api/sync', settings ? { tasks, settings } : { tasks });
+    const r = await api('/api/sync', settings ? { tasks, notes, settings } : { tasks, notes });
     if (localVer === sentVer) {
-      const before = JSON.stringify([tasks, settings]);
+      const before = JSON.stringify([tasks, notes, settings]);
       tasks = r.tasks;
+      if (Array.isArray(r.notes)) notes = r.notes;
       if (r.settings) settings = r.settings;
       lsSet(LS.tasks, JSON.stringify(tasks));
+      lsSet(LS.notes, JSON.stringify(notes));
       lsSet(LS.settings, JSON.stringify(settings));
-      if (JSON.stringify([tasks, settings]) !== before) render(); // nur neu zeichnen, wenn sich etwas geändert hat
+      if (JSON.stringify([tasks, notes, settings]) !== before) render(); // nur neu zeichnen, wenn sich etwas geändert hat
     } else {
       again = true; // während der Anfrage wurde etwas geändert: gleich noch einmal senden
     }
@@ -811,7 +950,7 @@ $('#btnNew').addEventListener('click', async () => {
 $('#btnNewDone').addEventListener('click', () => {
   code = pendingCode;
   lsSet(LS.code, code);
-  tasks = [];
+  tasks = []; notes = [];
   startApp();
 });
 $('#joinForm').addEventListener('submit', async (e) => {
@@ -823,7 +962,7 @@ $('#joinForm').addEventListener('submit', async (e) => {
     await api('/api/join', {}, c);
     code = c;
     lsSet(LS.code, code);
-    tasks = [];
+    tasks = []; notes = [];
     startApp();
   } catch (err) {
     if (err.status === 401) $('#joinErr').textContent = 'Den Code kenne ich nicht. Bitte nochmal prüfen.';
@@ -894,8 +1033,8 @@ $('#namesForm').addEventListener('submit', (e) => {
 $('#btnSyncNow').addEventListener('click', () => sync());
 $('#btnLogout').addEventListener('click', () => {
   if (!confirm('Auf diesem Gerät abmelden? Die Aufgaben bleiben online erhalten und sind mit dem Code wieder da.')) return;
-  code = ''; tasks = []; settings = null; localVer = 0;
-  lsDel(LS.code); lsDel(LS.tasks); lsDel(LS.settings);
+  code = ''; tasks = []; notes = []; settings = null; localVer = 0;
+  lsDel(LS.code); lsDel(LS.tasks); lsDel(LS.notes); lsDel(LS.settings);
   tab = 'today'; lsSet(LS.tab, tab);
   showSetup();
 });
@@ -906,6 +1045,10 @@ document.addEventListener('click', (e) => {
   if (tb) return setTab(tb.dataset.tab);
   const tip = e.target.closest('[data-tip]');
   if (tip) return toast(tip.dataset.tip);
+  const nc = e.target.closest('[data-ncat]');
+  if (nc) { noteFilter = nc.dataset.ncat === '*' ? null : nc.dataset.ncat; lsSet(LS.noteCat, JSON.stringify(noteFilter)); return render(); }
+  const note = e.target.closest('[data-note]');
+  if (note) return openNoteSheet(note.dataset.note);
   const f = e.target.closest('[data-filter]');
   if (f) { filter = f.dataset.filter; lsSet(LS.filter, filter); return render(); }
   const act = e.target.closest('[data-act]');
@@ -926,7 +1069,7 @@ document.addEventListener('click', (e) => {
 $('#prev').addEventListener('click', () => move(-1));
 $('#next').addEventListener('click', () => move(1));
 $('#today').addEventListener('click', () => { cursor = new Date(); selected = keyOf(cursor); render(); });
-$('#fab').addEventListener('click', () => openSheet(null, tab === 'today' ? keyOf(new Date()) : selected));
+$('#fab').addEventListener('click', () => (tab === 'notes' ? openNoteSheet(null) : openSheet(null, tab === 'today' ? keyOf(new Date()) : selected)));
 
 // Nach links/rechts wischen = nächste/vorige Woche bzw. Monat
 let touchStart = null;
