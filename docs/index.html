@@ -70,7 +70,7 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
 .dayhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .dayname{background:none;border:0;padding:6px 0;font-weight:700;font-size:17px;text-align:left;min-height:40px}
 .dayname.today{color:var(--accent)}
-.dayhead .sum{font-size:13px;color:var(--muted);margin-left:auto}
+.dayhead .sum{font-size:13px;color:var(--muted);margin-left:auto;padding-right:4px}
 .add-day{min-width:40px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:18px}
 .task{display:flex;align-items:stretch;background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;overflow:hidden}
 .task.done{opacity:.6}
@@ -196,11 +196,7 @@ main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-ins
       </div>
       <div>
         <label for="fWho">Zuweisung</label>
-        <select id="fWho">
-          <option value="">Offen</option>
-          <option value="nick">Nick</option>
-          <option value="partner">Freundin</option>
-        </select>
+        <select id="fWho"></select>
       </div>
     </div>
 
@@ -364,8 +360,8 @@ function render() {
       html += `<section class="day">
         <div class="dayhead">
           <button class="dayname${isToday ? ' today' : ''}" type="button" data-day="${k}">${dayLabel(k)}</button>
+          <button class="add-day" type="button" data-add="${k}" aria-label="Aufgabe für ${dayLabel(k)}">+</button>
           <span class="sum">${o.length ? `${o.length} offen · ${sumMin(o)} Min` : list.length ? 'alles erledigt' : ''}</span>
-          <button class="add-day" type="button" data-add="${k}" aria-label="Aufgabe für diesen Tag">+</button>
         </div>
         ${list.length ? list.map((t) => taskRow(t, false)).join('') : '<p class="empty">Nichts geplant</p>'}
       </section>`;
@@ -418,6 +414,7 @@ function openSheet(id, dueKey) {
   $('#fTitle').value = t ? t.title : '';
   $('#fDue').value = t ? t.due : (dueKey || selected);
   $('#fCat').innerHTML = CATS.map((c) => `<option>${esc(c)}</option>`).join('');
+  $('#fWho').innerHTML = '<option value="">Offen</option>' + Object.entries(PEOPLE).map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join('');
   $('#fCat').value = t ? t.category : 'Küche';
   $('#fMin').value = t ? t.minutes : 15;
   $('#fWho').value = t && t.assignee ? t.assignee : '';
