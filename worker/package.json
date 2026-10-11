@@ -1,0 +1,12 @@
+{
+  "name": "putzplan-api",
+  "private": true,
+  "description": "Putzplan-Backend auf Cloudflare Workers mit D1",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.141.0"
+  }
+}

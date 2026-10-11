@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14161c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6fa" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Putzplan">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Putzplan</title>
+<style>
+:root{
+  --bg:#14161c; --surface:#1d2028; --surface2:#262a35; --text:#eef0f5; --muted:#9aa1b2;
+  --accent:#5cc8a0; --accent-ink:#06210f; --ok:#4cd08a; --warn:#ff7a59; --line:#2f3442; --today:#3a4a5e; --radius:16px;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#f5f6fa; --surface:#fff; --surface2:#eceef4; --text:#1a1d26; --muted:#5d6577; --accent:#1f9d6e; --accent-ink:#fff; --ok:#17804a; --warn:#b8371c; --line:#dcdfe8; --today:#dbe6f5; }
+}
+:root[data-theme="dark"]{ --bg:#14161c; --surface:#1d2028; --surface2:#262a35; --text:#eef0f5; --muted:#9aa1b2; --accent:#5cc8a0; --accent-ink:#06210f; --ok:#4cd08a; --warn:#ff7a59; --line:#2f3442; --today:#3a4a5e; }
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100dvh;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+input,select{font-size:16px;width:100%;min-height:48px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);-webkit-appearance:none;appearance:none}
+input[type=date]{min-width:0}
+label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
+h1{font-size:26px;margin:0;letter-spacing:.2px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:22px 0 8px;font-weight:600}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.err{color:var(--warn);min-height:1.4em;margin:8px 0 0}
+
+.btn{min-height:48px;padding:10px 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);font-weight:600}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.big{width:100%;margin-top:6px}
+.btn.danger{color:var(--warn)}
+.btn.ghost{background:transparent;border-color:transparent}
+.icon-btn{min-width:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:20px}
+
+/* Start- und Verbindungsbildschirm */
+.setup{max-width:460px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 40px) 20px calc(env(safe-area-inset-bottom) + 24px)}
+.setup .lead{color:var(--muted);margin:8px 0 22px}
+.setup .or{text-align:center;color:var(--muted);margin:22px 0 4px}
+.setup .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.code{font-size:44px;font-weight:700;letter-spacing:.12em;text-align:center;margin:16px 0;font-variant-numeric:tabular-nums}
+
+/* Kopfbereich */
+.topbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;border-bottom:1px solid var(--line)}
+.topbar .row{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:720px;margin:0 auto}
+.toolbar{max-width:720px;margin:10px auto 0;display:grid;gap:10px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
+.seg button{min-height:40px;border:0;border-radius:9px;background:transparent;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface2);color:var(--text)}
+.nav{display:grid;grid-template-columns:44px 1fr auto 44px;gap:8px;align-items:center}
+.small-btn{min-height:44px;padding:8px 12px}
+.nav .range{text-align:center;font-weight:600}
+.status{max-width:720px;margin:6px auto 0;font-size:12px;color:var(--muted);min-height:1.2em}
+.status.bad{color:var(--warn)}
+
+main{max-width:720px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-inset-bottom))}
+
+/* Aufgaben */
+.day{margin-top:18px}
+.dayhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.dayname{background:none;border:0;padding:6px 0;font-weight:700;font-size:17px;text-align:left;min-height:40px}
+.dayname.today{color:var(--accent)}
+.dayhead .sum{font-size:13px;color:var(--muted);margin-left:auto}
+.add-day{min-width:40px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:18px}
+.task{display:flex;align-items:stretch;background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;overflow:hidden}
+.task.done{opacity:.6}
+.check{flex:0 0 56px;display:flex;align-items:center;justify-content:center;border:0;background:transparent;padding:0}
+.check span{width:30px;height:30px;border-radius:50%;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--accent-ink)}
+.task.done .check span{background:var(--ok);border-color:var(--ok)}
+.tbody{flex:1;min-width:0;text-align:left;border:0;background:transparent;padding:12px 14px 12px 0;display:flex;flex-direction:column;gap:6px}
+.ttl{font-weight:600;word-break:break-word}
+.task.done .ttl{text-decoration:line-through}
+.meta{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--muted);white-space:nowrap}
+.chip.who{color:var(--text)}
+.empty{color:var(--muted);font-size:14px;padding:6px 2px 10px}
+.weeksum{text-align:center;color:var(--muted);font-size:14px;margin:20px 0 0}
+
+/* Monatsraster */
+.mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:14px}
+.wd{font-size:12px;color:var(--muted);text-align:center;padding:4px 0}
+.cell{position:relative;min-height:52px;border-radius:10px;border:1px solid var(--line);background:var(--surface);padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px}
+.cell.out{opacity:.35}
+.cell.today{background:var(--today)}
+.cell.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.cell .num{font-weight:600}
+.cell .dot{font-style:normal;font-size:11px;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:0 6px;min-width:20px}
+
+/* Schwebender Hinzufügen-Knopf */
+.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);font-size:32px;line-height:1;box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:4}
+
+/* Bottom-Sheets */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:10}
+.sheet{width:100%;max-width:560px;max-height:92dvh;overflow:auto;background:var(--surface);border-radius:22px 22px 0 0;padding:14px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.3)}
+.grab{width:44px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 8px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.sheet-head h2{margin:0;color:var(--text);font-size:19px;text-transform:none;letter-spacing:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.actions .wide{grid-column:1 / -1}
+.setting-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.setting-row:last-child{border-bottom:0}
+.code-inline{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:.08em}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));background:var(--surface2);border:1px solid var(--line);padding:10px 14px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20;max-width:90vw}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- Start: neuen Haushalt anlegen oder Code eingeben -->
+<section id="setup" class="setup" hidden>
+  <h1>Putzplan</h1>
+  <p class="lead">Ihr verbindet eure Geräte über einen gemeinsamen Code. Kein Konto nötig.</p>
+
+  <div id="setupStart" class="card">
+    <button class="btn primary big" id="btnNew" type="button">Neuen Haushalt anlegen</button>
+    <p class="or small">oder</p>
+    <form id="joinForm" novalidate>
+      <label for="joinCode">Vorhandener Code (6 Ziffern)</label>
+      <input id="joinCode" inputmode="numeric" autocomplete="one-time-code" placeholder="000 000" maxlength="7">
+      <button class="btn big" type="submit">Verbinden</button>
+      <p class="err" id="joinErr" role="alert"></p>
+    </form>
+  </div>
+
+  <div id="setupCode" class="card" hidden>
+    <p>Euer gemeinsamer Code:</p>
+    <div class="code" id="newCode">000 000</div>
+    <p class="muted small">Schreib ihn dir auf. Die andere Person gibt ihn beim ersten Öffnen der App ein.</p>
+    <button class="btn primary big" id="btnNewDone" type="button">Weiter</button>
+  </div>
+
+  <p class="muted small" style="margin-top:20px">Auf dem iPhone: In Safari unten auf das Teilen-Symbol tippen, dann "Zum Home-Bildschirm". Danach startet die App wie eine normale App.</p>
+</section>
+
+<!-- Hauptansicht -->
+<div id="app" hidden>
+  <div class="topbar">
+    <div class="row">
+      <h1>Putzplan</h1>
+      <button class="icon-btn" id="btnSettings" type="button" aria-label="Einstellungen">⚙︎</button>
+    </div>
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Ansicht">
+        <button type="button" data-view="week" aria-pressed="true">Woche</button>
+        <button type="button" data-view="month" aria-pressed="false">Monat</button>
+      </div>
+      <div class="nav">
+        <button class="icon-btn" id="prev" type="button" aria-label="Zurück">‹</button>
+        <div class="range" id="range"></div>
+        <button class="btn ghost small-btn" id="today" type="button">Heute</button>
+        <button class="icon-btn" id="next" type="button" aria-label="Weiter">›</button>
+      </div>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+  <main id="view"></main>
+  <button class="fab" id="fab" type="button" aria-label="Neue Aufgabe">+</button>
+</div>
+
+<!-- Aufgabe anlegen / bearbeiten -->
+<div class="overlay" id="taskSheet" hidden>
+  <form class="sheet" id="taskForm" novalidate>
+    <div class="grab"></div>
+    <div class="sheet-head"><h2 id="sheetTitle">Neue Aufgabe</h2></div>
+
+    <label for="fTitle">Was ist zu tun?</label>
+    <input id="fTitle" required maxlength="200" placeholder="z.B. Badezimmer wischen" autocomplete="off">
+
+    <div class="two">
+      <div>
+        <label for="fDue">Fällig am</label>
+        <input id="fDue" type="date" required>
+      </div>
+      <div>
+        <label for="fMin">Minuten</label>
+        <input id="fMin" type="number" inputmode="numeric" min="0" max="1440" step="5" value="15">
+      </div>
+    </div>
+
+    <div class="two">
+      <div>
+        <label for="fCat">Kategorie</label>
+        <select id="fCat"></select>
+      </div>
+      <div>
+        <label for="fWho">Zuweisung</label>
+        <select id="fWho">
+          <option value="">Offen</option>
+          <option value="nick">Nick</option>
+          <option value="partner">Freundin</option>
+        </select>
+      </div>
+    </div>
+
+    <label for="fRepeat">Wiederholen</label>
+    <select id="fRepeat">
+      <option value="none">Nicht wiederholen</option>
+      <option value="weekly">Wöchentlich</option>
+      <option value="monthly">Monatlich</option>
+    </select>
+
+    <div class="actions">
+      <button class="btn danger wide" id="btnDelete" type="button" hidden>Aufgabe löschen</button>
+      <button class="btn" id="btnCancel" type="button">Abbrechen</button>
+      <button class="btn primary" type="submit">Speichern</button>
+    </div>
+  </form>
+</div>
+
+<!-- Einstellungen -->
+<div class="overlay" id="settingsSheet" hidden>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2>Einstellungen</h2></div>
+    <div class="setting-row"><span>Haushaltscode</span><span class="code-inline" id="sCode">—</span></div>
+    <div class="setting-row"><span>Synchronisation</span><span id="sStatus" class="muted">—</span></div>
+    <div class="actions">
+      <button class="btn wide" id="btnSyncNow" type="button">Jetzt synchronisieren</button>
+      <button class="btn danger wide" id="btnLogout" type="button">Abmelden / anderen Haushalt verbinden</button>
+      <button class="btn ghost wide" id="btnCloseSettings" type="button">Schließen</button>
+    </div>
+    <p class="muted small" style="margin-top:18px">Nur auf dem iPhone: Teilen-Symbol in Safari, dann "Zum Home-Bildschirm". Dann öffnet sich die App ohne Browserleiste.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ================= Einstellungen (hier anpassen) ================= */
+const API_BASE = 'https://putzplan-api.DEIN-NAME.workers.dev'; // nach dem Deploy eintragen, siehe SETUP.md
+const PEOPLE = { nick: 'Nick', partner: 'Freundin' };          // Anzeigenamen
+const CATS = ['Küche', 'Bad', 'Wohnzimmer', 'Wäsche', 'Sonstiges'];
+const REPEAT_LABEL = { none: '', weekly: '↻ wöchentlich', monthly: '↻ monatlich' };
+const POLL_MS = 12000;
+
+/* ================= Zustand ================= */
+const LS = { code: 'putzplan.code', tasks: 'putzplan.tasks', view: 'putzplan.view' };
+const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const MONTH_SHORT = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+const MONTH_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+
+let code = lsGet(LS.code) || '';
+let tasks = [];
+try { tasks = JSON.parse(lsGet(LS.tasks) || '[]'); } catch (e) { tasks = []; }
+let view = lsGet(LS.view) === 'month' ? 'month' : 'week';
+let cursor = new Date();                 // Bezugsdatum der angezeigten Woche/Monats
+let editingId = null;
+let localVer = 0, syncing = false, again = false, syncTimer = null;
+
+/* ================= Hilfsfunktionen ================= */
+const $ = (s) => document.querySelector(s);
+const pad = (n) => String(n).padStart(2, '0');
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtCode = (c) => c.slice(0, 3) + ' ' + c.slice(3);
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* privater Modus: egal */ } }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) { /* egal */ } }
+
+function keyOf(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+function fromKey(k) { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); }
+function addDays(k, n) { const d = fromKey(k); d.setDate(d.getDate() + n); return keyOf(d); }
+function addMonths(k, n) {
+  const [y, m, d] = k.split('-').map(Number);
+  const t = new Date(y, m - 1 + n, 1);
+  const last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+  t.setDate(Math.min(d, last));
+  return keyOf(t);
+}
+function weekStart(d) { const s = new Date(d.getFullYear(), d.getMonth(), d.getDate()); s.setDate(s.getDate() - ((s.getDay() + 6) % 7)); return keyOf(s); }
+function dayLabel(k) { const d = fromKey(k); return `${WD[(d.getDay() + 6) % 7]} ${d.getDate()}. ${MONTH_SHORT[d.getMonth()]}`; }
+function longDayLabel(k) { const d = fromKey(k); return `${WD[(d.getDay() + 6) % 7]}, ${d.getDate()}. ${MONTH_LONG[d.getMonth()]}`; }
+function touch(t) { t.updatedAt = Math.max(Date.now(), (t.updatedAt || 0) + 1); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+let selected = keyOf(new Date());        // ausgewählter Tag (nach den Hilfsfunktionen, die er braucht)
+
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+/* ================= Aufgaben-Logik ================= */
+const live = () => tasks.filter((t) => !t.deleted);
+const onDay = (k) => live().filter((t) => t.due === k).sort((a, b) => (a.done - b.done) || a.title.localeCompare(b.title, 'de'));
+const openOnDay = (k) => onDay(k).filter((t) => !t.done);
+const sumMin = (list) => list.reduce((s, t) => s + (t.minutes || 0), 0);
+
+function save() {
+  lsSet(LS.tasks, JSON.stringify(tasks));
+  localVer++;
+  scheduleSync();
+  render();
+}
+
+function toggleDone(id) {
+  const t = live().find((x) => x.id === id);
+  if (!t) return;
+  if (!t.done) {
+    t.done = true; t.doneAt = Date.now(); touch(t);
+    if (t.repeat !== 'none' && t.due) {
+      const next = t.repeat === 'weekly' ? addDays(t.due, 7) : addMonths(t.due, 1);
+      const now = Date.now();
+      tasks.push({ id: uid(), title: t.title, due: next, category: t.category, minutes: t.minutes, assignee: t.assignee,
+        repeat: t.repeat, done: false, doneAt: null, createdAt: now, updatedAt: now, deleted: false });
+      toast(`Nächster Termin: ${dayLabel(next)}`);
+    }
+  } else {
+    t.done = false; t.doneAt = null; touch(t);
+  }
+  save();
+}
+
+function taskRow(t, showDue) {
+  const who = t.assignee ? `<span class="chip who">${esc(PEOPLE[t.assignee])}</span>` : '<span class="chip">offen</span>';
+  return `<div class="task${t.done ? ' done' : ''}">
+    <button class="check" type="button" data-act="toggle" data-id="${t.id}" aria-label="${t.done ? 'Nicht erledigt' : 'Erledigt'}"><span>${t.done ? '✓' : ''}</span></button>
+    <button class="tbody" type="button" data-act="edit" data-id="${t.id}">
+      <span class="ttl">${esc(t.title)}</span>
+      <span class="meta">
+        ${showDue && t.due ? `<span class="chip">${dayLabel(t.due)}</span>` : ''}
+        <span class="chip">${esc(t.category)}</span>
+        <span class="chip">${t.minutes ? t.minutes + ' Min' : 'ohne Zeit'}</span>
+        ${who}
+        ${REPEAT_LABEL[t.repeat] ? `<span class="chip">${REPEAT_LABEL[t.repeat]}</span>` : ''}
+      </span>
+    </button>
+  </div>`;
+}
+
+/* ================= Anzeige ================= */
+function render() {
+  if (!code) return;
+  const today = keyOf(new Date());
+  document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
+
+  if (view === 'week') {
+    const ws = weekStart(cursor);
+    const days = [...Array(7)].map((_, i) => addDays(ws, i));
+    $('#range').textContent = `${fromKey(days[0]).getDate()}. – ${fromKey(days[6]).getDate()}. ${MONTH_SHORT[fromKey(days[6]).getMonth()]} ${fromKey(days[6]).getFullYear()}`;
+
+    const overdue = live().filter((t) => !t.done && t.due && t.due < today).sort((a, b) => a.due.localeCompare(b.due));
+    let html = '';
+    if (overdue.length) html += `<h2>Überfällig</h2>` + overdue.map((t) => taskRow(t, true)).join('');
+
+    const open = days.flatMap((k) => openOnDay(k));
+    days.forEach((k) => {
+      const list = onDay(k);
+      const o = list.filter((t) => !t.done);
+      const isToday = k === today;
+      html += `<section class="day">
+        <div class="dayhead">
+          <button class="dayname${isToday ? ' today' : ''}" type="button" data-day="${k}">${dayLabel(k)}</button>
+          <span class="sum">${o.length ? `${o.length} offen · ${sumMin(o)} Min` : list.length ? 'alles erledigt' : ''}</span>
+          <button class="add-day" type="button" data-add="${k}" aria-label="Aufgabe für diesen Tag">+</button>
+        </div>
+        ${list.length ? list.map((t) => taskRow(t, false)).join('') : '<p class="empty">Nichts geplant</p>'}
+      </section>`;
+    });
+    html += `<p class="weeksum">Diese Woche: ${open.length} offen · ${sumMin(open)} Min</p>`;
+    $('#view').innerHTML = html;
+  } else {
+    const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+    $('#range').textContent = `${MONTH_LONG[first.getMonth()]} ${first.getFullYear()}`;
+    const offset = (first.getDay() + 6) % 7;
+    const lastDay = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+    const rows = Math.ceil((offset + lastDay) / 7);
+    const start = addDays(keyOf(first), -offset);
+    let cells = '';
+    for (let i = 0; i < rows * 7; i++) {
+      const k = addDays(start, i);
+      const inMonth = fromKey(k).getMonth() === first.getMonth();
+      const n = openOnDay(k).length;
+      cells += `<button type="button" class="cell${inMonth ? '' : ' out'}${k === today ? ' today' : ''}${k === selected ? ' sel' : ''}" data-day="${k}">
+        <span class="num">${fromKey(k).getDate()}</span>${n ? `<i class="dot">${n}</i>` : ''}</button>`;
+    }
+    const list = onDay(selected);
+    $('#view').innerHTML = `<div class="mgrid">${WD.map((w) => `<div class="wd">${w}</div>`).join('')}${cells}</div>
+      <h2>${longDayLabel(selected)}</h2>
+      ${list.length ? list.map((t) => taskRow(t, false)).join('') : '<p class="empty">Nichts geplant</p>'}
+      <p class="weeksum">${openOnDay(selected).length} offen · ${sumMin(openOnDay(selected))} Min</p>`;
+  }
+}
+
+function setView(v) {
+  view = v;
+  lsSet(LS.view, v);
+  render();
+}
+function move(dir) {
+  if (view === 'week') cursor = fromKey(addDays(weekStart(cursor), dir * 7));
+  else {
+    const k = addMonths(keyOf(new Date(cursor.getFullYear(), cursor.getMonth(), 1)), dir);
+    cursor = fromKey(k);
+    selected = k;
+  }
+  render();
+}
+
+/* ================= Formular ================= */
+function openSheet(id, dueKey) {
+  editingId = id;
+  const t = id ? live().find((x) => x.id === id) : null;
+  $('#sheetTitle').textContent = t ? 'Aufgabe bearbeiten' : 'Neue Aufgabe';
+  $('#fTitle').value = t ? t.title : '';
+  $('#fDue').value = t ? t.due : (dueKey || selected);
+  $('#fCat').innerHTML = CATS.map((c) => `<option>${esc(c)}</option>`).join('');
+  $('#fCat').value = t ? t.category : 'Küche';
+  $('#fMin').value = t ? t.minutes : 15;
+  $('#fWho').value = t && t.assignee ? t.assignee : '';
+  $('#fRepeat').value = t ? t.repeat : 'none';
+  $('#btnDelete').hidden = !t;
+  $('#taskSheet').hidden = false;
+  if (!t) setTimeout(() => $('#fTitle').focus(), 50);
+}
+function closeSheet() { $('#taskSheet').hidden = true; editingId = null; }
+
+$('#taskForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const title = $('#fTitle').value.trim();
+  if (!title) { $('#fTitle').focus(); return; }
+  if (!$('#fDue').value) { $('#fDue').focus(); return; }
+  const data = {
+    title: title.slice(0, 200),
+    due: $('#fDue').value || '',
+    category: $('#fCat').value,
+    minutes: Math.max(0, Math.min(1440, Math.round(Number($('#fMin').value) || 0))),
+    assignee: $('#fWho').value || null,
+    repeat: $('#fRepeat').value,
+  };
+  const t = editingId ? live().find((x) => x.id === editingId) : null;
+  if (t) {
+    Object.assign(t, data);
+    touch(t);
+  } else {
+    const now = Date.now();
+    tasks.push({ id: uid(), ...data, done: false, doneAt: null, createdAt: now, updatedAt: now, deleted: false });
+  }
+  closeSheet();
+  save();
+});
+$('#btnDelete').addEventListener('click', () => {
+  const t = live().find((x) => x.id === editingId);
+  if (!t || !confirm(`"${t.title}" löschen?`)) return;
+  t.deleted = true; touch(t);
+  closeSheet(); save();
+});
+$('#btnCancel').addEventListener('click', closeSheet);
+$('#taskSheet').addEventListener('click', (e) => { if (e.target.id === 'taskSheet') closeSheet(); });
+
+/* ================= Sync ================= */
+function setStatus(text, bad) {
+  $('#status').textContent = text;
+  $('#status').classList.toggle('bad', !!bad);
+  $('#sStatus').textContent = text;
+}
+async function api(path, body, c = code) {
+  const r = await fetch(API_BASE + path, {
+    method: body ? 'POST' : 'GET',
+    headers: { Authorization: 'Bearer ' + c, 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let data = {};
+  try { data = await r.json(); } catch (e) { /* leer */ }
+  if (!r.ok) { const err = new Error(data.error || 'http ' + r.status); err.status = r.status; throw err; }
+  return data;
+}
+
+function scheduleSync() { clearTimeout(syncTimer); syncTimer = setTimeout(sync, 400); }
+
+async function sync() {
+  if (!code) return;
+  if (syncing) { again = true; return; }
+  syncing = true;
+  const sentVer = localVer;
+  try {
+    const r = await api('/api/sync', { tasks });
+    if (localVer === sentVer) {
+      const before = JSON.stringify(tasks);
+      tasks = r.tasks;
+      lsSet(LS.tasks, JSON.stringify(tasks));
+      if (JSON.stringify(tasks) !== before) render(); // nur neu zeichnen, wenn sich etwas geändert hat
+    } else {
+      again = true; // während der Anfrage wurde etwas geändert: gleich noch einmal senden
+    }
+    const time = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    setStatus(`Synchron · ${time}`);
+  } catch (e) {
+    if (e.status === 401) setStatus('Code wurde nicht erkannt. Bitte in den Einstellungen neu verbinden.', true);
+    else if (e.status === 429) setStatus('Zu viele Fehlversuche. Bitte 15 Minuten warten.', true);
+    else setStatus('Keine Verbindung. Du siehst den letzten gespeicherten Stand.', true);
+  } finally {
+    syncing = false;
+    if (again) { again = false; sync(); }
+  }
+}
+
+setInterval(() => { if (code && document.visibilityState === 'visible') sync(); }, POLL_MS);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && code) sync(); });
+window.addEventListener('focus', () => { if (code) sync(); });
+
+/* ================= Start, Verbinden, Abmelden ================= */
+let pendingCode = '';
+function showSetup() {
+  $('#app').hidden = true;
+  $('#setup').hidden = false;
+  $('#setupStart').hidden = false;
+  $('#setupCode').hidden = true;
+  $('#joinErr').textContent = '';
+}
+function startApp() {
+  $('#setup').hidden = true;
+  $('#app').hidden = false;
+  $('#sCode').textContent = fmtCode(code);
+  render();
+  sync();
+}
+
+$('#btnNew').addEventListener('click', async () => {
+  try {
+    const r = await fetch(API_BASE + '/api/household', { method: 'POST' });
+    const data = await r.json();
+    if (!r.ok || !data.code) throw new Error();
+    pendingCode = data.code;
+    $('#newCode').textContent = fmtCode(pendingCode);
+    $('#setupStart').hidden = true;
+    $('#setupCode').hidden = false;
+  } catch (e) {
+    $('#joinErr').textContent = 'Keine Verbindung zum Server. Bitte später nochmal versuchen.';
+  }
+});
+$('#btnNewDone').addEventListener('click', () => {
+  code = pendingCode;
+  lsSet(LS.code, code);
+  tasks = [];
+  startApp();
+});
+$('#joinForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const c = $('#joinCode').value.replace(/\D/g, '');
+  if (c.length !== 6) { $('#joinErr').textContent = 'Bitte 6 Ziffern eingeben.'; return; }
+  $('#joinErr').textContent = 'Prüfe Code …';
+  try {
+    await api('/api/join', {}, c);
+    code = c;
+    lsSet(LS.code, code);
+    tasks = [];
+    startApp();
+  } catch (err) {
+    if (err.status === 401) $('#joinErr').textContent = 'Den Code kenne ich nicht. Bitte nochmal prüfen.';
+    else if (err.status === 429) $('#joinErr').textContent = 'Zu viele Fehlversuche. Bitte 15 Minuten warten.';
+    else $('#joinErr').textContent = 'Keine Verbindung zum Server. Bitte später nochmal versuchen.';
+  }
+});
+$('#joinCode').addEventListener('input', (e) => {
+  const d = e.target.value.replace(/\D/g, '').slice(0, 6);
+  e.target.value = d.length > 3 ? d.slice(0, 3) + ' ' + d.slice(3) : d;
+});
+
+$('#btnSettings').addEventListener('click', () => { $('#settingsSheet').hidden = false; });
+$('#btnCloseSettings').addEventListener('click', () => { $('#settingsSheet').hidden = true; });
+$('#settingsSheet').addEventListener('click', (e) => { if (e.target.id === 'settingsSheet') $('#settingsSheet').hidden = true; });
+$('#btnSyncNow').addEventListener('click', () => sync());
+$('#btnLogout').addEventListener('click', () => {
+  if (!confirm('Auf diesem Gerät abmelden? Die Aufgaben bleiben online erhalten und sind mit dem Code wieder da.')) return;
+  code = ''; tasks = []; localVer = 0;
+  lsDel(LS.code); lsDel(LS.tasks);
+  $('#settingsSheet').hidden = true;
+  showSetup();
+});
+
+/* Navigation und Aufgaben (Ereignis-Weiterleitung) */
+document.addEventListener('click', (e) => {
+  const v = e.target.closest('[data-view]');
+  if (v) return setView(v.dataset.view);
+  const act = e.target.closest('[data-act]');
+  if (act) {
+    if (act.dataset.act === 'toggle') toggleDone(act.dataset.id);
+    else openSheet(act.dataset.id);
+    return;
+  }
+  const add = e.target.closest('[data-add]');
+  if (add) return openSheet(null, add.dataset.add);
+  const day = e.target.closest('[data-day]');
+  if (day) {
+    selected = day.dataset.day;
+    if (view === 'month') { cursor = fromKey(selected); }
+    return render();
+  }
+});
+$('#prev').addEventListener('click', () => move(-1));
+$('#next').addEventListener('click', () => move(1));
+$('#today').addEventListener('click', () => { cursor = new Date(); selected = keyOf(cursor); render(); });
+$('#fab').addEventListener('click', () => openSheet(null, selected));
+
+/* ================= Los geht's ================= */
+if (code) startApp(); else showSetup();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
