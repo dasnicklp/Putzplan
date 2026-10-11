@@ -109,6 +109,12 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 - Mengenerkennung kennt jetzt auch EL, TL, Prise, Zehen, Scheiben, Dose, Bund, Bruchzahlen
 - Suche ab 6 Rezepten; Beispielrezept zum Ausprobieren
 
+## Umgesetzt (Phase 9, 1.10.0)
+
+- Rezept-Import als JSON (einfügen, Datei, oder über „Teilen“ auf Android) mit Vorschau; erkennt einzelne Rezepte, Listen, `{recipes: […]}`, deutsche Feldnamen, Zutaten als Objekte, schema.org `Recipe` (auch `@graph`, `HowToStep`, `HowToSection`, `recipeYield`), ```json-Rahmen und eingebettetes `application/ld+json`
+- Gleicher Name ersetzt das vorhandene Rezept; Schutz vor zu großen Datenmengen (Server-Grenze ca. 1,5 MB)
+- Export im selben Format (auf dem Handy über das Teilen-Menü, sonst als Download)
+
 ## Später möglich
 
 - Eigene Kategorien für Aufgaben, Erinnerung an einzelne Aufgaben zu einer Uhrzeit

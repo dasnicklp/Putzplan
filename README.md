@@ -3,7 +3,7 @@
 Gemeinsamer Putzplan für zwei Personen als Web-App (PWA). Läuft auf iPhone und Android über den Homescreen, ohne App Store und ohne Benutzerkonto.
 
 - Vier Reiter unten: Putzen (umschaltbar Heute · Woche · Monat · Bilanz), Einkauf (umschaltbar Liste · Rezepte), Notizen, Haushalt
-- Rezepte: Zutaten untereinander eintragen, Portionen umrechnen, ausgewählte Zutaten mit einem Tipp auf die Einkaufsliste
+- Rezepte: Zutaten untereinander eintragen, Portionen umrechnen, ausgewählte Zutaten mit einem Tipp auf die Einkaufsliste; Import und Export als JSON (siehe unten)
 - Gemeinsame Einkaufsliste: schnell eintippen („2 Milch“), automatisch nach Bereichen im Laden sortiert, Abhaken, Vorschläge aus dem Verlauf
 - Gemeinsame Notizen mit Kategorien (Filter, eigene Kategorien, Anheften)
 - Heute-Ansicht (Überfälliges, heute, morgen), Monatsansicht und Wochenansicht mit den 7 Tagen nebeneinander, darunter die Aufgaben des gewählten Tags
@@ -22,6 +22,31 @@ Gemeinsamer Putzplan für zwei Personen als Web-App (PWA). Läuft auf iPhone und
 **App öffnen:** <https://putzplan-api.n-kudenholdt2000.workers.dev/> (alternativ <https://dasnicklp.github.io/Putzplan/>, gleiche Daten)
 
 **Einrichtung:** siehe [SETUP.md](SETUP.md).
+
+## Rezepte importieren
+
+Im Reiter „Einkauf“ → „Rezepte“ → „Importieren“: JSON einfügen oder eine Datei wählen. Vor dem Übernehmen zeigt die App, was sie erkannt hat. Ein Rezept mit gleichem Namen wird ersetzt.
+
+```json
+{
+  "recipes": [
+    {
+      "title": "Pfannkuchen",
+      "servings": 2,
+      "ingredients": ["250 g Mehl", "500 ml Milch", "3 Eier", "1 Prise Salz"],
+      "steps": ["Alles glatt rühren.", "10 Minuten quellen lassen.", "In Butter ausbacken."],
+      "link": "https://…"
+    }
+  ]
+}
+```
+
+- Nur `title` ist Pflicht. Statt der Liste geht auch ein einzelnes Rezept-Objekt oder ein Array von Rezepten.
+- `ingredients` und `steps` dürfen auch Text mit Zeilenumbrüchen sein; Zutaten auch als Objekte `{ "menge": 250, "einheit": "g", "name": "Mehl" }`.
+- Deutsche Feldnamen gehen auch: `titel`, `portionen`, `zutaten`, `zubereitung`, `quelle`.
+- Das Rezept-Format von Rezeptseiten (schema.org `Recipe`, z. B. `recipeIngredient`, `recipeInstructions`) wird erkannt, ebenso JSON mit ```json-Rahmen oder Text drumherum (z. B. aus einem Chat).
+- „Exportieren“ erzeugt genau dieses Format, zum Sichern oder Weitergeben.
+- Tipp: Einen Chat-Assistenten bitten „Gib mir das Rezept als JSON mit title, servings, ingredients und steps“ und die Antwort einfügen.
 
 ## Aufbau
 

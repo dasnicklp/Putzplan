@@ -525,6 +525,27 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
   </form>
 </div>
 
+<!-- Rezepte importieren -->
+<div class="overlay" id="importSheet" hidden>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2>Rezepte importieren</h2></div>
+    <p class="muted small" style="margin:4px 0 0">JSON einfügen oder eine Datei wählen: ein Rezept, eine Liste von Rezepten oder ein Export aus Putzplan. Das Rezept-Format von Rezeptseiten (schema.org) geht auch.</p>
+    <label for="impText">JSON</label>
+    <textarea id="impText" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder='{ "title": "Pfannkuchen", "servings": 2, "ingredients": ["250 g Mehl", "500 ml Milch"] }'></textarea>
+    <div class="two" style="margin-top:8px">
+      <button class="btn" id="impFile" type="button">Datei wählen</button>
+      <button class="btn" id="impSample" type="button">Vorlage einfügen</button>
+    </div>
+    <input id="impFileInput" type="file" accept=".json,application/json,text/plain" hidden>
+    <div class="update-info" id="impPreview" aria-live="polite"></div>
+    <div class="actions">
+      <button class="btn" id="impCancel" type="button">Abbrechen</button>
+      <button class="btn primary" id="impGo" type="button" disabled>Importieren</button>
+    </div>
+  </div>
+</div>
+
 <!-- Einkaufs-Eintrag bearbeiten -->
 <div class="overlay" id="shopSheet" hidden>
   <form class="sheet" id="shopForm" novalidate>
@@ -548,7 +569,7 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '1.9.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '1.10.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Haushalt“ änderbar
@@ -1174,6 +1195,7 @@ $('#shopAdd').addEventListener('submit', (e) => {
 
 /* Rezepte */
 const liveRecipes = () => recipes.filter((r) => !r.deleted);
+const zutaten = (n) => `${n} ${n === 1 ? 'Zutat' : 'Zutaten'}`;
 const ingrLines = (r) => String(r.ingredients || '').split(/\r?\n/).map((x) => x.replace(/^\s*(?:[-•*·–]|\[[ x]?\])\s*/, '').trim()).filter(Boolean);
 // Haben die meisten zu Hause: beim Übernehmen erst mal abgewählt
 const STAPLES = ['salz', 'pfeffer', 'wasser', 'salz und pfeffer', 'leitungswasser'];
@@ -1226,18 +1248,177 @@ function addQty(a, b) {
 function recipesHtml() {
   const all = liveRecipes();
   if (!all.length) return `<p class="empty" style="margin-top:18px">Noch keine Rezepte. Mit „+“ legt ihr eins an: Zutaten einfach untereinander schreiben. Danach kommen sie mit einem Tipp auf die Einkaufsliste.</p>
-    <button class="btn big" type="button" data-example-recipe>Beispiel anlegen: Spaghetti Bolognese</button>`;
+    <button class="btn big" type="button" data-example-recipe>Beispiel anlegen: Spaghetti Bolognese</button>
+    <button class="btn big" type="button" data-recipe-import>Rezepte importieren (JSON)</button>`;
   const q = $('#recipeBar').hidden ? '' : nameKey($('#recipeSearch').value);
   const list = all.filter((r) => !q || nameKey(r.title).includes(q) || nameKey(r.ingredients).includes(q))
     .sort((a, b) => a.title.localeCompare(b.title, 'de'));
   const onList = new Set(openShop().map((i) => i.from).filter(Boolean));
-  if (!list.length) return '<p class="empty" style="margin-top:18px">Kein Rezept gefunden.</p>';
+  const tools = `<div class="two" style="margin-top:18px"><button class="btn" type="button" data-recipe-import>Importieren</button>
+    <button class="btn" type="button" data-recipe-export>Exportieren</button></div>`;
+  if (!list.length) return '<p class="empty" style="margin-top:18px">Kein Rezept gefunden.</p>' + tools;
   return `<div style="margin-top:14px">${list.map((r) => `<button type="button" class="note" data-recipe="${r.id}">
     <span class="ttl">${esc(r.title)}</span>
-    <span class="meta"><span class="chip">🍽 ${r.servings} ${r.servings === 1 ? 'Portion' : 'Portionen'}</span><span class="chip">${ingrLines(r).length} Zutaten</span>${onList.has(r.title) ? '<span class="chip">🛒 auf der Liste</span>' : ''}</span>
-  </button>`).join('')}</div>`;
+    <span class="meta"><span class="chip">🍽 ${r.servings} ${r.servings === 1 ? 'Portion' : 'Portionen'}</span><span class="chip">${zutaten(ingrLines(r).length)}</span>${onList.has(r.title) ? '<span class="chip">🛒 auf der Liste</span>' : ''}</span>
+  </button>`).join('')}</div>` + tools;
 }
 $('#recipeSearch').addEventListener('input', () => render());
+
+/* Rezepte importieren und exportieren */
+const IMPORT_SAMPLE = JSON.stringify({ recipes: [{
+  title: 'Pfannkuchen', servings: 2,
+  ingredients: ['250 g Mehl', '500 ml Milch', '3 Eier', '1 Prise Salz', 'Butter zum Ausbacken'],
+  steps: ['Mehl, Milch, Eier und Salz glatt rühren.', 'Teig 10 Minuten quellen lassen.', 'In Butter dünne Pfannkuchen ausbacken.'],
+  link: '',
+}] }, null, 2);
+// HTML-Reste (z. B. von Rezeptseiten) entfernen; eine textarea dekodiert &amp; usw., ohne etwas auszuführen
+function plain(v) {
+  const t = document.createElement('textarea');
+  t.innerHTML = String(v == null ? '' : v).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, ' ');
+  return t.value.replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').trim();
+}
+const pick = (x, ...keys) => { for (const k of keys) if (x[k] != null && x[k] !== '') return x[k]; return undefined; };
+function ingredientText(v) {
+  if (v == null) return [];
+  if (typeof v === 'string') return plain(v).split('\n');
+  if (Array.isArray(v)) return v.flatMap(ingredientText);
+  if (typeof v === 'object') {
+    // { "menge": 250, "einheit": "g", "name": "Mehl" } oder englisch amount/unit/name
+    const parts = [pick(v, 'amount', 'menge', 'quantity', 'qty'), pick(v, 'unit', 'einheit'), pick(v, 'name', 'zutat', 'item', 'text')];
+    return [parts.filter((p) => p != null && p !== '').map(plain).join(' ')];
+  }
+  return [plain(v)];
+}
+function stepTexts(v) {
+  if (v == null) return [];
+  if (typeof v === 'string') return [plain(v)];
+  if (Array.isArray(v)) return v.flatMap(stepTexts);
+  if (typeof v === 'object') {
+    if (v.itemListElement) return [...(v.name ? [plain(v.name) + ':'] : []), ...stepTexts(v.itemListElement)]; // schema.org-Abschnitt
+    return stepTexts(pick(v, 'text', 'name', 'schritt'));
+  }
+  return [plain(v)];
+}
+function normRecipe(x) {
+  const title = plain(pick(x, 'title', 'name', 'titel', 'rezept')).slice(0, 200);
+  if (!title) return null;
+  const y = pick(x, 'servings', 'portionen', 'portions', 'yield', 'recipeYield', 'personen');
+  const servings = Math.max(1, Math.min(50, parseInt(String(Array.isArray(y) ? y[0] : y).match(/\d+/) || '', 10) || 2));
+  const ingredients = ingredientText(pick(x, 'ingredients', 'zutaten', 'recipeIngredient')).map((l) => l.trim()).filter(Boolean).join('\n').slice(0, 5000);
+  const raw = pick(x, 'steps', 'zubereitung', 'instructions', 'recipeInstructions', 'anleitung', 'schritte');
+  const steps = typeof raw === 'string' ? plain(raw)
+    : stepTexts(raw).filter(Boolean).map((t, i) => (/^\d+[.)]|:$/.test(t) ? t : `${i + 1}. ${t}`)).join('\n');
+  const link = String(pick(x, 'link', 'url', 'source', 'quelle') || '').trim();
+  return { title, servings, ingredients, steps: steps.slice(0, 10000), link: /^https?:\/\//i.test(link) ? link.slice(0, 500) : '' };
+}
+// Findet Rezepte in beliebig verschachteltem JSON; auch mit ```json-Rahmen oder Text drumherum (z. B. aus einem Chat)
+function parseRecipeImport(text) {
+  text = String(text || '').trim();
+  if (!text) return [];
+  const tries = [text, text.replace(/^```(?:json)?\s*|\s*```$/g, '')];
+  const a = text.search(/[[{]/), b = Math.max(text.lastIndexOf('}'), text.lastIndexOf(']'));
+  if (a >= 0 && b > a) tries.push(text.slice(a, b + 1));
+  for (const m of text.matchAll(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) tries.push(m[1]);
+  let data, err = null, found = [];
+  for (const t of tries) {
+    try { data = JSON.parse(t); } catch (e) { err = err || e; continue; }
+    const out = [];
+    const visit = (x, depth) => {
+      if (!x || typeof x !== 'object' || depth > 6) return;
+      if (Array.isArray(x)) return x.forEach((y) => visit(y, depth + 1));
+      const type = [].concat(x['@type'] || []);
+      if (x['@graph']) return visit(x['@graph'], depth + 1);
+      if (Array.isArray(x.recipes || x.rezepte)) return visit(x.recipes || x.rezepte, depth + 1);
+      if (type.length && !type.includes('Recipe')) return;
+      const r = normRecipe(x);
+      if (r) out.push(r);
+    };
+    visit(data, 0);
+    if (out.length) { found = out; break; }
+  }
+  if (!found.length && err && data === undefined) throw new Error('Das ist kein gültiges JSON. Fehlt vielleicht ein Komma oder eine Klammer?');
+  return found.slice(0, 300);
+}
+
+let importList = [];
+function previewImport() {
+  const box = $('#impPreview');
+  importList = [];
+  box.className = 'update-info';
+  try { importList = parseRecipeImport($('#impText').value); } catch (e) { box.textContent = e.message; $('#impGo').disabled = true; return; }
+  if (!$('#impText').value.trim()) box.textContent = '';
+  else if (!importList.length) box.textContent = 'Kein Rezept gefunden. Jedes Rezept braucht mindestens einen Namen ("title").';
+  else {
+    const have = new Set(liveRecipes().map((r) => nameKey(r.title)));
+    box.className = 'update-info new';
+    box.innerHTML = `${importList.length} ${importList.length === 1 ? 'Rezept' : 'Rezepte'} erkannt:<ul>${importList.map((r) =>
+      `<li>${esc(r.title)} · ${r.servings} Port. · ${zutaten(r.ingredients ? r.ingredients.split('\n').length : 0)}${have.has(nameKey(r.title)) ? ' · <b>ersetzt das vorhandene</b>' : ''}</li>`).join('')}</ul>`;
+  }
+  $('#impGo').disabled = !importList.length;
+  $('#impGo').textContent = importList.length > 1 ? `${importList.length} importieren` : 'Importieren';
+}
+function openImport(text) {
+  $('#impText').value = text || '';
+  previewImport();
+  $('#importSheet').hidden = false;
+}
+function closeImport() { $('#importSheet').hidden = true; importList = []; }
+let impTimer = null;
+$('#impText').addEventListener('input', () => { clearTimeout(impTimer); impTimer = setTimeout(previewImport, 250); });
+$('#impSample').addEventListener('click', () => { $('#impText').value = IMPORT_SAMPLE; previewImport(); });
+$('#impFile').addEventListener('click', () => $('#impFileInput').click());
+$('#impFileInput').addEventListener('change', async (e) => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  if (f.size > 2e6) { $('#impPreview').textContent = 'Die Datei ist zu groß (höchstens 2 MB).'; return; }
+  $('#impText').value = await f.text();
+  previewImport();
+});
+$('#impGo').addEventListener('click', () => {
+  if (!importList.length) return;
+  const now = Date.now();
+  let added = 0, replaced = 0;
+  const before = recipes.map((r) => ({ ...r }));
+  importList.forEach((d, i) => {
+    const ex = liveRecipes().find((r) => nameKey(r.title) === nameKey(d.title));
+    if (ex) { Object.assign(ex, d); touch(ex); replaced++; }
+    else { recipes.push({ id: uid(), ...d, createdAt: now, updatedAt: now + i, deleted: false }); added++; }
+  });
+  // Der Server speichert pro Haushalt höchstens ca. 1,5 MB
+  if (JSON.stringify({ tasks, notes, shop, recipes }).length > 1.4e6) {
+    recipes = before;
+    $('#impPreview').className = 'update-info';
+    $('#impPreview').textContent = 'Das wären zu viele Daten für euren Haushalt. Bitte weniger oder kürzere Rezepte importieren.';
+    return;
+  }
+  closeImport();
+  shopView = 'recipes'; lsSet(LS.shopView, shopView);
+  if (tab !== 'shop') setTab('shop');
+  save();
+  toast([added && `${added} ${added === 1 ? 'Rezept' : 'Rezepte'} importiert`, replaced && `${replaced} ersetzt`].filter(Boolean).join(', '));
+});
+$('#impCancel').addEventListener('click', closeImport);
+$('#importSheet').addEventListener('click', (e) => { if (e.target.id === 'importSheet') closeImport(); });
+
+// Export: dasselbe Format, das der Import versteht (zum Sichern oder Weitergeben)
+async function exportRecipes() {
+  const list = liveRecipes().sort((a, b) => a.title.localeCompare(b.title, 'de')).map((r) => ({
+    title: r.title, servings: r.servings, ingredients: ingrLines(r), steps: r.steps, link: r.link,
+  }));
+  const text = JSON.stringify({ app: 'Putzplan', exported: keyOf(new Date()), recipes: list }, null, 2);
+  const name = `putzplan-rezepte-${keyOf(new Date())}.json`;
+  const file = new File([text], name, { type: 'application/json' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Putzplan-Rezepte' }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  toast(`${list.length} ${list.length === 1 ? 'Rezept' : 'Rezepte'} exportiert`);
+}
 
 let rv = null; // angezeigtes Rezept: { id, serv, sel: Set der gewählten Zeilen }
 function openRecipe(id) {
@@ -1814,6 +1995,9 @@ function handleShare() {
   if (!text) return;
   history.replaceState(null, '', location.pathname);
   setTab('shop');
+  let found = [];
+  try { found = parseRecipeImport(q.get('text') || ''); } catch (e) { /* kein JSON: ist eine Einkaufsliste */ }
+  if (found.length) { shopView = 'recipes'; lsSet(LS.shopView, shopView); render(); openImport(q.get('text')); return; }
   addShop(text);
 }
 
@@ -1865,6 +2049,7 @@ async function sync() {
   } catch (e) {
     if (e.status === 401) setStatus('Code wurde nicht erkannt. Bitte in den Einstellungen neu verbinden.', true);
     else if (e.status === 429) setStatus('Zu viele Fehlversuche. Bitte 15 Minuten warten.', true);
+    else if (e.status === 413) setStatus('Zu viele Daten für den Server. Bitte ein paar lange Rezepte oder Notizen löschen.', true);
     else setStatus('Keine Verbindung. Du siehst den letzten gespeicherten Stand.', true);
   } finally {
     syncing = false;
@@ -2021,6 +2206,8 @@ document.addEventListener('click', (e) => {
   const rc = e.target.closest('[data-recipe]');
   if (rc) return openRecipe(rc.dataset.recipe);
   if (e.target.closest('[data-example-recipe]')) return addExampleRecipe();
+  if (e.target.closest('[data-recipe-import]')) return openImport('');
+  if (e.target.closest('[data-recipe-export]')) return exportRecipes();
   const sg = e.target.closest('[data-sugg]');
   if (sg) return addShop(sg.dataset.sugg);
   const tip = e.target.closest('[data-tip]');

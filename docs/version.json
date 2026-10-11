@@ -1,9 +1,9 @@
 {
-  "version": "1.9.0",
+  "version": "1.10.0",
   "date": "2026-10-11",
   "notes": [
-    "Neu: Rezepte im Reiter „Einkauf“ (oben umschalten zwischen Liste und Rezepte)",
-    "Portionen anpassen, Zutaten auswählen und mit einem Tipp auf die Einkaufsliste setzen",
-    "Auf der Liste steht dabei, für welches Rezept etwas gekauft wird; gleiche Zutaten werden zusammengefasst"
+    "Rezepte importieren: JSON einfügen oder Datei wählen, ein oder mehrere Rezepte auf einmal, mit Vorschau",
+    "Versteht auch das Rezept-Format von Rezeptseiten (schema.org) und JSON aus einem Chat",
+    "Rezepte exportieren (zum Sichern oder Weitergeben)"
   ]
 }
