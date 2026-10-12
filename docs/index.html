@@ -232,6 +232,12 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 
 /* Essensplan */
 .plan-nav{margin-top:14px}
+.meal-week{margin-top:18px}
+.mw-row{display:grid;grid-template-columns:62px 1fr;gap:10px;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:9px 2px;font-size:15px;color:var(--text);min-height:42px}
+.mw-row:first-of-type{border-top:0}
+.mw-row .mw-d{font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.mw-row.today .mw-d{color:var(--accent)}
+.mw-row.sel{background:var(--surface2);border-radius:8px}
 .meal-row .tbody{min-height:52px;justify-content:center}
 .meal-free{flex:1;min-width:0;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
 .servings{display:flex;align-items:center;gap:12px;margin:10px 0 4px}
@@ -803,7 +809,7 @@ a.btn.primary{color:var(--accent-ink)}
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '3.2.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '3.3.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Zuhause“ änderbar
@@ -1861,20 +1867,36 @@ function addExampleRecipe() {
 /* Essensplan */
 const liveMeals = () => meals.filter((m) => !m.deleted);
 let mealWeek = weekStart(new Date());
+let mealSel = keyOf(new Date()); // gewählter Tag im Essensplan
 const todayMeals = (k) => liveMeals().filter((m) => m.date === k).map((m) => m.title).join(', ');
 const recipeOf = (m) => m.recipeId && liveRecipes().find((r) => r.id === m.recipeId);
+// Wie die Wochenansicht beim Putzen: sieben Tage nebeneinander, darunter der gewählte Tag, dann die Woche auf einen Blick
+const mealsOn = (k) => liveMeals().filter((m) => m.date === k).sort((a, b) => a.createdAt - b.createdAt);
+function setMealWeek(dir) {
+  if (dir) { mealWeek = addDays(mealWeek, 7 * dir); mealSel = addDays(mealSel, 7 * dir); }
+  else { mealWeek = weekStart(new Date()); mealSel = keyOf(new Date()); }
+  render();
+}
 function planHtml() {
   const today = keyOf(new Date());
   const days = [...Array(7)].map((_, i) => addDays(mealWeek, i));
+  if (!days.includes(mealSel)) mealSel = days.includes(today) ? today : days[0];
   const range = `${fromKey(days[0]).getDate()}. – ${fromKey(days[6]).getDate()}. ${MONTH_SHORT[fromKey(days[6]).getMonth()]}`;
   let html = `<div class="nav plan-nav"><button class="icon-btn" type="button" data-mweek="-1" aria-label="Vorige Woche">‹</button>
     <div class="range">${range}</div><button class="btn ghost small-btn" type="button" data-mweek="0">Heute</button>
     <button class="icon-btn" type="button" data-mweek="1" aria-label="Nächste Woche">›</button></div>`;
-  for (const k of days) {
-    const list = liveMeals().filter((m) => m.date === k).sort((a, b) => a.createdAt - b.createdAt);
-    html += `<section class="day${list.length ? '' : ' empty-day'}"><div class="dayhead">
+  html += `<div class="wstrip">${days.map((k, i) => {
+    const n = mealsOn(k).length;
+    return `<button type="button" class="wday${k === today ? ' today' : ''}${k === mealSel ? ' sel' : ''}" data-mday="${k}"
+      aria-label="${longDayLabel(k)}, ${n ? `${n} ${n === 1 ? 'Gericht' : 'Gerichte'}` : 'nichts geplant'}" aria-pressed="${k === mealSel}">
+      <span class="wd-n">${WD[i]}</span><span class="num">${fromKey(k).getDate()}</span>${n ? `<span class="cnt">${n}</span>` : '<span class="cnt none"></span>'}</button>`;
+  }).join('')}</div>`;
+  for (const k of [mealSel]) {
+    const list = mealsOn(k);
+    html += `<section class="day"><div class="dayhead">
       <span class="dayname${k === today ? ' today' : ''}">${longDayLabel(k)}</span>
       <button class="add-day" type="button" data-meal-add="${k}" aria-label="Essen für ${longDayLabel(k)}">+</button></div>
+      ${list.length ? '' : '<p class="empty">Noch nichts geplant. Mit „+“ ein Rezept oder ein Gericht ohne Rezept eintragen.</p>'}
       ${list.map((m) => {
         const r = recipeOf(m);
         const meta = `<span class="meta"><span class="chip">🍽 ${m.servings} ${m.servings === 1 ? 'Portion' : 'Portionen'}</span>${r ? '<span class="chip">📖 Rezept</span>' : ''}${m.shopped ? '<span class="chip">🛒 auf der Liste</span>' : ''}</span>`;
@@ -1884,6 +1906,11 @@ function planHtml() {
           <button class="later" type="button" data-meal-del="${m.id}" aria-label="${esc(m.title)} aus dem Plan nehmen">✕</button></div>`;
       }).join('')}</section>`;
   }
+  // Die ganze Woche: ein Tag pro Zeile, antippen wählt den Tag
+  html += `<div class="bal meal-week"><h3>Diese Woche</h3>${days.map((k, i) => {
+    const t = mealsOn(k).map((m) => esc(m.title)).join(', ');
+    return `<button type="button" class="mw-row${k === mealSel ? ' sel' : ''}${k === today ? ' today' : ''}" data-mday="${k}"><span class="mw-d">${WD[i]} ${fromKey(k).getDate()}.</span><span class="${t ? '' : 'muted'}">${t || '–'}</span></button>`;
+  }).join('')}</div>`;
   const pending = liveMeals().filter((m) => days.includes(m.date) && !m.shopped && recipeOf(m));
   if (pending.length) html += `<button class="btn primary big" type="button" data-plan-shop style="margin-top:20px">Zutaten für ${pending.length} ${pending.length === 1 ? 'Gericht' : 'Gerichte'} auf die Liste</button>`;
   else if (liveMeals().some((m) => days.includes(m.date) && recipeOf(m))) html += '<p class="weeksum">Alle Zutaten dieser Woche sind auf der Liste.</p>';
@@ -3602,7 +3629,9 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('[data-recipe-import]')) return openImport('');
   if (e.target.closest('[data-recipe-export]')) return exportRecipes();
   const mw = e.target.closest('[data-mweek]');
-  if (mw) { mealWeek = Number(mw.dataset.mweek) ? addDays(mealWeek, 7 * Number(mw.dataset.mweek)) : weekStart(new Date()); return render(); }
+  if (mw) return setMealWeek(Number(mw.dataset.mweek));
+  const mdy = e.target.closest('[data-mday]');
+  if (mdy) { mealSel = mdy.dataset.mday; return render(); }
   const ma = e.target.closest('[data-meal-add]');
   if (ma) return openMealSheet(ma.dataset.mealAdd);
   const md = e.target.closest('[data-meal-del]');
@@ -3671,7 +3700,9 @@ $('#view').addEventListener('touchend', (e) => {
   const t = e.changedTouches[0];
   const dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
   touchStart = null;
-  if (tab === 'clean' && (view === 'week' || view === 'month') && Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(dy)) move(dx < 0 ? 1 : -1);
+  if (Math.abs(dx) <= 70 || Math.abs(dx) <= 2 * Math.abs(dy)) return;
+  if (tab === 'clean' && (view === 'week' || view === 'month')) move(dx < 0 ? 1 : -1);
+  else if (tab === 'shop' && shopView === 'plan') setMealWeek(dx < 0 ? 1 : -1);
 }, { passive: true });
 
 /* ================= Los geht's ================= */

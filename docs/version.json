@@ -1,8 +1,7 @@
 {
-  "version": "3.2.0",
+  "version": "3.3.0",
   "date": "2026-10-12",
   "notes": [
-    "Einstellungen aufgeräumt: oben umschalten zwischen Haushalt, Mitteilungen, Verbinden (Code, Kalender-Abo, Siri) und App (Update, Sicherung, Abmelden)",
-    "Handbuch: alle Funktionen und wie ihr sie einrichtet, unter Einstellungen → App"
+    "Essensplan wie die Woche beim Putzen: oben die sieben Tage, darunter der gewählte Tag und die ganze Woche auf einen Blick; Wischen wechselt die Woche"
   ]
 }

@@ -44,7 +44,8 @@ module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored
   await a.click('[data-tab=shop]');
   await a.fill('#shopInput', 'Zwiebel'); await a.press('#shopInput', 'Enter');
   await a.click('[data-sview=plan]');
-  ok(await a.textContent('#pageTitle') === 'Essensplan' && (await a.locator('[data-meal-add]').count()) === 7 && !(await a.isVisible('#fab')), 'Essensplan: 7 Tage');
+  ok(await a.textContent('#pageTitle') === 'Essensplan' && (await a.locator('.wstrip [data-mday]').count()) === 7 && (await a.locator('.mw-row').count()) === 7 && !(await a.isVisible('#fab')), 'Essensplan: 7 Tage nebeneinander und als Liste');
+  ok(await a.getAttribute(`.wstrip [data-mday="${day(0)}"]`, 'aria-pressed') === 'true' && (await a.locator('[data-meal-add]').count()) === 1, 'Heute ist gewählt, darunter nur dieser Tag');
   await a.click(`[data-meal-add="${day(0)}"]`);
   await a.click('#mLess'); await a.click('#mMore'); // bleibt 2
   await a.click('[data-pick-recipe="r1"]');
@@ -53,11 +54,18 @@ module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored
   // Chili an einem Tag dieser Woche (Plan zeigt die Woche ab Montag)
   const wk = await a.evaluate(() => [...Array(7)].map((_, i) => addDays(mealWeek, i)));
   const other = wk.find((d) => d !== day(0));
+  await a.click(`.wstrip [data-mday="${other}"]`);
+  ok(await a.getAttribute(`.wstrip [data-mday="${other}"]`, 'aria-pressed') === 'true' && (await a.textContent('#view .dayname')).length > 0, 'Anderen Tag gewählt');
   await a.click(`[data-meal-add="${other}"]`);
   await a.click('[data-pick-recipe="r2"]');
   const ms = await stored(a, 'meals');
   ok(ms.length === 3 && ms.find((m) => m.recipeId === 'r1').servings === 2 && ms.some((m) => m.title === 'Pizza bestellen' && !m.recipeId), 'Gerichte eingetragen (Rezept und frei)');
   ok((await a.textContent('[data-plan-shop]')).includes('2 Gerichte'), 'Knopf für den Wocheneinkauf');
+  ok(await a.textContent(`.wstrip [data-mday="${day(0)}"] .cnt`) === '2' && (await a.textContent(`.mw-row[data-mday="${day(0)}"]`)).includes('Pizza bestellen'), 'Woche: Anzahl am Tag und Gerichte in der Liste');
+  await a.click('[data-mweek="1"]');
+  const nextWk = await a.evaluate((k) => addDays(k, 7), other);
+  ok(await a.getAttribute(`.wstrip [data-mday="${nextWk}"]`, 'aria-pressed') === 'true', 'Nächste Woche: gleicher Wochentag gewählt');
+  await a.click('[data-mweek="0"]');
   await a.click('[data-plan-shop]');
   const rows = (await a.locator('#psList .pack-row').allTextContents()).map((r) => r.replace(/\s+/g, ' ').replace(/^✓ /, '').trim());
   const press = await a.$$eval('#psList .pack-row', (bs) => bs.map((b) => b.getAttribute('aria-pressed')));

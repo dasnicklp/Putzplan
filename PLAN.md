@@ -162,6 +162,10 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 - Einstellungen in vier Bereiche geteilt (oben umschaltbar, wird gemerkt): Haushalt, Mitteilungen, Verbinden, App
 - Handbuch `docs/handbuch.html` (Funktionen, Einrichtung, Kalender-Abo, Siri, Fragen), verlinkt in Einstellungen → App und auf dem Startbildschirm
 
+## Umgesetzt (3.3.0)
+
+- Essensplan wie die Wochenansicht beim Putzen: Tagesleiste mit Anzahl, gewählter Tag darunter, „Diese Woche“ als Liste, Wischen wechselt die Woche
+
 ## Später möglich
 
 - Eigene Kategorien für Aufgaben, Erinnerung an einzelne Aufgaben zu einer Uhrzeit
