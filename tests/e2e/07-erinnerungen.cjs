@@ -5,6 +5,8 @@ const { webcrypto: wc } = require('crypto');
 const enc = new TextEncoder();
 const b64u = (b) => Buffer.from(b).toString('base64url');
 const ub = (s) => new Uint8Array(Buffer.from(s, 'base64url'));
+// Wartet, bis die Bedingung stimmt (höchstens 8 s), statt fester Pausen
+const until = async (cond) => { for (let i = 0; i < 160 && !cond(); i++) await new Promise((r) => setTimeout(r, 50)); };
 const hkdf = async (salt, ikm, info, len) => new Uint8Array(await wc.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info },
   await wc.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']), len * 8));
 
@@ -50,9 +52,9 @@ module.exports = async ({ browser, ok, phone, newHousehold, api, BASE, day, slee
     const g = got[0] || {};
     ok(g.valid && g.claims.aud === 'http://127.0.0.1:9999' && g.encoding === 'aes128gcm', 'Signatur gültig, verschlüsselt');
     ok(g.data && g.data.count === 2 && g.data.body.includes('Bad putzen') && g.data.body.includes('Müll') && !g.data.body.includes('Fenster'), 'Inhalt: nur Nick und nicht Zugewiesenes');
-    await (await fetch(new URL('/__scheduled?cron=*/15+*+*+*+*', BASE))).text(); await sleep(800);
+    await (await fetch(new URL('/__scheduled?cron=*/15+*+*+*+*', BASE))).text(); await until(() => got.length >= 2);
     ok(got.length === 2, 'Zeitplan schickt die Tageserinnerung');
-    await (await fetch(new URL('/__scheduled?cron=*/15+*+*+*+*', BASE))).text(); await sleep(800);
+    await (await fetch(new URL('/__scheduled?cron=*/15+*+*+*+*', BASE))).text(); await sleep(1000);
     ok(got.length === 2, 'Kein zweites Mal am selben Tag');
     ok((await api('/api/push/unsubscribe', { endpoint: sub.endpoint }, code)).status === 200
       && (await api('/api/push/test', { endpoint: sub.endpoint }, code)).status === 404, 'Abgemeldet');
@@ -78,9 +80,11 @@ module.exports = async ({ browser, ok, phone, newHousehold, api, BASE, day, slee
     await p.waitForSelector('#btnPushTest:not([hidden])');
     ok((await p.textContent('#pushInfo')).includes('07:30'), 'Eingeschaltet für 07:30');
     const n = got.length;
-    await p.click('#btnPushTest'); await sleep(800);
+    await p.click('#btnPushTest');
+    await p.waitForFunction(() => /Gesendet|nicht geklappt/.test(document.querySelector('#pushInfo').textContent));
     ok(got.length === n + 1 && got[n].url === '/push/ui', 'Test-Knopf: Nachricht kommt beim Push-Dienst an');
-    await p.click('#btnPushOff'); await sleep(300);
+    await p.click('#btnPushOff');
+    await p.waitForSelector('#btnPushOn:not([hidden])', { timeout: 8000 }).catch(() => {});
     ok(await p.isVisible('#btnPushOn'), 'Ausgeschaltet');
     await sleep(10);
     void day;

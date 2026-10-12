@@ -56,7 +56,7 @@ module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored
   await a.click('[data-sview=recipes]');
   await a.click('[data-recipe-import]');
   await a.fill('#impText', JSON.stringify([{ title: 'pfannkuchen', servings: 4, ingredients: ['500 g Mehl'] }, { title: 'Toast' }]));
-  await sleep(400);
+  await a.waitForFunction(() => document.querySelector('#impPreview').textContent.includes('erkannt'), null, { timeout: 5000 }).catch(() => {});
   ok((await a.textContent('#impPreview')).includes('ersetzt das vorhandene') && (await a.textContent('#impGo')) === '2 importieren', 'Vorschau warnt vor Ersetzen');
   await a.click('#impGo');
   const recs = await stored(a, 'recipes');
