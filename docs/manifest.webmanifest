@@ -1,7 +1,7 @@
 {
   "name": "Haushalt",
   "short_name": "Haushalt",
-  "description": "Gemeinsamer Haushalt für zwei: Putzplan mit Wiederholung und Zuweisung, Einkaufsliste, Rezepte, Essensplan, Notizen, Erinnerungen",
+  "description": "Gemeinsamer Haushalt für zwei: Putzplan, Einkaufsliste, Vorrat, Rezepte, Essensplan, Pinnwand, Geburtstage, Notizen, Erinnerungen",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -36,5 +36,55 @@
       "title": "title",
       "text": "text"
     }
-  }
+  },
+  "shortcuts": [
+    {
+      "name": "Einkaufsliste",
+      "short_name": "Liste",
+      "url": "./?go=list",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Neue Aufgabe",
+      "short_name": "Aufgabe",
+      "url": "./?go=task",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Pinnwand",
+      "short_name": "Pinnwand",
+      "url": "./?go=board",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Vorrat",
+      "short_name": "Vorrat",
+      "url": "./?go=pantry",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
 }

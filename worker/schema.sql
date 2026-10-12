@@ -22,5 +22,7 @@ CREATE TABLE IF NOT EXISTS push_subs (
   time TEXT NOT NULL,           -- Uhrzeit HH:MM
   tz TEXT NOT NULL,             -- Zeitzone des Geräts
   last_sent TEXT NOT NULL DEFAULT '',  -- Datum der letzten Erinnerung
-  created INTEGER NOT NULL
+  created INTEGER NOT NULL,
+  opts TEXT NOT NULL DEFAULT '{}',     -- Mitteilungs-Arten: daily, weekly, msgs, shop
+  last_weekly TEXT NOT NULL DEFAULT '' -- Datum des letzten Wochenrückblicks
 );

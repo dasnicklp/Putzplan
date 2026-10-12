@@ -2,8 +2,12 @@
 
 Gemeinsame Haushalts-App für zwei Personen als Web-App (PWA): Putzplan, Einkaufsliste, Rezepte, Essensplan und Notizen. Läuft auf iPhone und Android über den Homescreen, ohne App Store und ohne Benutzerkonto.
 
-- Vier Reiter unten: Putzen (umschaltbar Heute · Woche · Monat · Bilanz), Einkauf (umschaltbar Liste · Rezepte · Essensplan), Notizen, Zuhause, Einstellungen
+- Vier Reiter unten: Putzen (umschaltbar Heute · Woche · Monat · Bilanz), Einkauf (Liste · Vorrat · Rezepte · Essen), Notizen, Zuhause (Übersicht mit Pinnwand · Geburtstage · Wünsche · Geräte), Einstellungen
 - Rezepte: Zutaten untereinander eintragen, Portionen umrechnen, ausgewählte Zutaten mit einem Tipp auf die Einkaufsliste; Import und Export als JSON (siehe unten)
+- Vorrat: was zu Hause ist; „Knapp“/„Leer“ setzt es auf die Einkaufsliste, Abhaken beim Einkauf füllt wieder auf, Rezepte wählen Vorhandenes ab
+- Pinnwand für Nachrichten aneinander, Geburtstage mit Erinnerung, Anschaffungen, Geräte mit Garantie, Anleitung und Wartung
+- Mitteilungen: täglich (Aufgaben, Geburtstage), Wochenrückblick am Sonntag, Pinnwand und neue Sachen auf der Liste sofort ans andere Handy
+- Eigene Laden-Reihenfolge, Kurzbefehle am App-Symbol (Android)
 - Essensplan: Rezepte oder freie Gerichte auf Wochentage legen, alle Zutaten der Woche zusammengefasst auf die Einkaufsliste
 - Checklisten in Aufgaben (z. B. Spiegel, Waschbecken, Fugen); Löschen mit „Rückgängig“; Komplett-Sicherung als Datei
 - Gemeinsame Einkaufsliste: schnell eintippen („2 Milch“), automatisch nach Bereichen im Laden sortiert, Abhaken, Vorschläge aus dem Verlauf
@@ -78,7 +82,7 @@ cd tests && npm ci && npx playwright install chromium && npm test
 npm test -- rezept   # nur Tests, deren Dateiname „rezept“ enthält
 ```
 
-Namen, Urlaub und Startpaket stehen in der App im Reiter „Zuhause“ (mit Überblick-Kacheln). Haushaltscode, Erinnerungen, Sicherung, installierte Version und „Nach Update suchen“ stehen unter „Einstellungen“.
+Unter „Einstellungen“ stehen Haushaltscode, Namen, Mitteilungen („Dieses Handy gehört“), Urlaub, Laden-Reihenfolge, Startpaket, Sicherung, installierte Version und „Nach Update suchen“.
 
 **Neue Version veröffentlichen:** Versionsnummer an zwei Stellen erhöhen, `APP_VERSION` in `docs/index.html` und `version` in `docs/version.json` (dort auch Datum und Neuerungen eintragen).
 

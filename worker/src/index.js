@@ -1,9 +1,10 @@
 // Putzplan-Backend (Cloudflare Worker + D1)
 // - Liefert außerdem die App (docs/) als statische Dateien aus, siehe [assets] in wrangler.toml
 // - Zugang über einen 6-stelligen Haushaltscode, kein Konto
-// - Sync: Geräte schicken Aufgaben, Notizen, Einkaufsliste, Rezepte und Essensplan, der Server führt sie zusammen (neueste Änderung gewinnt pro Eintrag)
+// - Sync: Geräte schicken Aufgaben, Notizen, Einkaufsliste, Vorrat, Rezepte, Essensplan, Pinnwand, Geburtstage, Wünsche und Geräte, der Server führt sie zusammen (neueste Änderung gewinnt pro Eintrag)
 // - Nach 5 falschen Codes von einer IP wird diese IP 15 Minuten gesperrt
-// - Erinnerungen: Geräte melden sich für Web Push an, ein Zeitplan (alle 15 Minuten) schickt einmal am Tag die offenen Aufgaben
+// - Mitteilungen: Geräte melden sich für Web Push an. Ein Zeitplan (alle 15 Minuten) schickt einmal am Tag die offenen Aufgaben
+//   und Geburtstage, sonntags den Wochenrückblick. Pinnwand-Nachrichten und neue Sachen auf der Liste gehen sofort an das andere Handy.
 
 const ORIGINS = [
   'https://dasnicklp.github.io',
@@ -17,6 +18,8 @@ const MAX_RECIPES = 300;
 const MAX_MEALS = 500;
 const ARCHIVE_MS = 180 * 864e5; // erledigte Aufgaben nach einem halben Jahr aufräumen (nur „Zuletzt geputzt“ merkt sich das Letzte pro Bereich)
 const MEAL_KEEP_DAYS = 60;      // Essensplan: vergangene Tage nach 60 Tagen löschen
+const BOARD_KEEP_DAYS = 30;     // Pinnwand: Nachrichten nach 30 Tagen löschen
+const SHOP_NOTIFY_MS = 30 * 60000; // neue Sachen auf der Liste innerhalb von 30 Minuten in einer Mitteilung sammeln
 const MAX_DATA = 1500 * 1024; // D1 erlaubt ca. 2 MB pro Zeile
 const TOMBSTONE_MS = 60 * 864e5; // gelöschte Aufgaben 60 Tage merken, damit andere Geräte sie auch löschen
 const MAX_FAILS = 5;
@@ -63,6 +66,10 @@ async function init(env) {
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, household TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL,
       person TEXT NOT NULL, time TEXT NOT NULL, tz TEXT NOT NULL, last_sent TEXT NOT NULL DEFAULT '', created INTEGER NOT NULL)`),
   ]);
+  // Spalten aus späteren Versionen nachrüsten (Fehler = gibt es schon)
+  for (const sql of ["ALTER TABLE push_subs ADD COLUMN opts TEXT NOT NULL DEFAULT '{}'", "ALTER TABLE push_subs ADD COLUMN last_weekly TEXT NOT NULL DEFAULT ''"]) {
+    try { await env.DB.prepare(sql).run(); } catch (e) { /* schon vorhanden */ }
+  }
   ready = true;
 }
 
@@ -200,6 +207,55 @@ function cleanMeal(m) {
   };
 }
 
+// Gemeinsame Felder: id, Zeitstempel, Löschmarkierung
+function baseItem(x) {
+  if (!x || typeof x !== 'object') return null;
+  if (typeof x.id !== 'string' || !/^[\w-]{1,64}$/.test(x.id)) return null;
+  if (!Number.isFinite(x.updatedAt)) return null;
+  return { id: x.id, createdAt: Number.isFinite(x.createdAt) ? x.createdAt : x.updatedAt, updatedAt: x.updatedAt, deleted: x.deleted === true };
+}
+const person = (p) => (['nick', 'partner'].includes(p) ? p : '');
+const httpLink = (l) => { l = clampStr(l, 500); return /^https?:\/\//i.test(l) ? l : ''; };
+const intIn = (v, lo, hi, def) => (Number.isInteger(v) && v >= lo && v <= hi ? v : def);
+
+// Vorrat: was zu Hause ist (da / wird knapp / leer)
+function cleanPantry(x) {
+  const b = baseItem(x); if (!b) return null;
+  const name = clampStr(x.name, 100);
+  if (!b.deleted && !name) return null;
+  return { ...b, name, cat: clampStr(x.cat, 40), status: ['ok', 'low', 'out'].includes(x.status) ? x.status : 'ok' };
+}
+// Pinnwand: kurze Nachricht an den anderen
+function cleanBoard(x) {
+  const b = baseItem(x); if (!b) return null;
+  const text = clampStr(x.text, 500);
+  if (!b.deleted && !text) return null;
+  return { ...b, text, from: person(x.from) };
+}
+// Geburtstag: Tag und Monat, Jahr optional (für das Alter), Erinnerung N Tage vorher
+function cleanBday(x) {
+  const b = baseItem(x); if (!b) return null;
+  const name = clampStr(x.name, 100);
+  const month = intIn(x.month, 1, 12, 0), day = intIn(x.day, 1, 31, 0);
+  if (!b.deleted && (!name || !month || !day)) return null;
+  return { ...b, name, month, day, year: intIn(x.year, 1900, 2100, null), remind: intIn(x.remind, 0, 60, 7), note: clampStr(x.note, 1000) };
+}
+// Anschaffung: größere Sachen, die ihr kaufen wollt
+function cleanWish(x) {
+  const b = baseItem(x); if (!b) return null;
+  const title = clampStr(x.title, 200);
+  if (!b.deleted && !title) return null;
+  return { ...b, title, price: clampStr(x.price, 30), prio: ['high', 'mid', 'low'].includes(x.prio) ? x.prio : 'mid', link: httpLink(x.link),
+    note: clampStr(x.note, 1000), done: x.done === true, doneAt: Number.isFinite(x.doneAt) ? x.doneAt : null };
+}
+// Gerät: Kaufdatum, Garantie, Link zur Anleitung
+function cleanDevice(x) {
+  const b = baseItem(x); if (!b) return null;
+  const name = clampStr(x.name, 100);
+  if (!b.deleted && !name) return null;
+  return { ...b, name, bought: isDate(x.bought) ? x.bought : '', warranty: isDate(x.warranty) ? x.warranty : '', link: httpLink(x.link), note: clampStr(x.note, 1000) };
+}
+
 // Alle Listen, die synchronisiert werden: Prüffunktion und Höchstzahl
 const COLLECTIONS = {
   tasks: [cleanTask, MAX_TASKS],
@@ -207,6 +263,11 @@ const COLLECTIONS = {
   shop: [cleanShopItem, MAX_SHOP],
   recipes: [cleanRecipe, MAX_RECIPES],
   meals: [cleanMeal, MAX_MEALS],
+  pantry: [cleanPantry, 500],
+  board: [cleanBoard, 300],
+  bdays: [cleanBday, 300],
+  wishes: [cleanWish, 300],
+  devices: [cleanDevice, 200],
 };
 
 // Gemeinsame Einstellungen (Namen, Urlaub): als Ganzes, die neuere Änderung gewinnt
@@ -214,7 +275,9 @@ function cleanSettings(s) {
   if (!s || typeof s !== 'object' || !Number.isFinite(s.updatedAt)) return null;
   const n = s.names && typeof s.names === 'object' ? s.names : {};
   const away = s.away && isDate(s.away.until) ? { until: s.away.until } : null; // Urlaub: zurück am
-  return { names: { nick: clampStr(n.nick, 30), partner: clampStr(n.partner, 30) }, away, updatedAt: s.updatedAt };
+  // Reihenfolge der Bereiche im Laden (so, wie man durch den eigenen Supermarkt läuft)
+  const shopOrder = Array.isArray(s.shopOrder) ? s.shopOrder.slice(0, 20).map((c) => clampStr(c, 40)).filter(Boolean) : [];
+  return { names: { nick: clampStr(n.nick, 30), partner: clampStr(n.partner, 30) }, away, shopOrder, updatedAt: s.updatedAt };
 }
 
 // Pro Eintrag gewinnt die neuere Änderung. Alte Löschmarkierungen fallen weg.
@@ -248,15 +311,32 @@ function archive(out, history) {
   });
   const oldDay = new Date(Date.now() - MEAL_KEEP_DAYS * 864e5).toISOString().slice(0, 10);
   out.meals = out.meals.filter((m) => m.deleted || m.date >= oldDay);
+  const oldMsg = Date.now() - BOARD_KEEP_DAYS * 864e5;
+  out.board = out.board.filter((m) => m.deleted || m.createdAt >= oldMsg);
+  out.wishes = out.wishes.filter((w) => !(w.done && !w.deleted && w.doneAt && w.doneAt < cutoff));
   return Object.keys(h.lastByCat).length ? h : null;
 }
 
 // Lesen, zusammenführen, schreiben. Bei gleichzeitigem Schreiben wird wiederholt (optimistische Sperre).
-async function sync(env, id, incoming, incomingSettings) {
+// me = wer dieses Gerät benutzt ('nick' / 'partner' / ''), für Mitteilungen an das andere Handy
+async function sync(env, id, incoming, incomingSettings, me) {
   for (let i = 0; i < 6; i++) {
     const row = await env.DB.prepare('SELECT data, updated_at FROM households WHERE id = ?').bind(id).first();
     if (!row) return null;
     const cur = JSON.parse(row.data);
+    // Was ist neu? (für Mitteilungen: neue Pinnwand-Nachrichten, neue Sachen auf der Liste)
+    const known = (k) => new Set((cur[k] || []).map((x) => x.id));
+    const knownBoard = known('board'), knownShop = known('shop');
+    const newBoard = incoming.board.filter((m) => !m.deleted && !knownBoard.has(m.id));
+    const newShop = incoming.shop.filter((x) => !x.deleted && !x.done && !knownShop.has(x.id));
+    let notify = cur.notify || null, shopNote = null;
+    if (newShop.length) {
+      const prev = notify && notify.shop;
+      const fresh = !(prev && prev.from === me && Date.now() - prev.at < SHOP_NOTIFY_MS);
+      const names = [...(fresh ? [] : prev.names), ...newShop.map((x) => x.name)].slice(-20);
+      notify = { ...(notify || {}), shop: { from: me, names, at: Date.now() } };
+      shopNote = { names, first: fresh };
+    }
     const out = {};
     for (const [k, [, max]] of Object.entries(COLLECTIONS)) out[k] = mergeItems(cur[k] || [], incoming[k] || [], max);
     const history = archive(out, cur.history);
@@ -269,6 +349,8 @@ async function sync(env, id, incoming, incomingSettings) {
     for (const k of Object.keys(COLLECTIONS)) if (k !== 'tasks' && (out[k].length || cur[k])) stored[k] = out[k];
     if (settings) stored.settings = settings;
     if (history) stored.history = history;
+    if (notify) stored.notify = notify;
+    out.added = { board: newBoard, shop: shopNote };
     const data = JSON.stringify(stored);
     if (data === row.data) return out; // nichts geändert, nichts schreiben
     if (data.length > MAX_DATA) return { tooBig: true };
@@ -360,30 +442,90 @@ async function sendPush(env, sub, data) {
   return r.status;
 }
 
+// Mitteilungs-Arten pro Gerät (Spalte opts): täglich, Wochenrückblick, Pinnwand, neue Sachen auf der Liste
+function subOpts(s) {
+  let o = {};
+  try { o = JSON.parse(s.opts || '{}'); } catch (e) { /* Standard */ }
+  return { daily: o.daily !== false, weekly: o.weekly !== false, msgs: o.msgs !== false, shop: o.shop === true };
+}
+const shownNames = (data) => {
+  const n = (data && data.settings && data.settings.names) || {};
+  return { nick: n.nick || 'Nick', partner: n.partner || 'Freundin' };
+};
+
+// Sofort-Mitteilungen an die anderen Geräte des Haushalts (nicht an das Gerät, das es geschickt hat)
+async function notifyOthers(env, id, out, me, device) {
+  const { board, shop } = out.added || {};
+  if (!(board && board.length) && !shop) return;
+  const who = me ? shownNames(out)[me] : 'Jemand';
+  const { results } = await env.DB.prepare('SELECT * FROM push_subs WHERE household = ?').bind(id).all();
+  for (const s of results) {
+    if (s.endpoint === device || (me && s.person === me)) continue;
+    const o = subOpts(s);
+    try {
+      if (o.msgs) for (const m of board) await sendPush(env, s, { title: `📌 ${who}`, body: m.text, tag: 'putzplan-board-' + m.id, url: './?go=board' });
+      if (o.shop && shop) await sendPush(env, s, { title: `🛒 ${who} hat etwas auf die Liste gesetzt`, body: shop.names.join(', '), tag: 'putzplan-shop', renotify: shop.first, url: './?go=list' });
+    } catch (e) { /* nächstes Gerät */ }
+  }
+}
+
 const validTz = (tz) => { try { new Intl.DateTimeFormat('de', { timeZone: tz }); return true; } catch (e) { return false; } };
 // Datum und Minuten seit Mitternacht in der Zeitzone des Geräts
 function localNow(tz, now = new Date()) {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: validTz(tz) ? tz : 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now);
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: validTz(tz) ? tz : 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'short', hourCycle: 'h23' }).formatToParts(now);
   const g = (t) => parts.find((p) => p.type === t).value;
-  return { date: `${g('year')}-${g('month')}-${g('day')}`, min: Number(g('hour')) * 60 + Number(g('minute')) };
+  return { date: `${g('year')}-${g('month')}-${g('day')}`, min: Number(g('hour')) * 60 + Number(g('minute')), wd: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(g('weekday')) };
 }
 
 // Inhalt der täglichen Erinnerung: offene Aufgaben bis heute (für die Person plus nicht zugewiesene). null = nichts zu tun.
+// Geburtstage heute, morgen und N Tage vorher (N pro Geburtstag einstellbar)
+function birthdayLines(data, today) {
+  const t = Date.parse(today + 'T00:00:00Z'), y = Number(today.slice(0, 4));
+  const lines = [];
+  for (const b of data.bdays || []) {
+    if (b.deleted) continue;
+    let next = Date.UTC(y, b.month - 1, b.day), year = y;
+    if (next < t) { next = Date.UTC(y + 1, b.month - 1, b.day); year = y + 1; }
+    const d = Math.round((next - t) / 864e5);
+    const when = d === 0 ? 'Heute' : d === 1 ? 'Morgen' : d === b.remind ? `In ${d} Tagen` : null;
+    if (when) lines.push({ d, text: `🎂 ${when}: ${b.name}${b.year ? ` wird ${year - b.year}` : ''}` });
+  }
+  return lines.sort((a, b) => a.d - b.d).map((l) => l.text);
+}
+
 function reminderFor(data, person, today) {
   const away = data.settings && data.settings.away;
-  if (away && away.until > today) return null; // Urlaub
-  const open = (data.tasks || [])
+  const open = away && away.until > today ? [] : (data.tasks || []) // im Urlaub keine Aufgaben
     .filter((t) => !t.deleted && !t.done && t.due && t.due <= today && (!person || !t.assignee || t.assignee === person))
     .sort((a, b) => a.due.localeCompare(b.due) || a.title.localeCompare(b.title, 'de'));
-  if (!open.length) return null;
+  const bdays = birthdayLines(data, today);
+  if (!open.length && !bdays.length) return null;
+  if (!open.length) return { title: bdays.length === 1 ? 'Geburtstag' : 'Geburtstage', body: bdays.join('\n'), count: 0, tag: 'putzplan-today' };
   const late = open.filter((t) => t.due < today).length;
   const list = open.slice(0, 4).map((t) => t.title).join(', ') + (open.length > 4 ? ` und ${open.length - 4} weitere` : '');
   return {
     title: open.length === 1 ? 'Heute steht 1 Aufgabe an' : `Heute stehen ${open.length} Aufgaben an`,
-    body: list + (late ? ` (${late} überfällig)` : ''),
+    body: list + (late ? ` (${late} überfällig)` : '') + (bdays.length ? '\n' + bdays.join('\n') : ''),
     count: open.length,
     tag: 'putzplan-today',
   };
+}
+
+// Wochenrückblick (sonntags): was in den letzten 7 Tagen erledigt wurde, wer wie lange, was nächste Woche ansteht
+function weeklyFor(data, today, now) {
+  const since = now.getTime() - 7 * 864e5;
+  const tasks = (data.tasks || []).filter((t) => !t.deleted);
+  const done = tasks.filter((t) => t.done && t.doneAt >= since);
+  const end = new Date(Date.parse(today + 'T00:00:00Z') + 7 * 864e5).toISOString().slice(0, 10);
+  const next = tasks.filter((t) => !t.done && t.due && t.due > today && t.due <= end).length;
+  if (!done.length && !next) return null;
+  const n = shownNames(data);
+  const min = { nick: 0, partner: 0 };
+  for (const t of done) if (t.assignee) min[t.assignee] += t.minutes || 0;
+  const fmt = (m) => (m >= 60 ? `${String(Math.round(m / 6) / 10).replace('.', ',')} Std.` : `${m} Min.`);
+  const parts = [`${done.length} ${done.length === 1 ? 'Aufgabe' : 'Aufgaben'} erledigt`];
+  if (min.nick || min.partner) parts.push(`${n.nick} ${fmt(min.nick)}`, `${n.partner} ${fmt(min.partner)}`);
+  return { title: 'Wochenrückblick', body: parts.join(' · ') + `\nNächste Woche: ${next} ${next === 1 ? 'Aufgabe' : 'Aufgaben'}`, tag: 'putzplan-weekly' };
 }
 
 // Zeitplan: alle 15 Minuten. Jedes Gerät bekommt höchstens eine Erinnerung pro Tag, ab seiner Uhrzeit (bis 3 Stunden später nachgeholt).
@@ -392,20 +534,34 @@ async function runReminders(env, now = new Date()) {
   const { results } = await env.DB.prepare('SELECT * FROM push_subs').all();
   const households = new Map();
   let sent = 0;
-  for (const s of results) {
-    const { date, min } = localNow(s.tz, now);
-    const [h, m] = s.time.split(':').map(Number);
-    if (s.last_sent === date || min < h * 60 + m || min >= h * 60 + m + 180) continue;
-    if (!households.has(s.household)) {
-      const row = await env.DB.prepare('SELECT data FROM households WHERE id = ?').bind(s.household).first();
-      households.set(s.household, row ? JSON.parse(row.data) : null);
+  const load = async (hh) => {
+    if (!households.has(hh)) {
+      const row = await env.DB.prepare('SELECT data FROM households WHERE id = ?').bind(hh).first();
+      households.set(hh, row ? JSON.parse(row.data) : null);
     }
-    const data = households.get(s.household);
-    await env.DB.prepare('UPDATE push_subs SET last_sent = ? WHERE endpoint = ?').bind(date, s.endpoint).run();
+    return households.get(hh);
+  };
+  for (const s of results) {
+    const o = subOpts(s);
+    const { date, min, wd } = localNow(s.tz, now);
+    const [h, m] = s.time.split(':').map(Number);
+    const daily = o.daily && s.last_sent !== date && min >= h * 60 + m && min < h * 60 + m + 180;
+    const weekly = o.weekly && wd === 0 && min >= 19 * 60 && s.last_weekly !== date; // sonntags ab 19 Uhr
+    if (!daily && !weekly) continue;
+    const data = await load(s.household);
     if (!data) { await env.DB.prepare('DELETE FROM push_subs WHERE endpoint = ?').bind(s.endpoint).run(); continue; }
-    const msg = reminderFor(data, s.person, date);
-    if (!msg) continue;
-    try { await sendPush(env, s, msg); sent++; } catch (e) { /* nächstes Gerät */ }
+    const msgs = [];
+    if (daily) {
+      await env.DB.prepare('UPDATE push_subs SET last_sent = ? WHERE endpoint = ?').bind(date, s.endpoint).run();
+      msgs.push(reminderFor(data, s.person, date));
+    }
+    if (weekly) {
+      await env.DB.prepare('UPDATE push_subs SET last_weekly = ? WHERE endpoint = ?').bind(date, s.endpoint).run();
+      msgs.push(weeklyFor(data, date, now));
+    }
+    for (const msg of msgs.filter(Boolean)) {
+      try { await sendPush(env, s, msg); sent++; } catch (e) { /* nächstes Gerät */ }
+    }
   }
   return sent;
 }
@@ -419,8 +575,9 @@ function cleanSub(body) {
   if (typeof p256dh !== 'string' || !/^[\w-]{80,100}$/.test(p256dh) || typeof auth !== 'string' || !/^[\w-]{16,30}$/.test(auth)) return null;
   const time = typeof body.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(body.time) ? body.time : '08:00';
   const tz = typeof body.tz === 'string' && body.tz.length <= 64 && validTz(body.tz) ? body.tz : 'Europe/Berlin';
-  const person = ['nick', 'partner'].includes(body.person) ? body.person : '';
-  return { endpoint: sub.endpoint, host: url.hostname, https: url.protocol === 'https:', p256dh, auth, time, tz, person };
+  const o = body.opts && typeof body.opts === 'object' ? body.opts : {};
+  const opts = JSON.stringify({ daily: o.daily !== false, weekly: o.weekly !== false, msgs: o.msgs !== false, shop: o.shop === true });
+  return { endpoint: sub.endpoint, host: url.hostname, https: url.protocol === 'https:', p256dh, auth, time, tz, person: person(body.person), opts };
 }
 
 /* ------------------------------------------------------------------ */
@@ -447,7 +604,7 @@ async function authenticate(req, env) {
   return { id };
 }
 
-async function handle(req, env) {
+async function handle(req, env, ctx) {
   const path = new URL(req.url).pathname;
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(req) });
   const origin = req.headers.get('Origin');
@@ -469,6 +626,12 @@ async function handle(req, env) {
     return json(req, { error: 'server' }, 500);
   }
 
+  // Nur für Tests (lokal mit --var ALLOW_LOCAL_PUSH:1): Zeitplan zu einem bestimmten Zeitpunkt ausführen
+  if (path === '/api/push/run' && req.method === 'POST' && env.ALLOW_LOCAL_PUSH === '1') {
+    const body = await readJson(req);
+    return json(req, { sent: await runReminders(env, body.now ? new Date(body.now) : new Date()) });
+  }
+
   // Öffentlicher Schlüssel für die Push-Anmeldung im Browser
   if (path === '/api/push/key') return json(req, { publicKey: (await getVapid(env)).pub });
 
@@ -482,10 +645,13 @@ async function handle(req, env) {
     const body = await readJson(req);
     const incoming = {};
     for (const [k, [clean, max]] of Object.entries(COLLECTIONS)) incoming[k] = (Array.isArray(body[k]) ? body[k].slice(0, max) : []).map(clean).filter(Boolean);
-    const out = await sync(env, auth.id, incoming, cleanSettings(body.settings));
+    const me = person(body.me);
+    const out = await sync(env, auth.id, incoming, cleanSettings(body.settings), me);
     if (!out) return json(req, { error: 'unknown' }, 404);
     if (out.tooBig) return json(req, { error: 'too_big' }, 413);
-    return json(req, { ...out, serverTime: Date.now() });
+    const { added, ...rest } = out;
+    if (added && (added.board.length || added.shop) && ctx) ctx.waitUntil(notifyOthers(env, auth.id, out, me, String(body.device || '')));
+    return json(req, { ...rest, serverTime: Date.now() });
   }
 
   // Gerät für Erinnerungen anmelden (oder Einstellungen ändern)
@@ -493,9 +659,9 @@ async function handle(req, env) {
     const sub = cleanSub(await readJson(req));
     const local = env.ALLOW_LOCAL_PUSH === '1' && (sub && (sub.host === '127.0.0.1' || sub.host === 'localhost'));
     if (!sub || !(local || (sub.https && PUSH_HOSTS.test(sub.host)))) return json(req, { error: 'subscription' }, 400);
-    await env.DB.prepare(`INSERT INTO push_subs (endpoint, household, p256dh, auth, person, time, tz, created) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
-        ON CONFLICT(endpoint) DO UPDATE SET household = ?2, p256dh = ?3, auth = ?4, person = ?5, time = ?6, tz = ?7`)
-      .bind(sub.endpoint, auth.id, sub.p256dh, sub.auth, sub.person, sub.time, sub.tz, Date.now()).run();
+    await env.DB.prepare(`INSERT INTO push_subs (endpoint, household, p256dh, auth, person, time, tz, created, opts) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+        ON CONFLICT(endpoint) DO UPDATE SET household = ?2, p256dh = ?3, auth = ?4, person = ?5, time = ?6, tz = ?7, opts = ?9`)
+      .bind(sub.endpoint, auth.id, sub.p256dh, sub.auth, sub.person, sub.time, sub.tz, Date.now(), sub.opts).run();
     // Höchstens MAX_SUBS Geräte pro Haushalt, die ältesten fliegen raus
     await env.DB.prepare(`DELETE FROM push_subs WHERE household = ?1 AND endpoint NOT IN
         (SELECT endpoint FROM push_subs WHERE household = ?1 ORDER BY created DESC LIMIT ?2)`).bind(auth.id, MAX_SUBS).run();
@@ -524,8 +690,8 @@ async function handle(req, env) {
 }
 
 export default {
-  async fetch(req, env) {
-    try { return await handle(req, env); }
+  async fetch(req, env, ctx) {
+    try { return await handle(req, env, ctx); }
     catch (e) {
       if (e && e.tooBig) return json(req, { error: 'too_big' }, 413);
       return json(req, { error: 'server', detail: String(e && e.message || e) }, 500);

@@ -64,7 +64,7 @@ module.exports = async ({ browser, ok, settle, phone, newHousehold, stored, api,
   ok(badges.some((n) => n > 0) && badges[badges.length - 1] === 0, 'Zahl am App-Symbol: ' + badges.slice(-3).join(','));
 
   // Urlaub
-  await a.click('[data-tab=home]');
+  await a.click('[data-tab=settings]');
   await a.fill('#awayDate', day(10));
   await a.click('#btnAwayStart');
   ts = await stored(a, 'tasks');

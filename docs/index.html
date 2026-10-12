@@ -190,6 +190,29 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 .shop-row .ttl small{display:block;color:var(--muted);font-weight:400;font-size:13px}
 .seg.seg2{grid-template-columns:repeat(2,1fr)}
 .seg.seg3{grid-template-columns:repeat(3,1fr)}
+.seg.seg4{grid-template-columns:repeat(4,1fr)}
+.seg button{white-space:nowrap;min-width:0}
+
+/* Pinnwand */
+.msg{border-top:1px solid var(--line);padding:10px 0 8px;display:grid;grid-template-columns:1fr auto;gap:4px 8px}
+.msg .who{font-size:13px;color:var(--muted)}
+.msg .who b{color:var(--text)}
+.msg p{margin:0;grid-column:1;white-space:pre-wrap;word-break:break-word}
+.msg button{grid-row:1 / span 2;grid-column:2;border:0;background:none;color:var(--muted);font-size:18px;min-width:40px}
+.who-pick{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+#boardForm{margin:4px 0 6px}
+
+/* Listen auf Zuhause und im Vorrat */
+.row-sub{display:block;color:var(--muted);font-size:13px;font-weight:400}
+.mini{display:flex;gap:4px;align-items:center;padding-right:8px}
+.mini button{min-height:36px;padding:4px 9px;border-radius:9px;border:1px solid var(--line);background:var(--surface2);font-size:13px;font-weight:600;color:var(--muted)}
+.mini button[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.mini button.out[aria-pressed="true"]{background:var(--warn);border-color:var(--warn);color:#fff}
+.mini a,.mini .btn{min-height:36px;padding:6px 10px;font-size:13px;display:inline-flex;align-items:center;text-decoration:none;color:var(--text)}
+.order-row{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line)}
+.order-row:last-child{border-bottom:0}
+.order-row span{flex:1}
+.order-row .icon-btn{min-width:40px;min-height:40px;font-size:16px}
 
 /* Zuhause: Überblick */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
@@ -319,10 +342,17 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
       </div>
     </div>
     <div class="filters" id="filters" role="group" aria-label="Filter nach Person"></div>
-    <div class="seg seg3" id="shopSeg" role="group" aria-label="Ansicht">
+    <div class="seg seg4" id="shopSeg" role="group" aria-label="Ansicht">
       <button type="button" data-sview="list">Liste</button>
+      <button type="button" data-sview="pantry">Vorrat</button>
       <button type="button" data-sview="recipes">Rezepte</button>
-      <button type="button" data-sview="plan">Essensplan</button>
+      <button type="button" data-sview="plan">Essen</button>
+    </div>
+    <div class="seg seg4" id="homeSeg" role="group" aria-label="Ansicht">
+      <button type="button" data-hview="overview">Übersicht</button>
+      <button type="button" data-hview="bdays">Geburtstage</button>
+      <button type="button" data-hview="wishes">Wünsche</button>
+      <button type="button" data-hview="devices">Geräte</button>
     </div>
     <div class="toolbar" id="recipeBar">
       <input id="recipeSearch" type="search" placeholder="Rezept suchen" autocomplete="off" aria-label="Rezept suchen">
@@ -342,24 +372,16 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
   <!-- Zuhause: Überblick und was euch beide betrifft -->
   <section class="page" id="homePage" hidden>
     <div id="homeTiles"></div>
-    <form class="bal" id="namesForm" novalidate>
-      <h3>Namen</h3>
-      <div class="two">
-        <div><label for="sName1">Person 1</label><input id="sName1" maxlength="30" autocomplete="off"></div>
-        <div><label for="sName2">Person 2</label><input id="sName2" maxlength="30" autocomplete="off"></div>
-      </div>
-      <button class="btn big" type="submit">Namen speichern</button>
-      <p class="muted small" style="margin:6px 0 0">Gilt für beide Geräte.</p>
-    </form>
-    <div class="bal">
-      <h3>Urlaub</h3>
-      <div id="awayBody"></div>
+    <div class="bal" id="boardBox">
+      <h3>Pinnwand</h3>
+      <div id="boardWho"></div>
+      <form class="quickadd" id="boardForm" novalidate>
+        <input id="boardInput" maxlength="500" placeholder="Nachricht, z. B. Paket kommt heute" autocomplete="off" enterkeyhint="send" aria-label="Neue Nachricht">
+        <button class="btn primary" type="submit" aria-label="Senden">➤</button>
+      </form>
+      <div id="boardList"></div>
     </div>
-    <div class="bal">
-      <h3>Startpaket</h3>
-      <p class="muted small" style="margin:0">Typische Putzaufgaben mit passendem Rhythmus auf einmal anlegen.</p>
-      <button class="btn big" type="button" data-open-pack>Startpaket ansehen</button>
-    </div>
+    <div id="homeBody"></div>
   </section>
 
   <!-- Einstellungen: Verbindung, Erinnerungen auf diesem Gerät, Sicherung, App -->
@@ -370,17 +392,43 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
       <div class="setting-row"><span>Synchronisation</span><span id="sStatus" class="muted">—</span></div>
       <button class="btn big" id="btnSyncNow" type="button">Jetzt synchronisieren</button>
     </div>
-    <div class="bal" id="pushBox">
-      <h3>Erinnerungen</h3>
-      <p class="muted small" style="margin:0">Jeden Tag eine Mitteilung mit den offenen Aufgaben, auch wenn die App zu ist. Kommt nur, wenn etwas ansteht.</p>
+    <form class="bal" id="namesForm" novalidate>
+      <h3>Namen</h3>
       <div class="two">
-        <div><label for="pWho">Für wen?</label><select id="pWho"></select></div>
-        <div><label for="pTime">Uhrzeit</label><select id="pTime"></select></div>
+        <div><label for="sName1">Person 1</label><input id="sName1" maxlength="30" autocomplete="off"></div>
+        <div><label for="sName2">Person 2</label><input id="sName2" maxlength="30" autocomplete="off"></div>
       </div>
-      <button class="btn primary big" id="btnPushOn" type="button">Erinnerungen einschalten</button>
+      <button class="btn big" type="submit">Namen speichern</button>
+      <p class="muted small" style="margin:6px 0 0">Gilt für beide Geräte.</p>
+    </form>
+    <div class="bal" id="pushBox">
+      <h3>Mitteilungen</h3>
+      <div class="two">
+        <div><label for="pWho">Dieses Handy gehört</label><select id="pWho"></select></div>
+        <div><label for="pTime">Erinnerung um</label><select id="pTime"></select></div>
+      </div>
+      <div class="pin-row"><span>Tägliche Erinnerung<small class="muted">Offene Aufgaben und Geburtstage, nur wenn etwas ansteht</small></span><button class="btn toggle" id="pDaily" type="button" aria-pressed="true">Ja</button></div>
+      <div class="pin-row"><span>Wochenrückblick<small class="muted">Sonntags um 19 Uhr: was erledigt wurde</small></span><button class="btn toggle" id="pWeekly" type="button" aria-pressed="true">Ja</button></div>
+      <div class="pin-row"><span>Pinnwand<small class="muted">Wenn der andere eine Nachricht schreibt</small></span><button class="btn toggle" id="pMsgs" type="button" aria-pressed="true">Ja</button></div>
+      <div class="pin-row"><span>Einkaufsliste<small class="muted">Wenn der andere etwas draufsetzt</small></span><button class="btn toggle" id="pShop" type="button" aria-pressed="false">Nein</button></div>
+      <button class="btn primary big" id="btnPushOn" type="button">Mitteilungen einschalten</button>
       <button class="btn big" id="btnPushTest" type="button" hidden>Test senden</button>
-      <button class="btn big" id="btnPushOff" type="button" hidden>Erinnerungen ausschalten</button>
+      <button class="btn big" id="btnPushOff" type="button" hidden>Mitteilungen ausschalten</button>
       <div class="update-info" id="pushInfo" aria-live="polite"></div>
+    </div>
+    <div class="bal">
+      <h3>Urlaub</h3>
+      <div id="awayBody"></div>
+    </div>
+    <div class="bal">
+      <h3>Laden-Reihenfolge</h3>
+      <p class="muted small" style="margin:0 0 6px">So sortiert die Einkaufsliste die Bereiche. Stellt sie so ein, wie ihr durch euren Laden lauft.</p>
+      <div id="orderList"></div>
+    </div>
+    <div class="bal">
+      <h3>Startpaket</h3>
+      <p class="muted small" style="margin:0">Typische Putzaufgaben mit passendem Rhythmus auf einmal anlegen.</p>
+      <button class="btn big" type="button" data-open-pack>Startpaket ansehen</button>
     </div>
     <div class="bal">
       <h3>Sicherung</h3>
@@ -624,6 +672,20 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
   </div>
 </div>
 
+<!-- Allgemeines Eingabefenster (Geburtstag, Anschaffung, Gerät, Vorrat) -->
+<div class="overlay" id="formSheet" hidden>
+  <form class="sheet" id="genForm" novalidate>
+    <div class="grab"></div>
+    <div class="sheet-head"><h2 id="gfTitle"></h2></div>
+    <div id="gfFields"></div>
+    <div class="actions">
+      <button class="btn danger wide" id="gfDelete" type="button" hidden>Löschen</button>
+      <button class="btn" id="gfCancel" type="button">Abbrechen</button>
+      <button class="btn primary" type="submit">Speichern</button>
+    </div>
+  </form>
+</div>
+
 <!-- Einkaufs-Eintrag bearbeiten -->
 <div class="overlay" id="shopSheet" hidden>
   <form class="sheet" id="shopForm" novalidate>
@@ -647,7 +709,7 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '2.2.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '3.0.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Zuhause“ änderbar
@@ -714,7 +776,28 @@ let meals = [];                          // Essensplan, wird mit synchronisiert
 try { meals = JSON.parse(lsGet(LS.meals) || '[]'); } catch (e) { meals = []; }
 let archived = null;                     // vom Server: das zuletzt Erledigte pro Bereich aus aufgeräumten Aufgaben
 try { archived = JSON.parse(lsGet(LS.history) || 'null'); } catch (e) { archived = null; }
-let shopView = ['recipes', 'plan'].includes(lsGet(LS.shopView)) ? lsGet(LS.shopView) : 'list'; // Reiter Einkauf: Liste, Rezepte, Essensplan
+let pantry = [], board = [], bdays = [], wishes = [], devices = []; // Vorrat, Pinnwand, Geburtstage, Anschaffungen, Geräte
+// Alle synchronisierten Listen: Name → [lesen, setzen]. Gespeichert unter „putzplan.<Name>“.
+const SYNCED = {
+  tasks: [() => tasks, (v) => { tasks = v; }],
+  notes: [() => notes, (v) => { notes = v; }],
+  shop: [() => shop, (v) => { shop = v; }],
+  recipes: [() => recipes, (v) => { recipes = v; }],
+  meals: [() => meals, (v) => { meals = v; }],
+  pantry: [() => pantry, (v) => { pantry = v; }],
+  board: [() => board, (v) => { board = v; }],
+  bdays: [() => bdays, (v) => { bdays = v; }],
+  wishes: [() => wishes, (v) => { wishes = v; }],
+  devices: [() => devices, (v) => { devices = v; }],
+};
+for (const k of ['pantry', 'board', 'bdays', 'wishes', 'devices']) {
+  try { SYNCED[k][1](JSON.parse(lsGet('putzplan.' + k) || '[]')); } catch (e) { /* leer lassen */ }
+}
+const allData = () => Object.fromEntries(Object.entries(SYNCED).map(([k, [get]]) => [k, get()]));
+function resetData() { for (const [, set] of Object.values(SYNCED)) set([]); archived = null; }
+// Wer dieses Handy benutzt ('nick' / 'partner' / ''): für die Pinnwand und damit eigene Änderungen keine Mitteilung auslösen
+const me = () => (['nick', 'partner'].includes(lsGet('putzplan.me')) ? lsGet('putzplan.me') : '');
+let shopView = ['recipes', 'plan', 'pantry'].includes(lsGet(LS.shopView)) ? lsGet(LS.shopView) : 'list'; // Reiter Einkauf: Liste, Vorrat, Rezepte, Essensplan
 let filter = ['nick', 'partner', 'none'].includes(lsGet(LS.filter)) ? lsGet(LS.filter) : 'all';
 // Reiter und Unteransicht; bis 1.6 waren Heute/Woche/Monat/Bilanz eigene Reiter, das wird übernommen
 let tab = lsGet(LS.tab), view = lsGet(LS.view);
@@ -797,11 +880,7 @@ const openOnDay = (k) => onDay(k).filter((t) => !t.done);
 const sumMin = (list) => list.reduce((s, t) => s + (t.minutes || 0), 0);
 
 function save() {
-  lsSet(LS.tasks, JSON.stringify(tasks));
-  lsSet(LS.notes, JSON.stringify(notes));
-  lsSet(LS.shop, JSON.stringify(shop));
-  lsSet(LS.recipes, JSON.stringify(recipes));
-  lsSet(LS.meals, JSON.stringify(meals));
+  for (const [k, [get]] of Object.entries(SYNCED)) lsSet('putzplan.' + k, JSON.stringify(get()));
   lsSet(LS.settings, JSON.stringify(settings));
   localVer++;
   scheduleSync();
@@ -1232,6 +1311,8 @@ function toggleShop(id) {
   if (!i) return;
   i.done = !i.done; i.doneAt = i.done ? Date.now() : null; touch(i);
   if (i.done && navigator.vibrate) navigator.vibrate(12);
+  const p = i.done && pantryOf(i.name); // gekauft: im Vorrat wieder „da“
+  if (p && p.status !== 'ok') { p.status = 'ok'; touch(p); }
   save();
 }
 function clearShopDone() {
@@ -1265,7 +1346,7 @@ function shopHtml() {
   const done = items.filter((i) => i.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
   const byName = (a, b) => a.name.localeCompare(b.name, 'de');
   let html = open.length ? '' : '<p class="empty" style="margin-top:18px">Alles im Wagen. 🎉</p>';
-  for (const c of SHOP_CATS) {
+  for (const c of shopOrder()) {
     const list = open.filter((i) => (SHOP_CATS.includes(i.cat) ? i.cat : 'Sonstiges') === c).sort(byName);
     if (list.length) html += `<h2>${SHOP_ICON[c]} ${esc(c)}</h2>` + list.map(shopRow).join('');
   }
@@ -1276,7 +1357,7 @@ function shopHtml() {
   return html;
 }
 function renderShopSuggs() {
-  const s = tab === 'shop' && shopView === 'list' ? shopSuggestions() : [];
+  const s = tab !== 'shop' ? [] : shopView === 'list' ? shopSuggestions() : shopView === 'pantry' ? pantrySuggestions() : [];
   $('#shopSuggs').hidden = !s.length;
   $('#shopSuggs').innerHTML = s.map((n) => `<button type="button" data-sugg="${esc(n)}">＋ ${esc(n)}</button>`).join('');
 }
@@ -1325,7 +1406,9 @@ $('#shopInput').addEventListener('paste', (e) => {
 });
 $('#shopAdd').addEventListener('submit', (e) => {
   e.preventDefault();
-  if (addShop($('#shopInput').value)) $('#shopInput').value = ''; // Fokus bleibt im Feld: gleich das Nächste eintippen
+  const v = $('#shopInput').value;
+  if (shopView === 'pantry') { if (v.trim()) { addPantry(v); $('#shopInput').value = ''; } return; }
+  if (addShop(v)) $('#shopInput').value = ''; // Fokus bleibt im Feld: gleich das Nächste eintippen
 });
 
 /* Rezepte */
@@ -1334,6 +1417,8 @@ const zutaten = (n) => `${n} ${n === 1 ? 'Zutat' : 'Zutaten'}`;
 const ingrLines = (r) => String(r.ingredients || '').split(/\r?\n/).map((x) => x.replace(/^\s*(?:[-•*·–]|\[[ x]?\])\s*/, '').trim()).filter(Boolean);
 // Haben die meisten zu Hause: beim Übernehmen erst mal abgewählt
 const STAPLES = ['salz', 'pfeffer', 'wasser', 'salz und pfeffer', 'leitungswasser'];
+// Im Vorrat und nicht knapp/leer: muss nicht gekauft werden
+const inStock = (key) => livePantry().some((p) => p.status === 'ok' && nameKey(p.name) === key);
 
 // Mengen umrechnen, wenn die Portionen geändert werden
 const FRAC = { '½': 1 / 2, '¼': 1 / 4, '¾': 3 / 4, '⅓': 1 / 3, '⅔': 2 / 3 };
@@ -1521,7 +1606,7 @@ $('#impGo').addEventListener('click', () => {
     else { recipes.push({ id: uid(), ...d, createdAt: now, updatedAt: now + i, deleted: false }); added++; }
   });
   // Der Server speichert pro Haushalt höchstens ca. 1,5 MB
-  if (JSON.stringify({ tasks, notes, shop, recipes }).length > 1.4e6) {
+  if (JSON.stringify(allData()).length > 1.4e6) {
     recipes = before;
     $('#impPreview').className = 'update-info';
     $('#impPreview').textContent = 'Das wären zu viele Daten für euren Haushalt. Bitte weniger oder kürzere Rezepte importieren.';
@@ -1561,7 +1646,7 @@ function openRecipe(id, serv) {
   if (!r) return;
   const open = new Set(openShop().map((i) => nameKey(i.name)));
   const sel = new Set();
-  ingrLines(r).forEach((l, i) => { const n = nameKey(splitQty(l).name); if (!STAPLES.includes(n) && !open.has(n)) sel.add(i); });
+  ingrLines(r).forEach((l, i) => { const n = nameKey(splitQty(l).name); if (!STAPLES.includes(n) && !open.has(n) && !inStock(n)) sel.add(i); });
   rv = { id, serv: serv || r.servings, sel };
   renderRecipe();
   $('#recipeSheet').hidden = false;
@@ -1574,9 +1659,9 @@ function renderRecipe() {
   $('#rvTitle').textContent = r.title;
   $('#rvServ').textContent = rv.serv;
   $('#rvIngr').innerHTML = lines.length ? lines.map((l, i) => {
-    const on = rv.sel.has(i), there = open.has(nameKey(splitQty(l).name));
+    const on = rv.sel.has(i), key = nameKey(splitQty(l).name), there = open.has(key);
     return `<button type="button" class="pack-row" data-ing="${i}" aria-pressed="${on}"><span class="pk">${on ? '✓' : ''}</span>
-      <span>${esc(scaleLine(l, f))}${there ? '<small>steht schon auf der Liste</small>' : ''}</span></button>`;
+      <span>${esc(scaleLine(l, f))}${there ? '<small>steht schon auf der Liste</small>' : inStock(key) ? '<small>im Vorrat</small>' : ''}</span></button>`;
   }).join('') : '<p class="empty">Noch keine Zutaten eingetragen.</p>';
   const n = rv.sel.size;
   $('#rvAdd').textContent = n ? `${n} ${n === 1 ? 'Zutat' : 'Zutaten'} auf die Einkaufsliste` : 'Nichts ausgewählt';
@@ -1740,7 +1825,7 @@ function openPlanShop() {
   }
   const open = new Set(openShop().map((i) => nameKey(i.name)));
   const items = [...map.values()];
-  ps = { meals: todo.map((m) => m.id), items, sel: new Set(items.filter((i) => !STAPLES.includes(i.key) && !open.has(i.key)).map((i) => i.key)) };
+  ps = { meals: todo.map((m) => m.id), items, sel: new Set(items.filter((i) => !STAPLES.includes(i.key) && !open.has(i.key) && !inStock(i.key)).map((i) => i.key)) };
   renderPlanShop();
   $('#planShopSheet').hidden = false;
 }
@@ -1749,7 +1834,7 @@ function renderPlanShop() {
   $('#psList').innerHTML = ps.items.map((i) => {
     const on = ps.sel.has(i.key);
     return `<button type="button" class="pack-row" data-ps="${esc(i.key)}" aria-pressed="${on}"><span class="pk">${on ? '✓' : ''}</span>
-      <span>${esc(((i.qty ? i.qty + ' ' : '') + i.name))}<small>${esc(i.from.join(', '))}${open.has(i.key) ? ' · steht schon auf der Liste' : ''}</small></span></button>`;
+      <span>${esc(((i.qty ? i.qty + ' ' : '') + i.name))}<small>${esc(i.from.join(', '))}${open.has(i.key) ? ' · steht schon auf der Liste' : inStock(i.key) ? ' · im Vorrat' : ''}</small></span></button>`;
   }).join('') || '<p class="empty">Die Rezepte haben keine Zutaten.</p>';
   const n = ps.sel.size;
   $('#psAdd').textContent = n ? `${n} ${n === 1 ? 'Zutat' : 'Zutaten'} auf die Einkaufsliste` : 'Nur als eingekauft markieren';
@@ -1789,7 +1874,7 @@ async function saveFile(name, text, title) {
 }
 $('#btnBackup').addEventListener('click', async () => {
   // app: 'Putzplan' ist die feste Kennung des Dateiformats (alte Sicherungen bleiben lesbar), nicht der Anzeigename
-  const data = { app: 'Putzplan', type: 'backup', version: APP_VERSION, exported: new Date().toISOString(), tasks, notes, shop, recipes, meals, settings, history: archived };
+  const data = { app: 'Putzplan', type: 'backup', version: APP_VERSION, exported: new Date().toISOString(), ...allData(), settings, history: archived };
   if (await saveFile(`haushalt-sicherung-${keyOf(new Date())}.json`, JSON.stringify(data), 'Haushalt-Sicherung')) $('#restoreInfo').textContent = 'Sicherung erstellt.';
 });
 $('#btnRestore').addEventListener('click', () => $('#restoreFile').click());
@@ -1818,10 +1903,11 @@ $('#restoreFile').addEventListener('change', async (e) => {
   const count = (a) => (Array.isArray(a) ? a.filter((x) => x && !x.deleted).length : 0);
   const when = d.exported ? new Date(d.exported).toLocaleDateString('de-DE') : '?';
   if (!confirm(`Sicherung vom ${when} einspielen?\n${count(d.tasks)} Aufgaben, ${count(d.shop)} Einkaufseinträge, ${count(d.recipes)} Rezepte, ${count(d.meals)} Essen, ${count(d.notes)} Notizen.\nVorhandenes bleibt, Fehlendes kommt dazu.`)) return;
-  const before = JSON.stringify({ tasks, notes, shop, recipes, meals });
-  const n = restoreInto(tasks, d.tasks) + restoreInto(notes, d.notes) + restoreInto(shop, d.shop) + restoreInto(recipes, d.recipes) + restoreInto(meals, d.meals);
-  if (JSON.stringify({ tasks, notes, shop, recipes, meals }).length > 1.4e6) {
-    ({ tasks, notes, shop, recipes, meals } = JSON.parse(before));
+  const before = JSON.parse(JSON.stringify(allData()));
+  let n = 0;
+  for (const [k, [get]] of Object.entries(SYNCED)) n += restoreInto(get(), d[k]);
+  if (JSON.stringify(allData()).length > 1.4e6) {
+    for (const [k, [, set]] of Object.entries(SYNCED)) set(before[k]);
     info.textContent = 'Das wären zu viele Daten für euren Haushalt.';
     return;
   }
@@ -1829,6 +1915,332 @@ $('#restoreFile').addEventListener('change', async (e) => {
   save();
   info.textContent = n ? `${n} Einträge wiederhergestellt.` : 'Alles aus der Sicherung ist schon da.';
 });
+
+/* ================= Allgemeines Eingabefenster ================= */
+// fields: [{ key, label, type: text|number|date|url|select|textarea, options: [[wert, text]], placeholder, half, required }]
+let gf = null;
+function openForm({ title, fields, values = {}, onSave, onDelete }) {
+  gf = { fields, onSave, onDelete };
+  $('#gfTitle').textContent = title;
+  let html = '', half = [];
+  const input = (f) => {
+    const v = values[f.key] == null ? '' : values[f.key];
+    const id = 'gf_' + f.key;
+    const field = f.type === 'select'
+      ? `<select id="${id}">${f.options.map(([o, l]) => `<option value="${esc(o)}"${String(o) === String(v) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`
+      : f.type === 'textarea'
+        ? `<textarea id="${id}" maxlength="1000" style="min-height:90px" placeholder="${esc(f.placeholder || '')}">${esc(v)}</textarea>`
+        : `<input id="${id}" type="${f.type === 'number' ? 'number' : f.type || 'text'}"${f.type === 'number' ? ' inputmode="numeric"' : ''}${f.type === 'url' ? ' inputmode="url"' : ''} value="${esc(v)}" placeholder="${esc(f.placeholder || '')}" autocomplete="off" maxlength="${f.max || 200}">`;
+    return `<div><label for="${id}">${esc(f.label)}</label>${field}</div>`;
+  };
+  const flush = () => { if (half.length) { html += half.length === 2 ? `<div class="two">${half.join('')}</div>` : half[0]; half = []; } };
+  for (const f of fields) {
+    if (f.half) { half.push(input(f)); if (half.length === 2) flush(); } else { flush(); html += input(f); }
+  }
+  flush();
+  $('#gfFields').innerHTML = html;
+  $('#gfDelete').hidden = !onDelete;
+  $('#formSheet').hidden = false;
+  if (!values.id) setTimeout(() => { const first = $('#gfFields input, #gfFields select'); if (first) first.focus(); }, 50);
+}
+function closeForm() { $('#formSheet').hidden = true; gf = null; }
+$('#genForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (!gf) return;
+  const vals = {};
+  for (const f of gf.fields) {
+    const el = $('#gf_' + f.key);
+    let v = el.value.trim();
+    if (f.type === 'number') v = v === '' ? null : Math.round(Number(v));
+    if (f.required && (v === '' || v == null || Number.isNaN(v))) { el.focus(); return; }
+    vals[f.key] = v;
+  }
+  const ok = gf.onSave(vals);
+  if (ok === false) return;
+  closeForm(); save();
+});
+$('#gfDelete').addEventListener('click', () => { const del = gf && gf.onDelete; closeForm(); if (del) del(); });
+$('#gfCancel').addEventListener('click', closeForm);
+$('#formSheet').addEventListener('click', (e) => { if (e.target.id === 'formSheet') closeForm(); });
+const newItem = (data) => { const now = Date.now(); return { id: uid(), ...data, createdAt: now, updatedAt: now, deleted: false }; };
+const httpOk = (l) => (/^https?:\/\//i.test(l || '') ? l : '');
+
+/* ================= Zuhause: Pinnwand, Geburtstage, Wünsche, Geräte ================= */
+let hview = ['bdays', 'wishes', 'devices'].includes(lsGet('putzplan.hview')) ? lsGet('putzplan.hview') : 'overview';
+const HVIEW_TITLE = { overview: 'Zuhause', bdays: 'Geburtstage', wishes: 'Wünsche', devices: 'Geräte' };
+const live_ = (list) => list.filter((x) => !x.deleted);
+const MONTHS_OPT = MONTH_LONG.map((m, i) => [i + 1, m]);
+function timeAgo(ts) {
+  const d = new Date(ts), today = keyOf(new Date()), k = keyOf(d);
+  const hm = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  return k === today ? `heute ${hm}` : k === addDays(today, -1) ? `gestern ${hm}` : `${d.getDate()}.${d.getMonth() + 1}. ${hm}`;
+}
+
+// Pinnwand
+function renderBoard() {
+  const n = names(), who = me();
+  $('#boardWho').innerHTML = who ? '' : `<div class="who-pick"><span class="muted small">Wer bist du auf diesem Handy?</span>
+    <button class="btn small-btn" type="button" data-me="nick">${esc(n.nick)}</button><button class="btn small-btn" type="button" data-me="partner">${esc(n.partner)}</button></div>`;
+  $('#boardInput').disabled = !who;
+  const list = live_(board).sort((a, b) => b.createdAt - a.createdAt).slice(0, 30);
+  $('#boardList').innerHTML = list.length ? list.map((m) => `<div class="msg">
+      <span class="who"><b>${esc(m.from ? n[m.from] : 'Jemand')}</b> · ${timeAgo(m.createdAt)}</span>
+      <p>${esc(m.text)}</p><button type="button" data-msg-del="${m.id}" aria-label="Nachricht entfernen">✕</button></div>`).join('')
+    : '<p class="empty" style="padding:4px 0 0">Noch keine Nachrichten. Was ihr hier schreibt, sieht der andere sofort, mit Mitteilung, wenn eingeschaltet.</p>';
+}
+$('#boardForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = $('#boardInput').value.trim().slice(0, 500);
+  if (!text || !me()) return;
+  board.push(newItem({ text, from: me() }));
+  $('#boardInput').value = '';
+  save();
+});
+function setMe(p) { lsSet('putzplan.me', p); renderBoard(); updateAppBadge(); if (pushPrefs().on) pushSettingChanged(); }
+
+// Geburtstage: nächster Termin und Alter
+function nextBday(b) {
+  const today = fromKey(keyOf(new Date())), y = today.getFullYear();
+  let d = new Date(y, b.month - 1, b.day);
+  if (d < today) d = new Date(y + 1, b.month - 1, b.day);
+  return { days: Math.round((d - today) / 864e5), age: b.year ? d.getFullYear() - b.year : null, date: d };
+}
+const bdayWhen = (n) => (n.days === 0 ? 'heute' : n.days === 1 ? 'morgen' : `in ${n.days} Tagen`);
+function bdaysHtml() {
+  const list = live_(bdays).map((b) => ({ b, n: nextBday(b) })).sort((x, y) => x.n.days - y.n.days);
+  if (!list.length) return '<p class="empty" style="margin-top:18px">Noch keine Geburtstage. Mit „+“ eintragen; die tägliche Mitteilung erinnert dann rechtzeitig.</p>';
+  return '<div style="margin-top:14px">' + list.map(({ b, n }) => `<button type="button" class="note" data-bday="${b.id}">
+    <span class="ttl">🎂 ${esc(b.name)}</span>
+    <span class="meta"><span class="chip">${b.day}. ${MONTH_LONG[b.month - 1]}</span><span class="chip">${bdayWhen(n)}${n.age ? ` · wird ${n.age}` : ''}</span></span>
+    ${b.note ? `<span class="nbody">${esc(b.note)}</span>` : ''}</button>`).join('') + '</div>';
+}
+function editBday(id) {
+  const b = id && live_(bdays).find((x) => x.id === id);
+  openForm({
+    title: b ? 'Geburtstag bearbeiten' : 'Neuer Geburtstag',
+    values: b || { remind: 7 },
+    fields: [
+      { key: 'name', label: 'Wer?', required: true, placeholder: 'z. B. Mama', max: 100 },
+      { key: 'day', label: 'Tag', type: 'number', required: true, half: true, placeholder: '1–31' },
+      { key: 'month', label: 'Monat', type: 'select', options: MONTHS_OPT, half: true },
+      { key: 'year', label: 'Geburtsjahr (optional)', type: 'number', half: true, placeholder: 'für das Alter' },
+      { key: 'remind', label: 'Erinnern', type: 'select', half: true, options: [[0, 'am Tag selbst'], [1, '1 Tag vorher'], [3, '3 Tage vorher'], [7, '1 Woche vorher'], [14, '2 Wochen vorher']] },
+      { key: 'note', label: 'Geschenkideen, Notizen', type: 'textarea', placeholder: 'z. B. mag Gin, Buch von …' },
+    ],
+    onSave: (v) => {
+      const data = { name: v.name.slice(0, 100), day: Math.max(1, Math.min(31, v.day)), month: Number(v.month), year: v.year && v.year > 1900 && v.year < 2100 ? v.year : null, remind: Number(v.remind), note: v.note };
+      if (b) { Object.assign(b, data); touch(b); } else bdays.push(newItem(data));
+    },
+    onDelete: b ? () => removeWithUndo(() => bdays, [b], `Geburtstag „${b.name}“ gelöscht`) : null,
+  });
+}
+
+// Anschaffungen
+const PRIO = { high: 'Bald', mid: 'Demnächst', low: 'Irgendwann' };
+function wishesHtml() {
+  const all = live_(wishes);
+  if (!all.length) return '<p class="empty" style="margin-top:18px">Noch keine Anschaffungen. Mit „+“ eintragen, was ihr euch irgendwann holen wollt: z. B. neuer Staubsauger oder eine Lampe.</p>';
+  const row = (w) => `<div class="task${w.done ? ' done' : ''}">
+    <button class="check" type="button" data-wish-done="${w.id}" aria-label="${w.done ? 'Nicht gekauft' : 'Gekauft'}"><span>${w.done ? '✓' : ''}</span></button>
+    <button class="tbody" type="button" data-wish="${w.id}"><span class="ttl">${esc(w.title)}</span>
+      <span class="meta">${w.price ? `<span class="chip">${esc(w.price)}</span>` : ''}${w.link ? '<span class="chip">🔗 Link</span>' : ''}${w.note ? `<span class="chip">📝</span>` : ''}</span></button></div>`;
+  let html = '';
+  for (const p of ['high', 'mid', 'low']) {
+    const list = all.filter((w) => !w.done && w.prio === p).sort((a, b) => a.createdAt - b.createdAt);
+    if (list.length) html += `<h2>${PRIO[p]}</h2>` + list.map(row).join('');
+  }
+  const done = all.filter((w) => w.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
+  if (done.length) html += '<h2>Gekauft</h2>' + done.slice(0, 15).map(row).join('');
+  return html;
+}
+function editWish(id) {
+  const w = id && live_(wishes).find((x) => x.id === id);
+  openForm({
+    title: w ? 'Anschaffung bearbeiten' : 'Neue Anschaffung',
+    values: w || { prio: 'mid' },
+    fields: [
+      { key: 'title', label: 'Was?', required: true, placeholder: 'z. B. Akku-Staubsauger' },
+      { key: 'price', label: 'Preis (ungefähr)', half: true, placeholder: 'z. B. 250 €', max: 30 },
+      { key: 'prio', label: 'Wann?', type: 'select', half: true, options: Object.entries(PRIO) },
+      { key: 'link', label: 'Link (optional)', type: 'url', placeholder: 'https://…', max: 500 },
+      { key: 'note', label: 'Notizen', type: 'textarea', placeholder: 'z. B. Modell, Farbe, Maße' },
+    ],
+    onSave: (v) => {
+      const data = { title: v.title, price: v.price, prio: v.prio, link: httpOk(v.link), note: v.note };
+      if (w) { Object.assign(w, data); touch(w); } else wishes.push(newItem({ ...data, done: false, doneAt: null }));
+    },
+    onDelete: w ? () => removeWithUndo(() => wishes, [w], `„${w.title}“ gelöscht`) : null,
+  });
+}
+function toggleWish(id) {
+  const w = live_(wishes).find((x) => x.id === id);
+  if (!w) return;
+  w.done = !w.done; w.doneAt = w.done ? Date.now() : null; touch(w);
+  save();
+  if (w.done) toast(`„${w.title}“ als gekauft markiert`);
+}
+
+// Geräte: Garantie, Anleitung, Wartung (als wiederkehrende Aufgabe)
+function warrantyInfo(d) {
+  if (!d.warranty) return null;
+  const days = Math.round((fromKey(d.warranty) - fromKey(keyOf(new Date()))) / 864e5);
+  const [y, m] = d.warranty.split('-');
+  return { days, text: days < 0 ? 'Garantie abgelaufen' : `Garantie bis ${m}/${y}`, soon: days >= 0 && days <= 60 };
+}
+function devicesHtml() {
+  const list = live_(devices).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  if (!list.length) return '<p class="empty" style="margin-top:18px">Noch keine Geräte. Mit „+“ eintragen: Kaufdatum, Garantie und Link zur Anleitung, und daraus regelmäßige Wartung planen (z. B. entkalken).</p>';
+  return '<div style="margin-top:14px">' + list.map((d) => {
+    const w = warrantyInfo(d);
+    const maint = live().filter((t) => !t.done && t.title.toLowerCase().startsWith(d.name.toLowerCase() + ':'));
+    return `<div class="task"><button class="tbody" type="button" data-device="${d.id}" style="padding-left:14px"><span class="ttl">${esc(d.name)}</span>
+      <span class="meta">${w ? `<span class="chip">${w.soon ? '⚠ ' : ''}${w.text}</span>` : ''}${d.bought ? `<span class="chip">gekauft ${fmtDate(d.bought)}</span>` : ''}
+      ${maint.map((t) => `<span class="chip">🔧 ${esc(t.title.slice(d.name.length + 1).trim())} · ${dayLabel(t.due)}</span>`).join('')}</span></button>
+      <div class="mini">${d.link ? `<a class="btn" href="${esc(d.link)}" target="_blank" rel="noopener" aria-label="Anleitung öffnen">📖</a>` : ''}
+      <button class="btn" type="button" data-maint="${d.id}" aria-label="Wartung planen">🔧</button></div></div>`;
+  }).join('') + '</div>';
+}
+function editDevice(id) {
+  const d = id && live_(devices).find((x) => x.id === id);
+  openForm({
+    title: d ? 'Gerät bearbeiten' : 'Neues Gerät',
+    values: d || {},
+    fields: [
+      { key: 'name', label: 'Gerät', required: true, placeholder: 'z. B. Kaffeemaschine', max: 100 },
+      { key: 'bought', label: 'Gekauft am', type: 'date', half: true },
+      { key: 'warranty', label: 'Garantie bis', type: 'date', half: true },
+      { key: 'link', label: 'Anleitung (Link)', type: 'url', placeholder: 'https://…', max: 500 },
+      { key: 'note', label: 'Notizen', type: 'textarea', placeholder: 'z. B. Modellnummer, Filtertyp' },
+    ],
+    onSave: (v) => {
+      const data = { name: v.name, bought: v.bought, warranty: v.warranty, link: httpOk(v.link), note: v.note };
+      if (d) { Object.assign(d, data); touch(d); } else devices.push(newItem(data));
+    },
+    onDelete: d ? () => removeWithUndo(() => devices, [d], `„${d.name}“ gelöscht`) : null,
+  });
+}
+// Wartung: Aufgabe „Gerät: …“, monatlich, im Bereich Sonstiges
+function planMaintenance(id) {
+  const d = live_(devices).find((x) => x.id === id);
+  if (!d) return;
+  openSheet(null, keyOf(new Date()));
+  $('#fTitle').value = d.name + ': ';
+  $('#fCat').value = 'Sonstiges';
+  $('#fMin').value = 10;
+  $('#fRepeat').value = 'm1';
+  updateRepeatForm();
+  setTimeout(() => { const t = $('#fTitle'); t.focus(); t.setSelectionRange(t.value.length, t.value.length); }, 80);
+}
+
+// Übersicht: Kacheln, Pinnwand, Demnächst
+function upcomingHtml() {
+  const items = [];
+  for (const b of live_(bdays)) { const n = nextBday(b); if (n.days <= 30) items.push({ d: n.days, text: `🎂 ${esc(b.name)} ${bdayWhen(n)}${n.age ? ` (wird ${n.age})` : ''}`, go: 'bdays' }); }
+  for (const d of live_(devices)) { const w = warrantyInfo(d); if (w && w.soon) items.push({ d: w.days, text: `⚠ Garantie ${esc(d.name)} endet in ${w.days} Tagen`, go: 'devices' }); }
+  const soon = live_(wishes).filter((w) => !w.done && w.prio === 'high');
+  if (soon.length) items.push({ d: 999, text: `🛍 ${soon.length === 1 ? `„${esc(soon[0].title)}“ steht` : `${soon.length} Anschaffungen stehen`} bald an`, go: 'wishes' });
+  if (!items.length) return '';
+  return `<div class="bal"><h3>Demnächst</h3>${items.sort((a, b) => a.d - b.d).map((i) => `<button type="button" class="wk-row" data-hgo="${i.go}" style="grid-template-columns:1fr">${i.text}</button>`).join('')}</div>`;
+}
+function renderHome() {
+  const ov = hview === 'overview';
+  $('#homeTiles').hidden = $('#boardBox').hidden = !ov;
+  if (ov) { $('#homeTiles').innerHTML = tilesHtml(); renderBoard(); }
+  $('#homeBody').innerHTML = ov ? upcomingHtml() : hview === 'bdays' ? bdaysHtml() : hview === 'wishes' ? wishesHtml() : devicesHtml();
+}
+function setHview(v) { hview = v; lsSet('putzplan.hview', v); window.scrollTo(0, 0); render(); }
+
+/* ================= Vorrat ================= */
+const PANTRY_LABEL = { ok: 'Da', low: 'Knapp', out: 'Leer' };
+const livePantry = () => live_(pantry);
+const pantryOf = (name) => livePantry().find((p) => nameKey(p.name) === nameKey(name));
+// Reihenfolge der Bereiche, wie in den Einstellungen festgelegt
+function shopOrder() {
+  const o = ((settings && settings.shopOrder) || []).filter((c) => SHOP_CATS.includes(c));
+  return [...o, ...SHOP_CATS.filter((c) => !o.includes(c))];
+}
+function pantryHtml() {
+  const all = livePantry();
+  if (!all.length) return '<p class="empty" style="margin-top:18px">Noch nichts im Vorrat. Oben eintragen, was ihr zu Hause habt (z. B. Spülmittel, Kaffee, Nudeln). Wird etwas knapp oder ist leer, kommt es automatisch auf die Einkaufsliste.</p>';
+  const low = all.filter((p) => p.status !== 'ok').length;
+  let html = low ? `<p class="subtitle">${low} knapp oder leer, steht auf der Einkaufsliste</p>` : '';
+  for (const c of shopOrder()) {
+    const list = all.filter((p) => (SHOP_CATS.includes(p.cat) ? p.cat : 'Sonstiges') === c).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+    if (!list.length) continue;
+    html += `<h2>${SHOP_ICON[c]} ${esc(c)}</h2>` + list.map((p) => `<div class="task shop-row">
+      <button class="tbody" type="button" data-pantry="${p.id}" style="padding-left:14px"><span class="ttl">${esc(p.name)}</span></button>
+      <div class="mini" role="group" aria-label="${esc(p.name)}">${['ok', 'low', 'out'].map((st) => `<button type="button" class="${st}" data-pst="${p.id}" data-st="${st}" aria-pressed="${p.status === st}">${PANTRY_LABEL[st]}</button>`).join('')}</div></div>`).join('');
+  }
+  return html;
+}
+function addPantry(text) {
+  let n = 0;
+  for (const raw of splitItems(text)) {
+    const { name } = splitQty(raw);
+    if (!name || pantryOf(name)) continue;
+    pantry.push(newItem({ name, cat: guessShopCat(name), status: 'ok' }));
+    n++;
+  }
+  if (n) save(); else toast('Steht schon im Vorrat');
+}
+function setPantry(id, st) {
+  const p = livePantry().find((x) => x.id === id);
+  if (!p || p.status === st) return;
+  p.status = st; touch(p);
+  if (st !== 'ok' && !openShop().some((i) => nameKey(i.name) === nameKey(p.name))) {
+    putShopParts('', p.name, 'Vorrat');
+    toast(`„${p.name}“ steht jetzt auf der Einkaufsliste`);
+  }
+  save();
+}
+function editPantry(id) {
+  const p = livePantry().find((x) => x.id === id);
+  if (!p) return;
+  openForm({
+    title: 'Vorrat bearbeiten', values: p,
+    fields: [{ key: 'name', label: 'Was?', required: true, max: 100 }, { key: 'cat', label: 'Bereich im Laden', type: 'select', options: SHOP_CATS.map((c) => [c, `${SHOP_ICON[c]} ${c}`]) }],
+    onSave: (v) => { Object.assign(p, { name: v.name, cat: v.cat }); touch(p); },
+    onDelete: () => removeWithUndo(() => pantry, [p], `„${p.name}“ aus dem Vorrat genommen`),
+  });
+}
+// Vorschläge für den Vorrat: Einkäufe aus dem Verlauf, die noch nicht im Vorrat stehen
+const pantrySuggestions = () => shopSuggestions().concat(openShop().map((i) => i.name)).filter((n, i, a) => !pantryOf(n) && a.indexOf(n) === i).slice(0, 12);
+
+/* ================= Laden-Reihenfolge (Einstellungen) ================= */
+function renderOrder() {
+  const o = shopOrder();
+  $('#orderList').innerHTML = o.map((c, i) => `<div class="order-row"><span>${SHOP_ICON[c]} ${esc(c)}</span>
+    <button class="icon-btn" type="button" data-ord="${i}" data-dir="-1" aria-label="${esc(c)} nach oben"${i === 0 ? ' disabled' : ''}>↑</button>
+    <button class="icon-btn" type="button" data-ord="${i}" data-dir="1" aria-label="${esc(c)} nach unten"${i === o.length - 1 ? ' disabled' : ''}>↓</button></div>`).join('');
+}
+$('#orderList').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-ord]');
+  if (!b) return;
+  const o = shopOrder(), i = Number(b.dataset.ord), j = i + Number(b.dataset.dir);
+  if (j < 0 || j >= o.length) return;
+  [o[i], o[j]] = [o[j], o[i]];
+  setSettings({ shopOrder: o });
+  save(); renderOrder();
+});
+
+/* ================= Kurzbefehle und Sprünge (App-Symbol, Mitteilungen) ================= */
+function handleGo(where) {
+  if (where === 'list' || where === 'pantry') { shopView = where; lsSet(LS.shopView, shopView); setTab('shop'); if (where === 'list') setTimeout(() => $('#shopInput').focus(), 100); }
+  else if (where === 'board') { hview = 'overview'; lsSet('putzplan.hview', hview); setTab('home'); setTimeout(() => $('#boardInput').focus(), 100); }
+  else if (where === 'task') { setTab('clean'); openSheet(null, keyOf(new Date())); }
+}
+if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.type === 'go' && code) handleGo(e.data.go); });
+
+// Unterteilungen oben: Beschriftung verkleinern, falls sie nicht passt
+function fitSegs() {
+  for (const seg of document.querySelectorAll('.seg')) {
+    if (seg.hidden || !seg.offsetWidth) continue;
+    const bs = [...seg.querySelectorAll('button')];
+    bs.forEach((b) => { b.style.fontSize = ''; });
+    let size = parseFloat(getComputedStyle(bs[0]).fontSize);
+    while (size > 10 && bs.some((b) => b.scrollWidth > b.clientWidth)) { size -= 0.5; bs.forEach((b) => { b.style.fontSize = size + 'px'; }); }
+  }
+}
 
 // Heute: Überfälliges, heute, morgen
 function todayHtml(today) {
@@ -1851,6 +2263,8 @@ function todayHtml(today) {
   return `<p class="subtitle">${longDayLabel(today)}</p>`
     + (s >= 2 ? `<p class="streak">🔥 ${s} Putztage in Folge alles geschafft</p>` : '')
     + (todayMeals(today) ? `<p class="banner">🍽 Heute gibt's: ${esc(todayMeals(today))}</p>` : '')
+    + live_(bdays).map((b) => ({ b, n: nextBday(b) })).filter((x) => x.n.days <= 1)
+      .map(({ b, n }) => `<p class="banner">🎂 ${n.days ? 'Morgen' : 'Heute'}: ${esc(b.name)}${n.age ? ` wird ${n.age}` : ''}</p>`).join('')
     + (away ? `<p class="banner">🏖 Urlaub bis ${dayLabel(addDays(away, -1))}. Erinnerungen sind pausiert.</p>` : '')
     + starter
     + (overdue.length ? `<h2>Überfällig</h2>${overdue.map((t) => taskRow(t, true)).join('')}` : '')
@@ -1860,7 +2274,8 @@ function todayHtml(today) {
 function render() {
   if (!code) return;
   const today = keyOf(new Date());
-  $('#pageTitle').textContent = tab === 'shop' && shopView !== 'list' ? (shopView === 'plan' ? 'Essensplan' : 'Rezepte') : TABS[tab];
+  $('#pageTitle').textContent = tab === 'shop' ? { list: 'Einkaufsliste', pantry: 'Vorrat', recipes: 'Rezepte', plan: 'Essensplan' }[shopView]
+    : tab === 'home' ? HVIEW_TITLE[hview] : TABS[tab];
   document.querySelectorAll('[data-tab]').forEach((b) => (b.dataset.tab === tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
   const clean = tab === 'clean';
@@ -1870,15 +2285,22 @@ function render() {
   $('#filters').hidden = !tasksView;
   const recipesView = tab === 'shop' && shopView === 'recipes';
   document.querySelectorAll('[data-sview]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sview === shopView)));
+  document.querySelectorAll('[data-hview]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.hview === hview)));
   $('#shopSeg').hidden = tab !== 'shop';
-  $('#shopBar').hidden = !(tab === 'shop' && shopView === 'list');
+  $('#homeSeg').hidden = tab !== 'home';
+  const bar = tab === 'shop' && (shopView === 'list' || shopView === 'pantry');
+  $('#shopBar').hidden = !bar;
+  if (bar) $('#shopInput').placeholder = shopView === 'pantry' ? 'Was habt ihr da? z. B. Spülmittel' : 'Was fehlt? z. B. 2 Milch';
   $('#recipeBar').hidden = !(recipesView && liveRecipes().length > 5);
-  $('#fab').hidden = !(tasksView || tab === 'notes' || recipesView);
-  $('#fab').setAttribute('aria-label', tab === 'notes' ? 'Neue Notiz' : recipesView ? 'Neues Rezept' : 'Neue Aufgabe');
+  const homeList = tab === 'home' && hview !== 'overview';
+  $('#fab').hidden = !(tasksView || tab === 'notes' || recipesView || homeList);
+  $('#fab').setAttribute('aria-label', tab === 'notes' ? 'Neue Notiz' : recipesView ? 'Neues Rezept'
+    : homeList ? { bdays: 'Neuer Geburtstag', wishes: 'Neue Anschaffung', devices: 'Neues Gerät' }[hview] : 'Neue Aufgabe');
   $('#view').hidden = tab === 'home' || tab === 'settings';
   $('#homePage').hidden = tab !== 'home';
   $('#settingsPage').hidden = tab !== 'settings';
-  if (tab === 'home') $('#homeTiles').innerHTML = tilesHtml();
+  if (tab === 'home') renderHome();
+  fitSegs();
   const openCount = openShop().length;
   $('#shopBadge').hidden = !openCount;
   $('#shopBadge').textContent = openCount > 99 ? '99+' : openCount || '';
@@ -1887,7 +2309,7 @@ function render() {
   updateAppBadge();
 
   if (tab === 'home' || tab === 'settings') return;
-  if (tab === 'shop') { $('#view').innerHTML = shopView === 'recipes' ? recipesHtml() : shopView === 'plan' ? planHtml() : shopHtml(); return; }
+  if (tab === 'shop') { $('#view').innerHTML = { recipes: recipesHtml, plan: planHtml, pantry: pantryHtml }[shopView]?.() ?? shopHtml(); return; }
   if (tab === 'notes') { $('#view').innerHTML = notesHtml(); return; }
   if (view === 'today') { $('#view').innerHTML = todayHtml(today); return; }
   if (view === 'stats') { $('#view').innerHTML = statsHtml(); return; }
@@ -1993,6 +2415,7 @@ function fillHome() {
   $('#btnApplyUpdate').hidden = true;
   renderAway();
   renderPush();
+  renderOrder();
 }
 function move(dir) {
   if (view === 'week') {
@@ -2228,17 +2651,23 @@ $('#awayBody').addEventListener('click', (e) => {
 // Offene Aufgaben bis heute; mit gewählter Person nur ihre und nicht zugewiesene (wie bei den Erinnerungen)
 function updateAppBadge() {
   if (!('setAppBadge' in navigator)) return;
-  const today = keyOf(new Date()), p = pushPrefs().person;
+  const today = keyOf(new Date()), p = me();
   const n = awayUntil() ? 0 : live().filter((t) => !t.done && t.due && t.due <= today && (!p || !t.assignee || t.assignee === p)).length;
   (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {});
 }
 
 /* ================= Erinnerungen (Push) ================= */
+// Mitteilungen dieses Geräts: an/aus, Uhrzeit, Arten. Die Person steht in „putzplan.me“ (Dieses Handy gehört …)
 function pushPrefs() {
   let p = null;
   try { p = JSON.parse(lsGet(LS.push)); } catch (e) { /* leer */ }
-  return { on: false, person: '', time: '08:00', ...(p || {}) };
+  p = { on: false, time: '08:00', ...(p || {}) };
+  p.opts = { daily: true, weekly: true, msgs: true, shop: false, ...(p.opts || {}) };
+  return p;
 }
+// Bis 2.2 stand die Person bei den Erinnerungen
+if (!lsGet('putzplan.me') && ['nick', 'partner'].includes(pushPrefs().person)) lsSet('putzplan.me', pushPrefs().person);
+const OPT_BTNS = { daily: '#pDaily', weekly: '#pWeekly', msgs: '#pMsgs', shop: '#pShop' };
 const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
@@ -2246,9 +2675,10 @@ const urlB64 = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/
 
 function renderPush(msg) {
   const p = pushPrefs(), n = names();
-  $('#pWho').innerHTML = [['', 'Alle Aufgaben'], ['nick', n.nick], ['partner', n.partner]]
-    .map(([v, l]) => `<option value="${v}">${esc(l)}${v ? ' + offene' : ''}</option>`).join('');
-  $('#pWho').value = p.person;
+  $('#pWho').innerHTML = [['', 'Uns beiden'], ['nick', n.nick], ['partner', n.partner]]
+    .map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+  $('#pWho').value = me();
+  for (const [k, sel] of Object.entries(OPT_BTNS)) setToggle($(sel), p.opts[k]);
   const times = [];
   for (let h = 6; h <= 22; h++) for (const m of ['00', '30']) times.push(`${pad(h)}:${m}`);
   $('#pTime').innerHTML = times.map((t) => `<option>${t}</option>`).join('');
@@ -2262,7 +2692,7 @@ function renderPush(msg) {
       ? 'Auf dem iPhone gehen Erinnerungen nur in der App vom Home-Bildschirm (ab iOS 16.4). Öffne die App dort und schalte sie hier ein.'
       : 'Dieser Browser kann leider keine Mitteilungen empfangen.';
     else if (Notification.permission === 'denied') info = 'Mitteilungen sind für diese App blockiert. Bitte in den Einstellungen des Geräts erlauben.';
-    else if (on) info = `Eingeschaltet: täglich um ${p.time} Uhr, wenn etwas ansteht.`;
+    else if (on) info = 'Eingeschaltet' + (p.opts.daily ? `: täglich um ${p.time} Uhr, wenn etwas ansteht.` : '.');
   }
   $('#btnPushOn').disabled = !pushSupported() || Notification.permission === 'denied';
   $('#pushInfo').textContent = info;
@@ -2276,7 +2706,8 @@ async function pushSubscribe(prefs) {
   const cur = sub && sub.options && sub.options.applicationServerKey;
   if (sub && cur && btoa(String.fromCharCode(...new Uint8Array(cur))) !== btoa(String.fromCharCode(...urlB64(publicKey)))) { await sub.unsubscribe(); sub = null; }
   if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(publicKey) });
-  await api('/api/push/subscribe', { subscription: sub.toJSON(), person: prefs.person, time: prefs.time, tz: Intl.DateTimeFormat().resolvedOptions().timeZone });
+  await api('/api/push/subscribe', { subscription: sub.toJSON(), person: me(), time: prefs.time, opts: prefs.opts, tz: Intl.DateTimeFormat().resolvedOptions().timeZone });
+  lsSet('putzplan.endpoint', sub.endpoint); // damit eigene Änderungen keine Mitteilung an dieses Gerät auslösen
   return sub;
 }
 $('#btnPushOn').addEventListener('click', async () => {
@@ -2284,7 +2715,8 @@ $('#btnPushOn').addEventListener('click', async () => {
     const perm = await Notification.requestPermission(); // muss direkt nach dem Antippen kommen (iPhone)
     if (perm !== 'granted') return renderPush('Ohne Erlaubnis für Mitteilungen geht es leider nicht. Bitte in den Einstellungen des Geräts erlauben.');
     renderPush('Einen Moment …');
-    const prefs = { ...pushPrefs(), on: true, person: $('#pWho').value, time: $('#pTime').value };
+    lsSet('putzplan.me', $('#pWho').value);
+    const prefs = { ...pushPrefs(), on: true, time: $('#pTime').value };
     await pushSubscribe(prefs);
     lsSet(LS.push, JSON.stringify(prefs));
     renderPush(); updateAppBadge();
@@ -2293,7 +2725,9 @@ $('#btnPushOn').addEventListener('click', async () => {
   }
 });
 async function pushSettingChanged() {
-  const prefs = { ...pushPrefs(), person: $('#pWho').value, time: $('#pTime').value };
+  lsSet('putzplan.me', $('#pWho').value);
+  const opts = Object.fromEntries(Object.entries(OPT_BTNS).map(([k, sel]) => [k, toggled($(sel))]));
+  const prefs = { ...pushPrefs(), time: $('#pTime').value, opts };
   lsSet(LS.push, JSON.stringify(prefs));
   updateAppBadge();
   if (!prefs.on || Notification.permission !== 'granted') return;
@@ -2301,6 +2735,7 @@ async function pushSettingChanged() {
 }
 $('#pWho').addEventListener('change', pushSettingChanged);
 $('#pTime').addEventListener('change', pushSettingChanged);
+for (const sel of Object.values(OPT_BTNS)) $(sel).addEventListener('click', (e) => { setToggle(e.currentTarget, !toggled(e.currentTarget)); pushSettingChanged(); });
 $('#btnPushTest').addEventListener('click', async () => {
   renderPush('Sende Test …');
   try {
@@ -2309,7 +2744,7 @@ $('#btnPushTest').addEventListener('click', async () => {
     await api('/api/push/test', { endpoint: sub.endpoint });
     renderPush('Gesendet. Die Mitteilung sollte gleich erscheinen.');
   } catch (e) {
-    renderPush('Test hat nicht geklappt. Schalte die Erinnerungen aus und wieder ein.');
+    renderPush('Test hat nicht geklappt. Schalte die Mitteilungen aus und wieder ein.');
   }
 });
 async function pushOff(c = code) {
@@ -2318,6 +2753,7 @@ async function pushOff(c = code) {
     if (sub) { await api('/api/push/unsubscribe', { endpoint: sub.endpoint }, c).catch(() => {}); await sub.unsubscribe(); }
   } catch (e) { /* egal */ }
   lsSet(LS.push, JSON.stringify({ ...pushPrefs(), on: false }));
+  lsDel('putzplan.endpoint');
 }
 $('#btnPushOff').addEventListener('click', async () => { await pushOff(); renderPush('Ausgeschaltet.'); });
 // Beim Start: Anmeldung beim Server auffrischen (falls die Push-Adresse sich geändert hat)
@@ -2329,6 +2765,7 @@ function pushRefresh() {
 /* ================= Teilen an die App (Android) ================= */
 function handleShare() {
   const q = new URLSearchParams(location.search);
+  if (q.get('go')) { history.replaceState(null, '', location.pathname); handleGo(q.get('go')); return; }
   const text = [q.get('title'), q.get('text')].filter(Boolean).join('\n');
   if (!text) return;
   history.replaceState(null, '', location.pathname);
@@ -2365,24 +2802,18 @@ async function sync() {
   syncing = true;
   const sentVer = localVer;
   try {
-    const r = await api('/api/sync', settings ? { tasks, notes, shop, recipes, meals, settings } : { tasks, notes, shop, recipes, meals });
+    const body = { ...allData(), me: me(), device: lsGet('putzplan.endpoint') || '' };
+    if (settings) body.settings = settings;
+    const r = await api('/api/sync', body);
     if (localVer === sentVer) {
-      const before = JSON.stringify([tasks, notes, shop, recipes, meals, settings, archived]);
-      tasks = r.tasks;
-      if (Array.isArray(r.notes)) notes = r.notes;
-      if (Array.isArray(r.shop)) shop = r.shop;
-      if (Array.isArray(r.recipes)) recipes = r.recipes;
-      if (Array.isArray(r.meals)) meals = r.meals;
-      if ('history' in r) archived = r.history;
+      const before = JSON.stringify([allData(), settings, archived]);
+      for (const [k, [, set]] of Object.entries(SYNCED)) if (Array.isArray(r[k])) set(r[k]); // fehlt eine Liste (ältere Server), bleibt sie
       if (r.settings) settings = r.settings;
-      lsSet(LS.tasks, JSON.stringify(tasks));
-      lsSet(LS.notes, JSON.stringify(notes));
-      lsSet(LS.shop, JSON.stringify(shop));
-      lsSet(LS.recipes, JSON.stringify(recipes));
-      lsSet(LS.meals, JSON.stringify(meals));
+      if ('history' in r) archived = r.history;
+      for (const [k, [get]] of Object.entries(SYNCED)) lsSet('putzplan.' + k, JSON.stringify(get()));
       lsSet(LS.history, JSON.stringify(archived));
       lsSet(LS.settings, JSON.stringify(settings));
-      if (JSON.stringify([tasks, notes, shop, recipes, meals, settings, archived]) !== before) render(); // nur neu zeichnen, wenn sich etwas geändert hat
+      if (JSON.stringify([allData(), settings, archived]) !== before) render(); // nur neu zeichnen, wenn sich etwas geändert hat
     } else {
       again = true; // während der Anfrage wurde etwas geändert: gleich noch einmal senden
     }
@@ -2454,7 +2885,7 @@ $('#btnNew').addEventListener('click', async () => {
 $('#btnNewDone').addEventListener('click', () => {
   code = pendingCode;
   lsSet(LS.code, code);
-  tasks = []; notes = []; shop = []; recipes = []; meals = []; archived = null;
+  resetData();
   startApp();
 });
 $('#joinForm').addEventListener('submit', async (e) => {
@@ -2466,7 +2897,7 @@ $('#joinForm').addEventListener('submit', async (e) => {
     await api('/api/join', {}, c);
     code = c;
     lsSet(LS.code, code);
-    tasks = []; notes = []; shop = []; recipes = []; meals = []; archived = null;
+    resetData();
     startApp();
   } catch (err) {
     if (err.status === 401) $('#joinErr').textContent = 'Den Code kenne ich nicht. Bitte nochmal prüfen.';
@@ -2540,14 +2971,36 @@ $('#btnLogout').addEventListener('click', () => {
   if (!confirm('Auf diesem Gerät abmelden? Aufgaben, Einkaufsliste und Notizen bleiben online erhalten und sind mit dem Code wieder da.')) return;
   if (pushPrefs().on) pushOff(code);
   if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
-  code = ''; tasks = []; notes = []; shop = []; recipes = []; meals = []; archived = null; settings = null; localVer = 0;
-  [LS.code, LS.tasks, LS.notes, LS.shop, LS.recipes, LS.meals, LS.history, LS.settings].forEach(lsDel);
+  code = ''; resetData(); settings = null; localVer = 0;
+  [LS.code, LS.history, LS.settings, 'putzplan.endpoint', ...Object.keys(SYNCED).map((k) => 'putzplan.' + k)].forEach(lsDel);
   tab = 'clean'; view = 'today'; lsSet(LS.tab, tab); lsSet(LS.view, view);
   showSetup();
 });
 
 /* Navigation und Aufgaben (Ereignis-Weiterleitung) */
 document.addEventListener('click', (e) => {
+  const hv = e.target.closest('[data-hview]');
+  if (hv) return setHview(hv.dataset.hview);
+  const hg = e.target.closest('[data-hgo]');
+  if (hg) return setHview(hg.dataset.hgo);
+  const mp = e.target.closest('[data-me]');
+  if (mp) return setMe(mp.dataset.me);
+  const md_ = e.target.closest('[data-msg-del]');
+  if (md_) { const m = live_(board).find((x) => x.id === md_.dataset.msgDel); if (m) removeWithUndo(() => board, [m], 'Nachricht entfernt'); return; }
+  const bd = e.target.closest('[data-bday]');
+  if (bd) return editBday(bd.dataset.bday);
+  const wd_ = e.target.closest('[data-wish-done]');
+  if (wd_) return toggleWish(wd_.dataset.wishDone);
+  const wi = e.target.closest('[data-wish]');
+  if (wi) return editWish(wi.dataset.wish);
+  const mt = e.target.closest('[data-maint]');
+  if (mt) return planMaintenance(mt.dataset.maint);
+  const dv = e.target.closest('[data-device]');
+  if (dv) return editDevice(dv.dataset.device);
+  const ps_ = e.target.closest('[data-pst]');
+  if (ps_) return setPantry(ps_.dataset.pst, ps_.dataset.st);
+  const pe = e.target.closest('[data-pantry]');
+  if (pe) return editPantry(pe.dataset.pantry);
   const gt = e.target.closest('[data-go]');
   if (gt) return go(gt.dataset.go);
   const ck = e.target.closest('[data-cl]');
@@ -2579,7 +3032,7 @@ document.addEventListener('click', (e) => {
   if (mo) { const m = liveMeals().find((x) => x.id === mo.dataset.meal); if (m && m.recipeId) openRecipe(m.recipeId, m.servings); return; }
   if (e.target.closest('[data-plan-shop]')) return openPlanShop();
   const sg = e.target.closest('[data-sugg]');
-  if (sg) return addShop(sg.dataset.sugg);
+  if (sg) return shopView === 'pantry' ? addPantry(sg.dataset.sugg) : addShop(sg.dataset.sugg);
   const tip = e.target.closest('[data-tip]');
   if (tip) return toast(tip.dataset.tip);
   const nc = e.target.closest('[data-ncat]');
@@ -2608,6 +3061,7 @@ $('#prev').addEventListener('click', () => move(-1));
 $('#next').addEventListener('click', () => move(1));
 $('#today').addEventListener('click', () => { cursor = new Date(); selected = keyOf(cursor); render(); });
 $('#fab').addEventListener('click', () => (tab === 'notes' ? openNoteSheet(null) : tab === 'shop' ? openRecipeEdit(null)
+  : tab === 'home' ? { bdays: editBday, wishes: editWish, devices: editDevice }[hview](null)
   : openSheet(null, view === 'today' ? keyOf(new Date()) : selected)));
 
 // Nach links/rechts wischen = nächste/vorige Woche bzw. Monat

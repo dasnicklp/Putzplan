@@ -2,7 +2,7 @@
 // Netzwerk zuerst (damit Updates ankommen), Cache als Rückfall (damit es offline trotzdem startet).
 // Die Verbindung zum Backend (andere Domain) wird nie zwischengespeichert.
 // Außerdem: tägliche Erinnerungen (Push) anzeigen.
-const CACHE = 'putzplan-v14';
+const CACHE = 'putzplan-v15';
 const SHELL = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -45,18 +45,24 @@ self.addEventListener('push', (e) => {
     if (Number.isInteger(d.count) && self.navigator.setAppBadge) await self.navigator.setAppBadge(d.count).catch(() => {});
     await self.registration.showNotification(d.title || 'Haushalt', {
       body: d.body || 'Schau mal in die Haushalt-App.',
-      tag: d.tag || 'putzplan', renotify: true,
+      tag: d.tag || 'putzplan', renotify: d.renotify !== false,
       icon: './icon-192.png', badge: './icon-192.png',
-      data: { url: './' },
+      data: { url: d.url || './' },
     });
   })());
 });
 
+// Antippen: App öffnen und an die passende Stelle springen (z. B. Pinnwand oder Einkaufsliste)
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || './';
+  const go = new URL(url, self.location).searchParams.get('go');
   e.waitUntil((async () => {
     const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    if (wins.length) return wins[0].focus();
-    return self.clients.openWindow('./');
+    if (wins.length) {
+      if (go) wins[0].postMessage({ type: 'go', go });
+      return wins[0].focus();
+    }
+    return self.clients.openWindow(url);
   })());
 });

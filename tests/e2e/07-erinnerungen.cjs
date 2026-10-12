@@ -11,6 +11,7 @@ const hkdf = async (salt, ikm, info, len) => new Uint8Array(await wc.subtle.deri
   await wc.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']), len * 8));
 
 module.exports = async ({ browser, ok, phone, newHousehold, api, BASE, day, sleep }) => {
+  const run = Math.random().toString(36).slice(2, 8); // eigene Push-Adressen pro Lauf (die Test-Datenbank merkt sich den Versand)
   // Gerät mit Schlüsselpaar wie ein Browser
   const kp = await wc.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
   const uaPub = new Uint8Array(await wc.subtle.exportKey('raw', kp.publicKey));
@@ -44,7 +45,7 @@ module.exports = async ({ browser, ok, phone, newHousehold, api, BASE, day, slee
     await api('/api/sync', { tasks: [t('a', 'Bad putzen', today, 'nick'), t('b', 'Müll', '2020-01-01', null), t('c', 'Fenster', today, 'partner'), t('d', 'Fertig', today, 'nick', true)] }, code);
     const { data: { publicKey } } = await api('/api/push/key');
     ok(ub(publicKey).length === 65, 'Öffentlicher Server-Schlüssel');
-    const sub = { endpoint: 'http://127.0.0.1:9999/push/a', keys: { p256dh: b64u(uaPub), auth: b64u(auth) } };
+    const sub = { endpoint: `http://127.0.0.1:9999/push/a-${run}`, keys: { p256dh: b64u(uaPub), auth: b64u(auth) } };
     ok((await api('/api/push/subscribe', { subscription: { ...sub, endpoint: 'https://evil.example.com/x' }, time: '08:00' }, code)).status === 400, 'Fremde Push-Adresse abgelehnt');
     const hm = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
     ok((await api('/api/push/subscribe', { subscription: sub, person: 'nick', time: hm, tz: 'Europe/Berlin' }, code)).status === 200, 'Gerät angemeldet');
@@ -59,20 +60,62 @@ module.exports = async ({ browser, ok, phone, newHousehold, api, BASE, day, slee
     ok((await api('/api/push/unsubscribe', { endpoint: sub.endpoint }, code)).status === 200
       && (await api('/api/push/test', { endpoint: sub.endpoint }, code)).status === 404, 'Abgemeldet');
 
+    // Sofort-Mitteilungen: Pinnwand und Einkaufsliste gehen an das andere Handy, nicht an das eigene
+    const sub2 = { endpoint: `http://127.0.0.1:9999/push/lena-${run}`, keys: sub.keys };
+    await api('/api/push/subscribe', { subscription: sub2, person: 'partner', time: '23:59', tz: 'Europe/Berlin', opts: { shop: true, daily: false } }, code);
+    let n0 = got.length;
+    const item = (id, x) => ({ id, createdAt: Date.now(), updatedAt: Date.now(), deleted: false, ...x });
+    await api('/api/sync', { me: 'nick', board: [item('m1', { text: 'Paket kommt heute', from: 'nick' })], shop: [item('s1', { name: 'Milch', qty: '', cat: 'Kühlregal', done: false })] }, code);
+    await until(() => got.length >= n0 + 2);
+    const toLena = got.slice(n0).filter((g) => g.url === '/push/lena-' + run);
+    ok(toLena.some((g) => g.data.title === '📌 Nick' && g.data.body === 'Paket kommt heute'), 'Pinnwand-Nachricht geht an das andere Handy');
+    ok(toLena.some((g) => g.data.title.startsWith('🛒 Nick') && g.data.body === 'Milch' && g.data.renotify === true), 'Neue Sache auf der Liste: Mitteilung');
+    n0 = got.length;
+    await api('/api/sync', { me: 'nick', shop: [item('s2', { name: 'Eier', qty: '', cat: 'Kühlregal', done: false })] }, code);
+    await until(() => got.length > n0);
+    ok(got.length === n0 + 1 && got[n0].data.body === 'Milch, Eier' && got[n0].data.renotify === false, 'Mehrere Sachen werden gesammelt (leise aktualisiert)');
+    n0 = got.length;
+    await api('/api/sync', { me: 'partner', board: [item('m2', { text: 'Bin später da', from: 'partner' })] }, code);
+    await api('/api/sync', { me: '', device: sub2.endpoint, board: [item('m3', { text: 'Test', from: '' })] }, code);
+    await sleep(800);
+    ok(got.length === n0, 'Keine Mitteilung an das eigene Handy');
+
+    // Geburtstag in der täglichen Erinnerung, Wochenrückblick sonntags
+    const tmr = new Date(Date.now() + 864e5);
+    const tmrB = new Date(tmr.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+    await api('/api/sync', { bdays: [item('b1', { name: 'Mama', month: tmrB.getMonth() + 1, day: tmrB.getDate(), year: tmrB.getFullYear() - 60, remind: 7 })] }, code);
+    const sub3 = { endpoint: `http://127.0.0.1:9999/push/b-${run}`, keys: sub.keys };
+    await api('/api/push/subscribe', { subscription: sub3, person: 'nick', time: hm, tz: 'Europe/Berlin', opts: { weekly: true } }, code);
+    n0 = got.length;
+    await api('/api/push/run', { now: new Date().toISOString() }, code);
+    await until(() => got.length > n0);
+    const daily = got.slice(n0).find((g) => g.url === '/push/b-' + run);
+    ok(daily && daily.data.body.includes('🎂 Morgen: Mama wird 60'), 'Tägliche Erinnerung nennt den Geburtstag');
+    const sun = new Date(); sun.setUTCDate(sun.getUTCDate() + ((7 - sun.getUTCDay()) % 7 || 7)); sun.setUTCHours(19, 0, 0, 0);
+    n0 = got.length;
+    await api('/api/push/run', { now: sun.toISOString() }, code);
+    await until(() => got.some((g, i) => i >= n0 && g.data && g.data.title === 'Wochenrückblick'));
+    const wk = got.slice(n0).find((g) => g.data && g.data.title === 'Wochenrückblick');
+    ok(wk && /Aufgabe/.test(wk.data.body), 'Wochenrückblick am Sonntagabend: ' + (wk ? wk.data.body.replace('\n', ' / ') : '—'));
+    n0 = got.length;
+    await api('/api/push/run', { now: new Date(sun.getTime() + 15 * 60000).toISOString() }, code);
+    await sleep(600);
+    ok(!got.slice(n0).some((g) => g.data && g.data.title === 'Wochenrückblick'), 'Wochenrückblick nur einmal');
+
     // Oberfläche: Anmeldung im Browser nachgebildet (Headless-Chromium hat keinen echten Push-Dienst)
     const p = await phone(browser);
     await p.context().grantPermissions(['notifications'], { origin: BASE });
-    await p.context().addInitScript(() => {
+    await p.context().addInitScript((run) => {
       let fake = null;
       const enc64 = (b) => btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
       PushManager.prototype.getSubscription = async () => fake;
       PushManager.prototype.subscribe = async (opts) => {
         const k = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
-        const json = { endpoint: 'http://127.0.0.1:9999/push/ui', keys: { p256dh: enc64(await crypto.subtle.exportKey('raw', k.publicKey)), auth: enc64(crypto.getRandomValues(new Uint8Array(16))) } };
+        const json = { endpoint: `http://127.0.0.1:9999/push/ui-${run}`, keys: { p256dh: enc64(await crypto.subtle.exportKey('raw', k.publicKey)), auth: enc64(crypto.getRandomValues(new Uint8Array(16))) } };
         fake = { endpoint: json.endpoint, options: opts, toJSON: () => json, unsubscribe: async () => { fake = null; return true; } };
         return fake;
       };
-    });
+    }, run);
     await newHousehold(p);
     await p.click('[data-tab=settings]');
     await p.selectOption('#pWho', 'partner'); await p.selectOption('#pTime', '07:30');
@@ -82,7 +125,7 @@ module.exports = async ({ browser, ok, phone, newHousehold, api, BASE, day, slee
     const n = got.length;
     await p.click('#btnPushTest');
     await p.waitForFunction(() => /Gesendet|nicht geklappt/.test(document.querySelector('#pushInfo').textContent));
-    ok(got.length === n + 1 && got[n].url === '/push/ui', 'Test-Knopf: Nachricht kommt beim Push-Dienst an');
+    ok(got.length === n + 1 && got[n].url === '/push/ui-' + run, 'Test-Knopf: Nachricht kommt beim Push-Dienst an');
     await p.click('#btnPushOff');
     await p.waitForSelector('#btnPushOn:not([hidden])', { timeout: 8000 }).catch(() => {});
     ok(await p.isVisible('#btnPushOn'), 'Ausgeschaltet');

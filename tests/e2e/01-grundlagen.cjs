@@ -37,7 +37,7 @@ module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored
   ok((await stored(a, 'tasks')).some((x) => x.title === 'Müll raus'), 'Änderung von Gerät B kommt bei A an');
 
   // Namen gelten für beide
-  await a.click('[data-tab=home]');
+  await a.click('[data-tab=settings]');
   await a.fill('#sName2', 'Lena');
   await a.click('#namesForm button[type=submit]');
   await settle(a);

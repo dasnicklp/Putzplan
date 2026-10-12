@@ -59,7 +59,7 @@ module.exports = async ({ browser, ok, phone, newHousehold, BASE, day, sleep }) 
 
   // Einstellungen: Version und Update-Prüfung
   await a.click('[data-tab=settings]');
-  ok(await a.isVisible('#sCode') && !(await a.isVisible('#namesForm')), 'Einstellungen: Code dort, Namen unter Zuhause');
+  ok(await a.isVisible('#sCode') && await a.isVisible('#namesForm') && await a.isVisible('#orderList'), 'Einstellungen: Code, Namen, Laden-Reihenfolge');
   const v = await a.textContent('#sVersion');
   await a.click('#btnCheckUpdate');
   await a.waitForFunction(() => !document.querySelector('#updateInfo').textContent.includes('Suche'));

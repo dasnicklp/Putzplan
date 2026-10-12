@@ -136,6 +136,16 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 
 - Anzeigename der App „Haushalt“ statt „Putzplan“ (Titel, Home-Bildschirm, Startseite, Mitteilungen, Dateinamen). Adresse, Worker, Datenbank, Speicher-Schlüssel und die Kennung `app: 'Putzplan'` in Sicherungen bleiben unverändert, damit nichts neu eingerichtet werden muss
 
+## Umgesetzt (Phase 13, 3.0.0)
+
+- **Vorrat** (`pantry: {name, cat, status: ok|low|out}`) im Reiter Einkauf: „Knapp“/„Leer“ setzt den Eintrag auf die Einkaufsliste (`from: 'Vorrat'`), Abhaken beim Einkauf setzt ihn wieder auf „Da“; Rezepte und Wocheneinkauf wählen Vorhandenes ab
+- **Zuhause** mit Übersicht (Kacheln, **Pinnwand** `board: {text, from}`, Demnächst), **Geburtstage** (`bdays: {name, day, month, year?, remind, note}`), **Wünsche** (`wishes: {title, price, prio, link, note, done}`), **Geräte** (`devices: {name, bought, warranty, link, note}`; „Wartung planen“ legt eine monatliche Aufgabe „Gerät: …“ an)
+- **Einstellungen**: zusätzlich Namen, Urlaub, Startpaket, **Laden-Reihenfolge** (`settings.shopOrder`) und „Dieses Handy gehört“ (`putzplan.me`, pro Gerät)
+- **Mitteilungen** pro Gerät (`push_subs.opts`): täglich (jetzt mit Geburtstagen), **Wochenrückblick** sonntags ab 19 Uhr (`last_weekly`), **Pinnwand** und **neue Sachen auf der Liste** sofort beim Sync an die anderen Geräte (nicht an das eigene: per Person und per Push-Adresse); neue Listeneinträge werden 30 Minuten lang in einer Mitteilung gesammelt
+- **Kurzbefehle** im Manifest (`?go=list|task|board|pantry`); Tipp auf eine Mitteilung springt an die passende Stelle
+- Client: alle synchronisierten Listen in einer Tabelle (`SYNCED`), Server: Pinnwand nach 30 Tagen und gekaufte Wünsche nach 180 Tagen aufgeräumt
+- Testzugang `POST /api/push/run` (nur lokal mit `ALLOW_LOCAL_PUSH`) für Zeitplan-Tests; 10 Testdateien, rund 160 Prüfungen
+
 ## Später möglich
 
 - Eigene Kategorien für Aufgaben, Erinnerung an einzelne Aufgaben zu einer Uhrzeit

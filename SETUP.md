@@ -91,7 +91,7 @@ Die App-Adresse ist **<https://putzplan-api.n-kudenholdt2000.workers.dev/>**.
 
 Änderungen erscheinen auf dem anderen Gerät nach spätestens etwa 12 Sekunden, solange die App offen ist, und sofort beim Öffnen. Der Code steht jederzeit in der App im Reiter „Einstellungen“.
 
-**Erinnerungen (optional):** In der App im Reiter „Einstellungen“ unter „Erinnerungen“ Person und Uhrzeit wählen, dann „Erinnerungen einschalten“ und Mitteilungen erlauben. Das macht jedes Handy für sich. In Cloudflare ist dafür nichts einzurichten, der Worker legt seine Schlüssel selbst an. Auf dem iPhone geht das nur in der App vom Home-Bildschirm (ab iOS 16.4).
+**Mitteilungen (optional):** In der App im Reiter „Einstellungen“ unter „Mitteilungen“ wählen, wem das Handy gehört, Uhrzeit und Arten einstellen (täglich, Wochenrückblick, Pinnwand, Einkaufsliste), dann „Mitteilungen einschalten“ und erlauben. Das macht jedes Handy für sich. In Cloudflare ist dafür nichts einzurichten, der Worker legt seine Schlüssel selbst an. Auf dem iPhone geht das nur in der App vom Home-Bildschirm (ab iOS 16.4).
 
 ---
 
@@ -102,7 +102,7 @@ Alles, was auf `main` landet, geht automatisch raus:
 - **App** (`docs/`) und **Backend** (`worker/`): Die Action „App und Backend veröffentlichen“ läuft von selbst, GitHub Pages aktualisiert sich parallel. Nach 1–2 Minuten ist alles online.
 - Die Handys holen die neue Version beim nächsten Öffnen, oder sofort über den Reiter „Einstellungen“ → „Nach Update suchen“.
 
-Namen anpassen: in der App im Reiter „Zuhause“ → „Namen speichern“. Gilt automatisch für beide Geräte.
+Namen anpassen: in der App im Reiter „Einstellungen“ → „Namen speichern“. Gilt automatisch für beide Geräte.
 
 ## Wenn etwas nicht geht
 
