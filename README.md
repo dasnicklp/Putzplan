@@ -31,6 +31,8 @@ Bis Version 2.1 hieß die App „Putzplan“. Technische Namen (Repo, Worker `pu
 
 **App öffnen:** <https://putzplan-api.n-kudenholdt2000.workers.dev/> (alternativ <https://dasnicklp.github.io/Putzplan/>, gleiche Daten)
 
+**Handbuch für euch beide** (Funktionen und Einrichtung): <https://putzplan-api.n-kudenholdt2000.workers.dev/handbuch.html>, in der App unter Einstellungen → App → „Handbuch öffnen“. Quelle: `docs/handbuch.html`.
+
 **Einrichtung:** siehe [SETUP.md](SETUP.md).
 
 ## Rezepte importieren

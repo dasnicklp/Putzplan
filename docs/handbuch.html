@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14161c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6fa" media="(prefers-color-scheme: light)">
+<link rel="icon" href="icon-192.png">
+<!--HB-START-->
+<title>Haushalt-Handbuch</title>
+<style>
+/* Gleiche Farben und Schrift wie die App: helle Fläche, grüner Akzent, Systemschrift. Eine Spalte, Inhaltsverzeichnis oben. */
+:root{
+  --bg:#f5f6fa; --surface:#fff; --surface2:#eceef4; --text:#1a1d26; --muted:#5d6577; --accent:#1f9d6e; --accent-ink:#fff; --line:#dcdfe8; --warn:#b8371c;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --mono:ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#14161c; --surface:#1d2028; --surface2:#262a35; --text:#eef0f5; --muted:#9aa1b2; --accent:#5cc8a0; --accent-ink:#06210f; --line:#2f3442; --warn:#ff7a59; color-scheme:dark }
+}
+:root[data-theme="dark"]{ --bg:#14161c; --surface:#1d2028; --surface2:#262a35; --text:#eef0f5; --muted:#9aa1b2; --accent:#5cc8a0; --accent-ink:#06210f; --line:#2f3442; --warn:#ff7a59; color-scheme:dark }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--sans);-webkit-text-size-adjust:100%}
+.wrap{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:28px 80px}
+h1,h2,h3{text-wrap:balance;line-height:1.25}
+h1{font-size:30px;margin:0 0 6px;letter-spacing:-.01em}
+h2{font-size:22px;margin:48px 0 10px;padding-top:6px;scroll-margin-top:12px}
+h3{font-size:17px;margin:26px 0 6px}
+p,li,dd{max-width:65ch}
+p{margin:8px 0}
+a{color:var(--accent);font-weight:600;text-underline-offset:2px}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.lead{color:var(--muted);margin:0}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.linkcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin:22px 0 0}
+.url{display:block;font-family:var(--mono);font-size:15px;word-break:break-all;color:var(--text);background:var(--surface2);border-radius:10px;padding:10px 12px;margin:4px 0 10px;user-select:all}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 16px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);color:var(--text);font:600 15px var(--sans);text-decoration:none;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink)}
+.small{font-size:14px;color:var(--muted)}
+nav.toc{margin:28px 0 0;display:flex;flex-wrap:wrap;gap:6px}
+nav.toc a{font-size:14px;font-weight:600;padding:6px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--text);text-decoration:none}
+ol.steps{list-style:none;counter-reset:s;padding:0;margin:12px 0 0;display:grid;gap:10px}
+ol.steps>li{counter-increment:s;position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px 12px 52px;max-width:none;min-width:0}
+ol.steps>li::before{content:counter(s);position:absolute;left:14px;top:12px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+ol.steps>li b:first-child{display:block}
+ul{padding-left:20px;margin:8px 0}
+li{margin:4px 0}
+.path{font-weight:600}
+.ui{display:inline-block;font-size:.92em;font-weight:600;padding:0 7px;border-radius:7px;background:var(--surface2);border:1px solid var(--line)}
+.tbl{overflow-x:auto;margin:12px 0}
+table{border-collapse:collapse;width:100%;min-width:480px;font-size:15px}
+th,td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--line)}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td:first-child{font-weight:600;white-space:nowrap}
+.note{border-left:3px solid var(--accent);background:var(--surface);padding:10px 14px;border-radius:0 12px 12px 0;margin:14px 0}
+.note.warn{border-left-color:var(--warn)}
+dl{margin:12px 0}
+dt{font-weight:700;margin-top:18px}
+dd{margin:4px 0 0}
+pre{font-family:var(--mono);font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;overflow-x:auto;margin:10px 0}
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+<!--HB-HEAD-END-->
+</head>
+<body>
+<!--HB-BODY-->
+<main class="wrap">
+  <p class="eyebrow">Handbuch · Version 3.2</p>
+  <h1>Haushalt</h1>
+  <p class="lead">Eure gemeinsame App für Putzplan, Einkaufsliste, Vorrat, Rezepte, Termine und alles rund ums Zuhause. Zwei Handys, ein Haushalt, alles gleicht sich von selbst ab.</p>
+
+  <div class="linkcard">
+    <p class="eyebrow">Link zur App</p>
+    <a class="url" href="https://putzplan-api.n-kudenholdt2000.workers.dev/" id="appUrl">https://putzplan-api.n-kudenholdt2000.workers.dev/</a>
+    <div class="row">
+      <a class="btn primary" href="https://putzplan-api.n-kudenholdt2000.workers.dev/" target="_blank" rel="noopener">App öffnen</a>
+      <button class="btn" type="button" id="copyUrl">Link kopieren</button>
+    </div>
+    <p class="small" style="margin:10px 0 0">Ersatzadresse mit denselben Daten, falls die erste einmal nicht geht: <a href="https://dasnicklp.github.io/Putzplan/" target="_blank" rel="noopener">dasnicklp.github.io/Putzplan</a></p>
+  </div>
+
+  <nav class="toc" aria-label="Inhalt">
+    <a href="#einrichten">Einrichten</a><a href="#reiter">Die Reiter</a><a href="#putzen">Putzen</a><a href="#einkauf">Einkauf</a>
+    <a href="#notizen">Notizen</a><a href="#zuhause">Zuhause</a><a href="#mitteilungen">Mitteilungen</a><a href="#extras">Kalender, Siri, WLAN</a>
+    <a href="#einstellungen">Einstellungen</a><a href="#daten">Daten & Sicherung</a><a href="#fragen">Fragen</a>
+  </nav>
+
+  <h2 id="einrichten">Einrichten in fünf Minuten</h2>
+  <p>Das macht jeder einmal auf seinem Handy. Ein Konto braucht ihr nicht: Eure Handys sind über einen 6-stelligen Haushaltscode verbunden.</p>
+  <ol class="steps">
+    <li><b>App auf den Home-Bildschirm holen</b>
+      <span class="path">iPhone:</span> Link oben in <b>Safari</b> öffnen, unten auf das Teilen-Symbol tippen, dann <span class="ui">Zum Home-Bildschirm</span>.<br>
+      <span class="path">Android:</span> Link in <b>Chrome</b> öffnen, oben rechts <span class="ui">⋮</span>, dann <span class="ui">App installieren</span> (oder „Zum Startbildschirm hinzufügen“).<br>
+      Ab jetzt die App immer über das neue Symbol starten.</li>
+    <li><b>Haushalt anlegen (erstes Handy)</b>
+      <span class="ui">Neuen Haushalt anlegen</span> tippen. Die App zeigt euren Code, z. B. 469 980. Mit <span class="ui">Weiter</span> geht's los.</li>
+    <li><b>Zweites Handy verbinden</b>
+      Auf dem anderen Handy den Code unter „Vorhandener Code“ eingeben und <span class="ui">Verbinden</span> tippen. Den Code findet ihr jederzeit unter <span class="path">Einstellungen → Verbinden</span>.</li>
+    <li><b>Namen eintragen</b>
+      <span class="path">Einstellungen → Haushalt → Namen</span>, dann <span class="ui">Namen speichern</span>. Gilt automatisch für beide Handys.</li>
+    <li><b>Mitteilungen einschalten (jedes Handy für sich)</b>
+      <span class="path">Einstellungen → Mitteilungen</span>: bei „Dieses Handy gehört“ den eigenen Namen wählen, Uhrzeit und Arten einstellen, <span class="ui">Mitteilungen einschalten</span> und erlauben. Mit <span class="ui">Test senden</span> prüft ihr, ob es klappt.</li>
+    <li><b>Loslegen</b>
+      Im Reiter Putzen das <b>Startpaket</b> ansehen (typische Putzaufgaben mit passendem Rhythmus), im Vorrat eintragen, was ihr zu Hause habt, und unter <span class="path">Einstellungen → Haushalt</span> die <b>Laden-Reihenfolge</b> so sortieren, wie ihr durch euren Supermarkt lauft.</li>
+  </ol>
+  <div class="note warn"><b>iPhone:</b> Mitteilungen gehen nur in der App vom Home-Bildschirm (ab iOS 16.4), nicht in Safari selbst.</div>
+
+  <h2 id="reiter">Die fünf Reiter</h2>
+  <p>Unten wechselt ihr zwischen den Bereichen, oben darunter zwischen den Ansichten eines Bereichs.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Reiter</th><th>Ansichten</th><th>Wofür</th></tr></thead>
+    <tbody>
+      <tr><td>Putzen</td><td>Heute · Woche · Monat · Bilanz</td><td>Putzaufgaben planen, erledigen und sehen, wer wie viel gemacht hat</td></tr>
+      <tr><td>Einkauf</td><td>Liste · Vorrat · Rezepte · Essen</td><td>Einkaufsliste, was zu Hause ist, Rezepte und Essensplan</td></tr>
+      <tr><td>Notizen</td><td>nach Kategorie filterbar</td><td>Gemeinsame Notizen, z. B. Putztipps, Infos, Ideen</td></tr>
+      <tr><td>Zuhause</td><td>Übersicht · Kalender · Wünsche · Geräte</td><td>Pinnwand, Termine, Geburtstage, Anschaffungen, Geräte und Zählerstände</td></tr>
+      <tr><td>Einstellungen</td><td>Haushalt · Mitteilungen · Verbinden · App</td><td>Alles Einstellbare, aufgeteilt in vier Bereiche</td></tr>
+    </tbody>
+  </table></div>
+  <p>Was einer einträgt, sieht der andere nach ein paar Sekunden. Ohne Internet zeigt die App den letzten Stand; Änderungen werden nachgeschickt, sobald wieder Verbindung da ist. Fast alles lässt sich direkt danach mit <span class="ui">Rückgängig</span> unten im Hinweis zurücknehmen.</p>
+
+  <h2 id="putzen">Putzen</h2>
+  <h3>Aufgabe anlegen</h3>
+  <p>Unten rechts auf <span class="ui">+</span>. Ihr tragt ein:</p>
+  <ul>
+    <li><b>Was ist zu tun</b>, <b>Fällig am</b>, <b>Minuten</b> (für die Bilanz)</li>
+    <li><b>Kategorie</b>: Küche, Bad, Wohnzimmer, Wäsche oder Sonstiges</li>
+    <li><b>Zuweisung</b>: eine Person oder offen für beide</li>
+    <li><b>Wiederholen</b>: täglich, wöchentlich, alle 2 Wochen, monatlich, alle 3 Monate oder alle … Tage. Mit <b>Ab dem Erledigen zählen</b> richtet sich der nächste Termin danach, wann ihr es wirklich gemacht habt (z. B. Pflanzen gießen).</li>
+    <li><b>Abwechselnd zuweisen</b>: nach dem Erledigen ist die andere Person dran</li>
+    <li><b>Checkliste</b>: ein Punkt pro Zeile (z. B. Spiegel, Waschbecken, Fugen), abhakbar direkt in der Liste</li>
+  </ul>
+  <h3>Erledigen und verschieben</h3>
+  <ul>
+    <li>Den Kreis links antippen = erledigt. Wiederkehrende Aufgaben bekommen sofort ihren nächsten Termin.</li>
+    <li>Der Pfeil <span class="ui">↷</span> rechts verschiebt auf morgen, übermorgen, das Wochenende oder nächste Woche.</li>
+    <li>Die Aufgabe selbst antippen zum Ändern oder Löschen.</li>
+  </ul>
+  <h3>Die Ansichten</h3>
+  <ul>
+    <li><b>Heute</b>: Überfälliges, heute und morgen. Oben stehen Hinweise: was es heute zu essen gibt, Termine, Geburtstage und was im Vorrat abläuft.</li>
+    <li><b>Woche</b>: die sieben Tage nebeneinander, darunter die Aufgaben des gewählten Tags. Nach links oder rechts wischen wechselt die Woche.</li>
+    <li><b>Monat</b>: Kalender mit der Zahl offener Aufgaben pro Tag.</li>
+    <li><b>Bilanz</b>: wann welcher Bereich zuletzt geputzt wurde, wer diese Woche und in den letzten 8 Wochen wie viel gemacht hat, und nach Kategorie.</li>
+  </ul>
+  <p>Oben filtert ihr nach Person (Alle, eure Namen, Offen). Habt ihr an einem Tag alles geschafft, gibt's Konfetti, und die Serie 🔥 zählt die Tage in Folge.</p>
+
+  <h2 id="einkauf">Einkauf</h2>
+  <h3>Liste</h3>
+  <ul>
+    <li>Oben eintippen, was fehlt, z. B. <span class="ui">2 Milch</span> oder <span class="ui">500 g Hack</span>. Mehrere Sachen auf einmal mit Komma oder je einer Zeile.</li>
+    <li>Die App sortiert nach Bereichen im Laden, in eurer Laden-Reihenfolge. Darunter stehen Vorschläge aus dem, was ihr oft kauft.</li>
+    <li>Abhaken legt die Sache „Im Wagen“ ab. <span class="ui">Erledigte entfernen</span> räumt auf. Antippen ändert Menge oder Bereich.</li>
+    <li>Die Zahl am Einkaufswagen-Symbol zeigt, wie viel noch auf der Liste steht.</li>
+    <li>Android: Text aus einer anderen App (z. B. einem Chat) über <span class="ui">Teilen → Haushalt</span> direkt auf die Liste schicken.</li>
+  </ul>
+  <h3>Vorrat</h3>
+  <ul>
+    <li>Oben eintragen, was ihr zu Hause habt, z. B. Spülmittel, Kaffee, Nudeln.</li>
+    <li>Pro Sache <span class="ui">Da</span>, <span class="ui">Knapp</span> oder <span class="ui">Leer</span>. Bei Knapp und Leer landet sie automatisch auf der Einkaufsliste. Hakt ihr sie beim Einkaufen ab, steht sie wieder auf Da.</li>
+    <li><b>Mindesthaltbarkeit</b>: Sache antippen, „Mindestens haltbar bis“ eintragen. Drei Tage vorher erscheint sie unter Demnächst, am Vortag und am Tag selbst in der täglichen Mitteilung. Neu gekauft löscht das alte Datum.</li>
+  </ul>
+  <h3>Rezepte</h3>
+  <ul>
+    <li><span class="ui">+</span> legt ein Rezept an. Zutaten einfach untereinander schreiben, gern mit Menge („250 g Mehl“).</li>
+    <li>Rezept öffnen: Mit − und + die Portionen ändern, die Mengen rechnen sich um. Zutaten an- oder abwählen und <span class="ui">… auf die Einkaufsliste</span>. Salz, Pfeffer, Wasser, was schon auf der Liste steht und was im Vorrat ist, sind von selbst abgewählt.</li>
+    <li><b>Was können wir kochen?</b> oben in der Rezeptliste zeigt die Rezepte, für die ihr laut Vorrat schon alles oder das meiste habt, mit „Fehlt: …“.</li>
+    <li><b>Importieren</b>: ein oder mehrere Rezepte als JSON einfügen, z. B. von ChatGPT („Gib mir das Rezept als JSON mit title, servings, ingredients, steps“) oder aus einer Rezeptseite. <b>Exportieren</b> speichert alle Rezepte als Datei.</li>
+  </ul>
+  <pre>{ "title": "Pfannkuchen", "servings": 2,
+  "ingredients": ["250 g Mehl", "500 ml Milch", "3 Eier"],
+  "steps": ["Verrühren", "In der Pfanne ausbacken"] }</pre>
+  <h3>Essen</h3>
+  <p>Der Wochenplan: Beim Tag auf <span class="ui">+</span>, ein Rezept wählen oder frei eintragen („Pizza bestellen“). Unten fasst <span class="ui">Zutaten für … Gerichte auf die Liste</span> alles für die Woche zusammen, gleiche Zutaten werden zusammengerechnet.</p>
+
+  <h2 id="notizen">Notizen</h2>
+  <p><span class="ui">+</span> für eine neue Notiz mit Titel, Text und Kategorie. Wichtiges oben anheften. Oben filtert ihr nach Kategorie, eigene Kategorien legt ihr in der Notiz an.</p>
+
+  <h2 id="zuhause">Zuhause</h2>
+  <h3>Übersicht</h3>
+  <ul>
+    <li><b>Kacheln</b>: offene Aufgaben, Einkaufsliste, Essen heute, Serie. Antippen springt hin.</li>
+    <li><b>Pinnwand</b>: kurze Nachrichten aneinander („Paket kommt heute“). Beim ersten Mal fragt sie, wer auf diesem Handy schreibt. Der andere bekommt eine Mitteilung.</li>
+    <li><b>Demnächst</b>: Termine der nächsten 14 Tage, Geburtstage der nächsten 30 Tage, ablaufende Garantien, Lebensmittel, die bald ablaufen, fällige Zählerstände und dringende Anschaffungen.</li>
+    <li><b>WLAN für Gäste</b>: siehe <a href="#wlan">unten</a>.</li>
+  </ul>
+  <h3>Kalender</h3>
+  <ul>
+    <li><span class="ui">+</span> → <b>Termin</b>: Was, Tag, Uhrzeit (optional), für wen, Notizen. Erinnerung am Vortag und am Tag selbst in der täglichen Mitteilung.</li>
+    <li><span class="ui">+</span> → <b>Geburtstag</b>: Tag und Monat, Geburtsjahr für das Alter, wie früh erinnert werden soll, Geschenkideen.</li>
+    <li>Ganz unten: <span class="ui">Im Handy-Kalender anzeigen</span>, siehe <a href="#kalender">Kalender-Abo</a>.</li>
+  </ul>
+  <h3>Wünsche</h3>
+  <p>Größere Anschaffungen mit Preis, Link und Notizen, sortiert nach Bald, Demnächst und Irgendwann. Gekauft? Abhaken.</p>
+  <h3>Geräte & Zähler</h3>
+  <ul>
+    <li><span class="ui">+</span> → <b>Gerät</b>: Kaufdatum, Garantie bis, Link zur Anleitung. ⚠ zeigt an, wenn die Garantie bald endet. <span class="ui">📖</span> öffnet die Anleitung.</li>
+    <li><span class="ui">🔧</span> plant Wartung: Es öffnet sich eine monatliche Aufgabe „Gerät: …“, z. B. „Kaffeemaschine: entkalken“. Sie steht danach auch am Gerät.</li>
+    <li><span class="ui">+</span> → <b>Zähler</b>: Strom, Gas oder Wasser mit Einheit und Zählernummer. <span class="ui">Ablesen</span> trägt den Stand ein (Komma geht, z. B. 12.345,6).</li>
+    <li>Das Säulendiagramm zeigt den Verbrauch pro Monat. Säule antippen zeigt den Wert. Ein Monat erscheint, sobald er ganz zwischen zwei Ablesungen liegt, am einfachsten also immer am Monatsersten ablesen. Daran erinnert die App auch.</li>
+    <li>„Alle Ablesungen und Monatswerte“ klappt die Liste auf. Dort lassen sich Ablesungen mit ✕ löschen.</li>
+  </ul>
+
+  <h2 id="mitteilungen">Mitteilungen</h2>
+  <p>Jedes Handy stellt unter <span class="path">Einstellungen → Mitteilungen</span> selbst ein, was es bekommt. Was ihr selbst ändert, löst auf dem eigenen Handy nie eine Mitteilung aus.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Art</th><th>Wann</th><th>Inhalt</th><th>Standard</th></tr></thead>
+    <tbody>
+      <tr><td>Täglich</td><td>zur gewählten Uhrzeit, nur wenn etwas ansteht</td><td>offene Aufgaben (eigene und nicht zugewiesene), Termine heute und morgen, Geburtstage, was heute oder morgen abläuft, am Monatsersten die Zählerstände</td><td>an</td></tr>
+      <tr><td>Wochenrückblick</td><td>sonntags ab 19 Uhr</td><td>was erledigt wurde, wer wie lange, was nächste Woche ansteht</td><td>an</td></tr>
+      <tr><td>Pinnwand</td><td>sofort</td><td>neue Nachricht des anderen</td><td>an</td></tr>
+      <tr><td>Einkaufsliste</td><td>sofort, innerhalb von 30 Minuten gesammelt</td><td>was der andere auf die Liste gesetzt hat</td><td>aus</td></tr>
+    </tbody>
+  </table></div>
+  <p>Im Urlaub (<span class="path">Einstellungen → Haushalt → Urlaub</span>) pausieren die Aufgaben-Erinnerungen, und fällige Aufgaben rutschen auf die Zeit danach. Am App-Symbol steht die Zahl offener Aufgaben. Ein Tipp auf eine Mitteilung öffnet die passende Stelle.</p>
+
+  <h2 id="extras">Kalender, Siri, WLAN und Kurzbefehle</h2>
+  <h3 id="kalender">Kalender-Abo</h3>
+  <p>Termine, Geburtstage und Garantie-Enden erscheinen im normalen Kalender eures Handys und bleiben von selbst aktuell. Unter <span class="path">Einstellungen → Verbinden → Kalender-Abo</span>:</p>
+  <ol class="steps">
+    <li><b>Auswählen, was mit soll</b>Putzaufgaben und Essensplan lassen sich zuschalten. Das vor dem Abonnieren einstellen, denn es ändert den Link.</li>
+    <li><b>iPhone</b><span class="ui">Im iPhone-Kalender abonnieren</span> tippen, dann <span class="ui">Abonnieren</span> und <span class="ui">Hinzufügen</span>.</li>
+    <li><b>Android (Google Kalender)</b><span class="ui">Link kopieren</span> und euch schicken. Am Computer <a href="https://calendar.google.com" target="_blank" rel="noopener">calendar.google.com</a> öffnen, links bei „Weitere Kalender“ auf <span class="ui">+</span> → <span class="ui">Per URL</span>, Link einfügen, <span class="ui">Kalender hinzufügen</span>. Danach ist er auch in der Kalender-App auf dem Handy.</li>
+  </ol>
+  <p class="small">Das iPhone holt Änderungen meist innerhalb einer Stunde, Google nur alle paar Stunden. <span class="ui">Neuen Link erzeugen</span> macht den alten ungültig, falls er in falsche Hände geraten ist.</p>
+
+  <h3 id="siri">„Hey Siri, Einkaufsliste“</h3>
+  <p>Einmal einrichten, danach: „Hey Siri, Einkaufsliste“ → „Milch und Eier“ → Siri antwortet „Milch und Eier stehen jetzt auf der Einkaufsliste.“ Der andere bekommt eine Mitteilung, wenn er die für die Einkaufsliste eingeschaltet hat.</p>
+  <ol class="steps">
+    <li><b>Link kopieren</b>Zuerst unter <span class="path">Einstellungen → Mitteilungen</span> bei „Dieses Handy gehört“ den eigenen Namen wählen. Dann <span class="path">Einstellungen → Verbinden → Sprachassistent</span> → <span class="ui">Link kopieren</span>.</li>
+    <li><b>Kurzbefehl anlegen</b>App <b>Kurzbefehle</b> öffnen, oben rechts <span class="ui">+</span>.</li>
+    <li><b>Diktieren</b>Aktion <span class="ui">Text diktieren</span> hinzufügen.</li>
+    <li><b>Link aufrufen</b>Aktion <span class="ui">Inhalte von URL abrufen</span> hinzufügen und als URL den kopierten Link einfügen. In der Aktion auf den Pfeil tippen: Methode <span class="ui">POST</span>, Anfragetext <span class="ui">Formular</span>, dann <span class="ui">Neues Feld hinzufügen → Text</span> mit Schlüssel <b>t</b> und Wert <span class="ui">Diktierter Text</span>.</li>
+    <li><b>Antwort vorlesen</b>Aktion <span class="ui">Text sprechen</span> hinzufügen.</li>
+    <li><b>Benennen</b>Den Kurzbefehl oben „Einkaufsliste“ nennen. Fertig.</li>
+  </ol>
+  <p><b>Android:</b> Der Google Assistant kann leider keine eigenen Links aufrufen. Am schnellsten: lange auf das App-Symbol drücken → <span class="ui">Einkaufsliste</span> und mit dem Mikrofon der Tastatur diktieren. Wer es rein per Sprache will, legt in der kostenlosen App „HTTP Shortcuts“ einen Shortcut an (Methode POST, Adresse = Link, Formular-Feld <b>t</b> = eingegebener Text).</p>
+
+  <h3 id="wlan">WLAN für Gäste</h3>
+  <p><span class="path">Zuhause → Übersicht → WLAN für Gäste</span>: einmal Name und Passwort eintragen. Danach zeigt <span class="ui">QR-Code zeigen</span> einen Code, den Besuch mit der Handykamera scannt und sich mit einem Tipp verbindet. Darunter stehen Name und Passwort zum Abtippen oder Kopieren.</p>
+
+  <h3>Kurzbefehle am App-Symbol (Android)</h3>
+  <p>Lange auf das App-Symbol drücken: <b>Einkaufsliste</b>, <b>Neue Aufgabe</b>, <b>Pinnwand</b> oder <b>Vorrat</b> öffnen sich direkt. Auf dem iPhone gibt es das bei Web-Apps leider nicht.</p>
+
+  <h2 id="einstellungen">Einstellungen</h2>
+  <p>Oben umschalten zwischen den vier Bereichen; die App merkt sich, wo ihr zuletzt wart.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Bereich</th><th>Darin</th></tr></thead>
+    <tbody>
+      <tr><td>Haushalt</td><td>Namen, Urlaub, Laden-Reihenfolge, Startpaket</td></tr>
+      <tr><td>Mitteilungen</td><td>Dieses Handy gehört, Uhrzeit, Arten, Ein/Aus, Test</td></tr>
+      <tr><td>Verbinden</td><td>Haushaltscode, Jetzt synchronisieren, Kalender-Abo, Sprachassistent</td></tr>
+      <tr><td>App</td><td>Version, Nach Update suchen, Handbuch, Sicherung, Abmelden</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="daten">Daten & Sicherung</h2>
+  <ul>
+    <li>Der <b>Haushaltscode</b> ist euer Schlüssel. Gebt ihn nicht weiter. Nach 5 falschen Code-Eingaben ist die Anmeldung 15 Minuten gesperrt.</li>
+    <li><span class="path">Einstellungen → App → Sicherung speichern</span> legt alles in einer Datei ab. <span class="ui">Sicherung einspielen</span> holt Fehlendes und Gelöschtes zurück, Vorhandenes bleibt.</li>
+    <li>Die App räumt selbst auf: erledigte Aufgaben nach einem halben Jahr (das zuletzt Geputzte pro Bereich bleibt in der Bilanz), Pinnwand-Nachrichten nach 30 Tagen, vergangene Termine nach 30 Tagen, der Essensplan nach 60 Tagen, gekaufte Wünsche nach einem halben Jahr.</li>
+    <li><span class="ui">Abmelden</span> entfernt die Daten nur von diesem Handy. Mit dem Code ist alles wieder da.</li>
+  </ul>
+
+  <h2 id="fragen">Fragen und Probleme</h2>
+  <dl>
+    <dt>Wie bekomme ich die neueste Version?</dt>
+    <dd><span class="path">Einstellungen → App → Nach Update suchen</span>, dann <span class="ui">Jetzt aktualisieren</span>. Meist kommt sie auch von allein beim nächsten Öffnen.</dd>
+    <dt>Auf dem iPhone kommen keine Mitteilungen.</dt>
+    <dd>Die App muss vom Home-Bildschirm gestartet sein (nicht Safari), iOS 16.4 oder neuer. In den iPhone-Einstellungen unter Mitteilungen → Haushalt erlauben, Fokus-Modus prüfen. Dann in der App <span class="ui">Test senden</span>.</dd>
+    <dt>Das andere Handy zeigt eine Änderung nicht.</dt>
+    <dd>Kurz warten oder <span class="path">Einstellungen → Verbinden → Jetzt synchronisieren</span>. Oben unter der Ansicht steht, wann zuletzt abgeglichen wurde.</dd>
+    <dt>Neues Handy?</dt>
+    <dd>Link öffnen, App auf den Home-Bildschirm holen, Code eingeben: alles ist da. Mitteilungen, Kalender-Abo und Siri-Kurzbefehl auf dem neuen Handy neu einrichten.</dd>
+    <dt>Versehentlich etwas gelöscht?</dt>
+    <dd>Direkt danach <span class="ui">Rückgängig</span> im Hinweis unten. Später hilft eine Sicherung: <span class="path">Einstellungen → App → Sicherung einspielen</span>.</dd>
+    <dt>„Code wurde nicht erkannt“?</dt>
+    <dd>Unter <span class="path">Einstellungen → App → Abmelden</span> abmelden und den richtigen Code neu eingeben. Den Code zeigt das andere Handy unter <span class="path">Einstellungen → Verbinden</span>.</dd>
+  </dl>
+
+  <p class="foot">Haushalt · Handbuch zu Version 3.2 · App: <a href="https://putzplan-api.n-kudenholdt2000.workers.dev/">putzplan-api.n-kudenholdt2000.workers.dev</a></p>
+</main>
+<script>
+document.getElementById('copyUrl').addEventListener('click', function () {
+  var b = this, url = document.getElementById('appUrl').textContent;
+  var done = function () { b.textContent = 'Kopiert'; setTimeout(function () { b.textContent = 'Link kopieren'; }, 2000); };
+  try {
+    navigator.clipboard.writeText(url).then(done, function () { window.getSelection().selectAllChildren(document.getElementById('appUrl')); });
+  } catch (e) { window.getSelection().selectAllChildren(document.getElementById('appUrl')); }
+});
+</script>
+<!--HB-BODY-END-->
+</body>
+</html>

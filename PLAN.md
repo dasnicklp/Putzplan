@@ -160,6 +160,7 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 ## Umgesetzt (3.2.0)
 
 - Einstellungen in vier Bereiche geteilt (oben umschaltbar, wird gemerkt): Haushalt, Mitteilungen, Verbinden, App
+- Handbuch `docs/handbuch.html` (Funktionen, Einrichtung, Kalender-Abo, Siri, Fragen), verlinkt in Einstellungen → App und auf dem Startbildschirm
 
 ## Später möglich
 

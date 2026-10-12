@@ -69,6 +69,8 @@ module.exports = async ({ browser, ok, phone, newHousehold, BASE, day, sleep }) 
   ok(await a.isVisible('#sCode') && await a.isVisible('#calBox') && await a.isVisible('#voiceBox'), 'Verbinden: Code, Kalender, Sprachassistent');
   await a.click('[data-setview=app]');
   ok(await a.isVisible('#btnCheckUpdate') && await a.isVisible('#btnBackup') && await a.isVisible('#btnLogout'), 'App: Version, Sicherung, Abmelden');
+  const manual = await (await fetch(new URL(await a.getAttribute('#btnManual', 'href'), a.url()))).text();
+  ok(await a.isVisible('#btnManual') && manual.includes('<title>Haushalt-Handbuch</title>') && manual.includes('https://putzplan-api.n-kudenholdt2000.workers.dev/'), 'Handbuch erreichbar, mit Link zur App');
   await a.reload(); await a.waitForSelector('#app:not([hidden])');
   ok(await a.getAttribute('[data-setview=app]', 'aria-pressed') === 'true', 'Bereich bleibt gemerkt');
   const v = await a.textContent('#sVersion');
