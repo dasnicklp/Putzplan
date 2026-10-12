@@ -17,7 +17,8 @@ const lib = require('./lib.cjs');
   }
   const filter = process.argv[2] || '';
   const files = fs.readdirSync(path.join(__dirname, 'e2e')).filter((f) => f.endsWith('.cjs') && f.includes(filter)).sort();
-  const browser = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
+  // Volles Chromium (nicht die abgespeckte Headless-Variante): nur das hat Mitteilungen und Push wie ein echtes Handy
+  const browser = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : { channel: 'chromium' });
   let failed = 0, passed = 0;
   for (const f of files) {
     console.log(`\n▶ ${f}`);
