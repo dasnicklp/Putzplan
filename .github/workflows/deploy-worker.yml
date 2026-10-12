@@ -73,7 +73,7 @@ jobs:
           for i in 1 2 3 4 5 6 7 8 9 10; do
             API=$(curl -fsS "$WORKER_URL/api" || true)
             APP=$(curl -fsS "$WORKER_URL/" || true)
-            if [[ "$API" == *'"putzplan-api"'* && "$APP" == *'<title>Putzplan</title>'* ]]; then
+            if [[ "$API" == *'"putzplan-api"'* && "$APP" == *'<title>Haushalt</title>'* ]]; then
               echo "Backend und App antworten."
               echo "### App-Adresse: $WORKER_URL/" >> "$GITHUB_STEP_SUMMARY"
               exit 0

@@ -515,7 +515,7 @@ async function handle(req, env) {
     if (!s) return json(req, { error: 'not subscribed' }, 404);
     const row = await env.DB.prepare('SELECT data FROM households WHERE id = ?').bind(auth.id).first();
     const msg = reminderFor(JSON.parse(row.data), s.person, localNow(s.tz).date)
-      || { title: 'Test erfolgreich', body: `So meldet sich Putzplan jeden Tag um ${s.time} Uhr, wenn etwas ansteht.`, tag: 'putzplan-test' };
+      || { title: 'Test erfolgreich', body: `So meldet sich die Haushalt-App jeden Tag um ${s.time} Uhr, wenn etwas ansteht.`, tag: 'putzplan-test' };
     const status = await sendPush(env, s, msg);
     return json(req, { ok: status >= 200 && status < 300, status }, status >= 200 && status < 300 ? 200 : 502);
   }

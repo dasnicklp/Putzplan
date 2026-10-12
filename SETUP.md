@@ -1,4 +1,6 @@
-# Putzplan einrichten
+# Haushalt-App einrichten
+
+(Bis Version 2.1 hieß die App „Putzplan“; Worker, Datenbank und Repo heißen weiter so.)
 
 Du brauchst **kein Terminal und kein Node.js**. Das Backend veröffentlicht eine GitHub Action automatisch.
 Für dich bleiben ein paar Klicks im Browser, etwa 10 Minuten.

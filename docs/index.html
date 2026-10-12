@@ -7,11 +7,11 @@
 <meta name="theme-color" content="#f5f6fa" media="(prefers-color-scheme: light)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Putzplan">
+<meta name="apple-mobile-web-app-title" content="Haushalt">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Putzplan</title>
+<title>Haushalt</title>
 <style>
 :root{
   --bg:#14161c; --surface:#1d2028; --surface2:#262a35; --text:#eef0f5; --muted:#9aa1b2;
@@ -274,7 +274,7 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 
 <!-- Start: neuen Haushalt anlegen oder Code eingeben -->
 <section id="setup" class="setup" hidden>
-  <h1>Putzplan</h1>
+  <h1>Haushalt</h1>
   <p class="lead">Ihr verbindet eure Geräte über einen gemeinsamen Code. Kein Konto nötig.</p>
 
   <div id="setupStart" class="card">
@@ -575,7 +575,7 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
   <div class="sheet">
     <div class="grab"></div>
     <div class="sheet-head"><h2>Rezepte importieren</h2></div>
-    <p class="muted small" style="margin:4px 0 0">JSON einfügen oder eine Datei wählen: ein Rezept, eine Liste von Rezepten oder ein Export aus Putzplan. Das Rezept-Format von Rezeptseiten (schema.org) geht auch.</p>
+    <p class="muted small" style="margin:4px 0 0">JSON einfügen oder eine Datei wählen: ein Rezept, eine Liste von Rezepten oder ein Export aus dieser App. Das Rezept-Format von Rezeptseiten (schema.org) geht auch.</p>
     <label for="impText">JSON</label>
     <textarea id="impText" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder='{ "title": "Pfannkuchen", "servings": 2, "ingredients": ["250 g Mehl", "500 ml Milch"] }'></textarea>
     <div class="two" style="margin-top:8px">
@@ -647,7 +647,7 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '2.1.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '2.2.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Zuhause“ änderbar
@@ -1542,10 +1542,10 @@ async function exportRecipes() {
     title: r.title, servings: r.servings, ingredients: ingrLines(r), steps: r.steps, link: r.link,
   }));
   const text = JSON.stringify({ app: 'Putzplan', exported: keyOf(new Date()), recipes: list }, null, 2);
-  const name = `putzplan-rezepte-${keyOf(new Date())}.json`;
+  const name = `haushalt-rezepte-${keyOf(new Date())}.json`;
   const file = new File([text], name, { type: 'application/json' });
   try {
-    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Putzplan-Rezepte' }); return; }
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Haushalt-Rezepte' }); return; }
   } catch (e) { if (e && e.name === 'AbortError') return; }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(file);
@@ -1788,8 +1788,9 @@ async function saveFile(name, text, title) {
   return true;
 }
 $('#btnBackup').addEventListener('click', async () => {
+  // app: 'Putzplan' ist die feste Kennung des Dateiformats (alte Sicherungen bleiben lesbar), nicht der Anzeigename
   const data = { app: 'Putzplan', type: 'backup', version: APP_VERSION, exported: new Date().toISOString(), tasks, notes, shop, recipes, meals, settings, history: archived };
-  if (await saveFile(`putzplan-sicherung-${keyOf(new Date())}.json`, JSON.stringify(data), 'Putzplan-Sicherung')) $('#restoreInfo').textContent = 'Sicherung erstellt.';
+  if (await saveFile(`haushalt-sicherung-${keyOf(new Date())}.json`, JSON.stringify(data), 'Haushalt-Sicherung')) $('#restoreInfo').textContent = 'Sicherung erstellt.';
 });
 $('#btnRestore').addEventListener('click', () => $('#restoreFile').click());
 // Einspielen: Fehlendes wird ergänzt, Gelöschtes wiederhergestellt; was es noch gibt, bleibt wie es ist
@@ -1809,9 +1810,9 @@ $('#restoreFile').addEventListener('change', async (e) => {
   if (!f) return;
   const info = $('#restoreInfo');
   let d;
-  try { d = JSON.parse(await f.text()); } catch (err) { info.textContent = 'Die Datei ist keine Putzplan-Sicherung.'; return; }
+  try { d = JSON.parse(await f.text()); } catch (err) { info.textContent = 'Die Datei ist keine Sicherung dieser App.'; return; }
   if (!d || d.app !== 'Putzplan' || d.type !== 'backup') {
-    info.textContent = d && Array.isArray(d.recipes) ? 'Das ist ein Rezept-Export. Den bitte unter Einkauf → Rezepte → Importieren einlesen.' : 'Die Datei ist keine Putzplan-Sicherung.';
+    info.textContent = d && Array.isArray(d.recipes) ? 'Das ist ein Rezept-Export. Den bitte unter Einkauf → Rezepte → Importieren einlesen.' : 'Die Datei ist keine Sicherung dieser App.';
     return;
   }
   const count = (a) => (Array.isArray(a) ? a.filter((x) => x && !x.deleted).length : 0);
@@ -2258,9 +2259,9 @@ function renderPush(msg) {
   let info = msg || '';
   if (!msg) {
     if (!pushSupported()) info = isIos && !standalone()
-      ? 'Auf dem iPhone gehen Erinnerungen nur in der App vom Home-Bildschirm (ab iOS 16.4). Öffne Putzplan dort und schalte sie hier ein.'
+      ? 'Auf dem iPhone gehen Erinnerungen nur in der App vom Home-Bildschirm (ab iOS 16.4). Öffne die App dort und schalte sie hier ein.'
       : 'Dieser Browser kann leider keine Mitteilungen empfangen.';
-    else if (Notification.permission === 'denied') info = 'Mitteilungen sind für Putzplan blockiert. Bitte in den Einstellungen des Geräts erlauben.';
+    else if (Notification.permission === 'denied') info = 'Mitteilungen sind für diese App blockiert. Bitte in den Einstellungen des Geräts erlauben.';
     else if (on) info = `Eingeschaltet: täglich um ${p.time} Uhr, wenn etwas ansteht.`;
   }
   $('#btnPushOn').disabled = !pushSupported() || Notification.permission === 'denied';
@@ -2325,7 +2326,7 @@ function pushRefresh() {
   if (p.on && pushSupported() && Notification.permission === 'granted') pushSubscribe(p).catch(() => {});
 }
 
-/* ================= Teilen an Putzplan (Android) ================= */
+/* ================= Teilen an die App (Android) ================= */
 function handleShare() {
   const q = new URLSearchParams(location.search);
   const text = [q.get('title'), q.get('text')].filter(Boolean).join('\n');

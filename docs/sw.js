@@ -2,7 +2,7 @@
 // Netzwerk zuerst (damit Updates ankommen), Cache als Rückfall (damit es offline trotzdem startet).
 // Die Verbindung zum Backend (andere Domain) wird nie zwischengespeichert.
 // Außerdem: tägliche Erinnerungen (Push) anzeigen.
-const CACHE = 'putzplan-v13';
+const CACHE = 'putzplan-v14';
 const SHELL = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -43,8 +43,8 @@ self.addEventListener('push', (e) => {
   try { d = e.data ? e.data.json() : {}; } catch (err) { /* leer */ }
   e.waitUntil((async () => {
     if (Number.isInteger(d.count) && self.navigator.setAppBadge) await self.navigator.setAppBadge(d.count).catch(() => {});
-    await self.registration.showNotification(d.title || 'Putzplan', {
-      body: d.body || 'Schau mal in den Putzplan.',
+    await self.registration.showNotification(d.title || 'Haushalt', {
+      body: d.body || 'Schau mal in die Haushalt-App.',
       tag: d.tag || 'putzplan', renotify: true,
       icon: './icon-192.png', badge: './icon-192.png',
       data: { url: './' },

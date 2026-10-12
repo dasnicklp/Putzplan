@@ -1,7 +1,7 @@
 {
-  "name": "Putzplan",
-  "short_name": "Putzplan",
-  "description": "Gemeinsamer Putzplan für zwei Personen: Aufgaben mit Wiederholung und Zuweisung, Einkaufsliste, Notizen, Erinnerungen",
+  "name": "Haushalt",
+  "short_name": "Haushalt",
+  "description": "Gemeinsamer Haushalt für zwei: Putzplan mit Wiederholung und Zuweisung, Einkaufsliste, Rezepte, Essensplan, Notizen, Erinnerungen",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

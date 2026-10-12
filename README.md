@@ -1,6 +1,6 @@
-# Putzplan
+# Haushalt
 
-Gemeinsamer Putzplan für zwei Personen als Web-App (PWA). Läuft auf iPhone und Android über den Homescreen, ohne App Store und ohne Benutzerkonto.
+Gemeinsame Haushalts-App für zwei Personen als Web-App (PWA): Putzplan, Einkaufsliste, Rezepte, Essensplan und Notizen. Läuft auf iPhone und Android über den Homescreen, ohne App Store und ohne Benutzerkonto.
 
 - Vier Reiter unten: Putzen (umschaltbar Heute · Woche · Monat · Bilanz), Einkauf (umschaltbar Liste · Rezepte · Essensplan), Notizen, Zuhause, Einstellungen
 - Rezepte: Zutaten untereinander eintragen, Portionen umrechnen, ausgewählte Zutaten mit einem Tipp auf die Einkaufsliste; Import und Export als JSON (siehe unten)
@@ -20,6 +20,8 @@ Gemeinsamer Putzplan für zwei Personen als Web-App (PWA). Läuft auf iPhone und
 - Filter nach Person, Wochenbilanz (wer hat wie viel erledigt), Titelvorschläge beim Eintragen
 - Wischen nach links/rechts wechselt Woche bzw. Monat
 - Beide Geräte sind über einen 6-stelligen Haushaltscode verbunden und gleichen sich automatisch ab, auch die Namen
+
+Bis Version 2.1 hieß die App „Putzplan“. Technische Namen (Repo, Worker `putzplan-api`, Datenbank `putzplan`, Speicher-Schlüssel) bleiben, damit Adresse, Daten und Installationen gleich bleiben.
 
 **App öffnen:** <https://putzplan-api.n-kudenholdt2000.workers.dev/> (alternativ <https://dasnicklp.github.io/Putzplan/>, gleiche Daten)
 

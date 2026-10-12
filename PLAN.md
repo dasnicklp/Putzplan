@@ -1,4 +1,4 @@
-# Putzplan – Plan und Entscheidungen
+# Haushalt (früher Putzplan) – Plan und Entscheidungen
 
 ## Ziel
 Eine PWA für zwei Personen (Nick: Android/Windows, Freundin: iPhone). Installation über den Homescreen, kein App Store, keine Benutzerkonten.
@@ -131,6 +131,10 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 - Zuhause: Überblick-Kacheln (heute offen, Einkaufsliste, Essen heute, Serie; Antippen springt hin), Namen, Urlaub, Startpaket
 - Einstellungen: Haushaltscode und Synchronisation, Erinnerungen (pro Gerät), Sicherung, App-Version und Update, Abmelden
 - Beschriftung unten 11 px (unter 350 px Breite 10 px), damit „Einstellungen“ auch auf kleinen Handys passt
+
+## Umgesetzt (Phase 12, 2.2.0)
+
+- Anzeigename der App „Haushalt“ statt „Putzplan“ (Titel, Home-Bildschirm, Startseite, Mitteilungen, Dateinamen). Adresse, Worker, Datenbank, Speicher-Schlüssel und die Kennung `app: 'Putzplan'` in Sicherungen bleiben unverändert, damit nichts neu eingerichtet werden muss
 
 ## Später möglich
 
