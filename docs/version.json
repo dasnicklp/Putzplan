@@ -1,11 +1,8 @@
 {
-  "version": "2.0.0",
+  "version": "2.1.0",
   "date": "2026-10-12",
   "notes": [
-    "Essensplan: Rezepte auf Wochentage legen und alle Zutaten der Woche mit einem Tipp auf die Einkaufsliste setzen",
-    "Checklisten in Aufgaben, z. B. Spiegel, Waschbecken, Fugen beim Bad",
-    "Löschen ohne Rückfrage, dafür mit „Rückgängig“",
-    "Sicherung: alles in einer Datei speichern und wieder einspielen",
-    "Im Hintergrund: alte erledigte Aufgaben werden nach einem halben Jahr aufgeräumt"
+    "Neuer Reiter „Einstellungen“: Haushaltscode, Erinnerungen, Sicherung und Updates",
+    "„Haushalt“ heißt jetzt „Zuhause“: Überblick mit Kacheln, dazu Namen, Urlaub und Startpaket"
   ]
 }

@@ -73,7 +73,7 @@ module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored
   ok((await a.textContent('#view')).includes("Heute gibt's: Bolognese, Pizza bestellen"), 'Heute-Ansicht zeigt das Essen');
 
   // Sicherung speichern, Dinge löschen, Sicherung einspielen
-  await a.click('[data-tab=home]');
+  await a.click('[data-tab=settings]');
   const [dl] = await Promise.all([a.waitForEvent('download'), a.click('#btnBackup')]);
   const file = await dl.path();
   const backup = JSON.parse(fs.readFileSync(file, 'utf8'));

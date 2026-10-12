@@ -168,8 +168,9 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 .toast button{margin-left:12px;border:0;background:none;color:var(--accent);font-weight:700;font-size:14px;padding:6px 2px}
 
 /* Tab-Leiste unten */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
-.tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;padding:4px 0;color:var(--muted);font-size:12px;font-weight:600;min-width:0}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:4px 2px calc(4px + env(safe-area-inset-bottom))}
+.tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;padding:4px 0;color:var(--muted);font-size:11px;font-weight:600;letter-spacing:-.1px;min-width:0;white-space:nowrap}
+@media (max-width:350px){.tabbar button{font-size:10px;letter-spacing:-.2px}}
 .tabbar svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tabbar button[aria-current="page"]{color:var(--accent)}
 .tab-ico{position:relative;display:block;height:24px}
@@ -189,6 +190,14 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 .shop-row .ttl small{display:block;color:var(--muted);font-weight:400;font-size:13px}
 .seg.seg2{grid-template-columns:repeat(2,1fr)}
 .seg.seg3{grid-template-columns:repeat(3,1fr)}
+
+/* Zuhause: Überblick */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-height:104px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}
+.tile .tile-ic{font-size:20px;line-height:1}
+.tile b{font-size:26px;line-height:1.15;margin-top:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.tile.text b{font-size:17px}
+.tile span:last-child{color:var(--muted);font-size:13px}
 
 /* Checkliste in Aufgaben */
 .tmain{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -330,12 +339,9 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
   <main id="view"></main>
 
   <!-- Haushalt (Einstellungen) -->
+  <!-- Zuhause: Überblick und was euch beide betrifft -->
   <section class="page" id="homePage" hidden>
-    <div class="bal">
-      <div class="setting-row"><span>Haushaltscode</span><span class="code-inline" id="sCode">—</span></div>
-      <div class="setting-row"><span>Synchronisation</span><span id="sStatus" class="muted">—</span></div>
-      <button class="btn big" id="btnSyncNow" type="button">Jetzt synchronisieren</button>
-    </div>
+    <div id="homeTiles"></div>
     <form class="bal" id="namesForm" novalidate>
       <h3>Namen</h3>
       <div class="two">
@@ -345,6 +351,25 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
       <button class="btn big" type="submit">Namen speichern</button>
       <p class="muted small" style="margin:6px 0 0">Gilt für beide Geräte.</p>
     </form>
+    <div class="bal">
+      <h3>Urlaub</h3>
+      <div id="awayBody"></div>
+    </div>
+    <div class="bal">
+      <h3>Startpaket</h3>
+      <p class="muted small" style="margin:0">Typische Putzaufgaben mit passendem Rhythmus auf einmal anlegen.</p>
+      <button class="btn big" type="button" data-open-pack>Startpaket ansehen</button>
+    </div>
+  </section>
+
+  <!-- Einstellungen: Verbindung, Erinnerungen auf diesem Gerät, Sicherung, App -->
+  <section class="page" id="settingsPage" hidden>
+    <div class="bal">
+      <h3>Haushalt</h3>
+      <div class="setting-row"><span>Haushaltscode</span><span class="code-inline" id="sCode">—</span></div>
+      <div class="setting-row"><span>Synchronisation</span><span id="sStatus" class="muted">—</span></div>
+      <button class="btn big" id="btnSyncNow" type="button">Jetzt synchronisieren</button>
+    </div>
     <div class="bal" id="pushBox">
       <h3>Erinnerungen</h3>
       <p class="muted small" style="margin:0">Jeden Tag eine Mitteilung mit den offenen Aufgaben, auch wenn die App zu ist. Kommt nur, wenn etwas ansteht.</p>
@@ -356,15 +381,6 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
       <button class="btn big" id="btnPushTest" type="button" hidden>Test senden</button>
       <button class="btn big" id="btnPushOff" type="button" hidden>Erinnerungen ausschalten</button>
       <div class="update-info" id="pushInfo" aria-live="polite"></div>
-    </div>
-    <div class="bal">
-      <h3>Urlaub</h3>
-      <div id="awayBody"></div>
-    </div>
-    <div class="bal">
-      <h3>Startpaket</h3>
-      <p class="muted small" style="margin:0">Typische Putzaufgaben mit passendem Rhythmus auf einmal anlegen.</p>
-      <button class="btn big" type="button" data-open-pack>Startpaket ansehen</button>
     </div>
     <div class="bal">
       <h3>Sicherung</h3>
@@ -394,7 +410,8 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
     <button type="button" data-tab="clean"><svg viewBox="0 0 24 24"><path d="M10 3l1.8 4.7 4.7 1.8-4.7 1.8L10 16l-1.8-4.7L3.5 9.5l4.7-1.8z"/><path d="M18 14l.9 2.1 2.1.9-2.1.9L18 20l-.9-2.1-2.1-.9 2.1-.9z"/></svg>Putzen</button>
     <button type="button" data-tab="shop"><span class="tab-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M2.5 4h2.3l2.4 11.5h10.9l2.2-8.5H5.7"/></svg><i class="badge" id="shopBadge" hidden></i></span>Einkauf</button>
     <button type="button" data-tab="notes"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h5"/></svg>Notizen</button>
-    <button type="button" data-tab="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>Haushalt</button>
+    <button type="button" data-tab="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>Zuhause</button>
+    <button type="button" data-tab="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Einstellungen</button>
   </nav>
 </div>
 
@@ -630,10 +647,10 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '2.0.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '2.1.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
-const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Haushalt“ änderbar
+const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Zuhause“ änderbar
 const CATS = ['Küche', 'Bad', 'Wohnzimmer', 'Wäsche', 'Sonstiges'];
 const CAT_ICON = { 'Küche': '🍳', 'Bad': '🛁', 'Wohnzimmer': '🛋️', 'Wäsche': '🧺', 'Sonstiges': '📦' };
 const POLL_MS = 12000;
@@ -659,7 +676,7 @@ const PACK = [
 
 /* ================= Zustand ================= */
 const LS = { push: 'putzplan.push', code: 'putzplan.code', tasks: 'putzplan.tasks', notes: 'putzplan.notes', shop: 'putzplan.shop', recipes: 'putzplan.recipes', meals: 'putzplan.meals', history: 'putzplan.history', shopView: 'putzplan.shopView', tab: 'putzplan.tab', view: 'putzplan.view', settings: 'putzplan.settings', filter: 'putzplan.filter', noteCat: 'putzplan.noteCat' };
-const TABS = { clean: 'Putzen', shop: 'Einkaufsliste', notes: 'Notizen', home: 'Haushalt' };
+const TABS = { clean: 'Putzen', shop: 'Einkaufsliste', notes: 'Notizen', home: 'Zuhause', settings: 'Einstellungen' };
 const VIEWS = { today: 'Heute', week: 'Woche', month: 'Monat', stats: 'Bilanz' }; // Unteransichten im Reiter „Putzen“
 const NOTE_CAT_SUGGESTIONS = ['Putztipps', 'Info', 'Ideen'];
 // Einkaufsliste: Bereiche im Laden, in dieser Reihenfolge angezeigt
@@ -1857,8 +1874,10 @@ function render() {
   $('#recipeBar').hidden = !(recipesView && liveRecipes().length > 5);
   $('#fab').hidden = !(tasksView || tab === 'notes' || recipesView);
   $('#fab').setAttribute('aria-label', tab === 'notes' ? 'Neue Notiz' : recipesView ? 'Neues Rezept' : 'Neue Aufgabe');
-  $('#view').hidden = tab === 'home';
+  $('#view').hidden = tab === 'home' || tab === 'settings';
   $('#homePage').hidden = tab !== 'home';
+  $('#settingsPage').hidden = tab !== 'settings';
+  if (tab === 'home') $('#homeTiles').innerHTML = tilesHtml();
   const openCount = openShop().length;
   $('#shopBadge').hidden = !openCount;
   $('#shopBadge').textContent = openCount > 99 ? '99+' : openCount || '';
@@ -1866,7 +1885,7 @@ function render() {
   renderShopSuggs();
   updateAppBadge();
 
-  if (tab === 'home') return;
+  if (tab === 'home' || tab === 'settings') return;
   if (tab === 'shop') { $('#view').innerHTML = shopView === 'recipes' ? recipesHtml() : shopView === 'plan' ? planHtml() : shopHtml(); return; }
   if (tab === 'notes') { $('#view').innerHTML = notesHtml(); return; }
   if (view === 'today') { $('#view').innerHTML = todayHtml(today); return; }
@@ -1930,7 +1949,7 @@ function setTab(t) {
   const changed = t !== tab;
   tab = t;
   lsSet(LS.tab, t);
-  if (t === 'home' && changed) fillHome();
+  if ((t === 'home' || t === 'settings') && changed) fillHome();
   if (changed) $('#toast').classList.remove('show');
   render();
   if (changed) window.scrollTo(0, 0);
@@ -1944,7 +1963,26 @@ function setView(v) {
   render();
   if (changed) window.scrollTo(0, 0);
 }
-// Haushalt-Seite nur beim Öffnen befüllen, damit ein Sync nicht in laufende Eingaben schreibt
+// Zuhause und Einstellungen nur beim Öffnen befüllen, damit ein Sync nicht in laufende Eingaben schreibt
+// Überblick auf „Zuhause“: jede Kachel springt an die passende Stelle
+function tilesHtml() {
+  const today = keyOf(new Date());
+  const open = live().filter((t) => !t.done && t.due && t.due <= today).length;
+  const list = openShop().length, meal = todayMeals(today), s = streak();
+  const tile = (go, icon, big, label, cls = '') => `<button type="button" class="tile${cls}" data-go="${go}"><span class="tile-ic">${icon}</span><b>${big}</b><span>${label}</span></button>`;
+  return `<div class="tiles">
+    ${tile('today', '🧽', open || '✓', open ? (open === 1 ? 'Aufgabe heute offen' : 'Aufgaben heute offen') : 'Heute alles erledigt')}
+    ${tile('list', '🛒', list, list === 1 ? 'Sache auf der Liste' : 'Sachen auf der Liste')}
+    ${tile('plan', '🍽', meal ? esc(meal) : '–', meal ? 'gibt es heute' : 'Heute nichts geplant', meal ? ' text' : '')}
+    ${tile('stats', '🔥', s, s === 1 ? 'Putztag in Folge' : 'Putztage in Folge')}
+  </div>`;
+}
+function go(where) {
+  if (where === 'list' || where === 'plan') { shopView = where; lsSet(LS.shopView, shopView); setTab('shop'); return; }
+  view = where; lsSet(LS.view, view);
+  setTab('clean');
+}
+
 function fillHome() {
   const n = names();
   $('#sName1').value = n.nick;
@@ -2494,6 +2532,8 @@ $('#btnLogout').addEventListener('click', () => {
 
 /* Navigation und Aufgaben (Ereignis-Weiterleitung) */
 document.addEventListener('click', (e) => {
+  const gt = e.target.closest('[data-go]');
+  if (gt) return go(gt.dataset.go);
   const ck = e.target.closest('[data-cl]');
   if (ck) return toggleCheck(ck.dataset.cl, ck.dataset.ci);
   const tb = e.target.closest('[data-tab]');

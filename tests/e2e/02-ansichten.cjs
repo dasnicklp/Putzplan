@@ -7,7 +7,7 @@ module.exports = async ({ browser, ok, phone, newHousehold, BASE, day, sleep }) 
   await newHousehold(a);
   const tabs = (await a.locator('.tabbar button').allTextContents()).map((t) => t.trim());
   const cut = await a.$$eval('.tabbar button', (bs) => bs.filter((b) => b.scrollWidth > b.clientWidth + 1).length);
-  ok(tabs.join('|') === 'Putzen|Einkauf|Notizen|Haushalt' && !cut, 'Vier Reiter, nichts abgeschnitten (360 px)');
+  ok(tabs.join('|') === 'Putzen|Einkauf|Notizen|Zuhause|Einstellungen' && !cut, 'Fünf Reiter, nichts abgeschnitten (360 px)');
   ok(await a.getAttribute('[data-view=week]', 'aria-pressed') === 'true' && await a.isVisible('.wstrip'), 'Alter Reiter „Woche“ wird übernommen');
 
   // Aufgaben für die Woche anlegen
@@ -49,8 +49,17 @@ module.exports = async ({ browser, ok, phone, newHousehold, BASE, day, sleep }) 
   await a.reload(); await a.waitForSelector('#app:not([hidden])');
   ok(await a.getAttribute('[data-view=week]', 'aria-pressed') === 'true', 'Ansicht bleibt nach Neuladen');
 
-  // Haushalt: Version und Update-Prüfung
+  // Zuhause: Kacheln springen an die passende Stelle
   await a.click('[data-tab=home]');
+  ok((await a.locator('.tile').count()) === 4 && (await a.textContent('.tile[data-go=today] b')) === '3', 'Zuhause: vier Kacheln, 3 offen (2 heute, 1 überfällig)');
+  await a.click('.tile[data-go=list]');
+  ok(await a.getAttribute('[data-tab=shop]', 'aria-current') === 'page' && await a.getAttribute('[data-sview=list]', 'aria-pressed') === 'true', 'Kachel „Liste“ öffnet die Einkaufsliste');
+  await a.click('[data-tab=home]'); await a.click('.tile[data-go=stats]');
+  ok(await a.getAttribute('[data-view=stats]', 'aria-pressed') === 'true', 'Kachel „Serie“ öffnet die Bilanz');
+
+  // Einstellungen: Version und Update-Prüfung
+  await a.click('[data-tab=settings]');
+  ok(await a.isVisible('#sCode') && !(await a.isVisible('#namesForm')), 'Einstellungen: Code dort, Namen unter Zuhause');
   const v = await a.textContent('#sVersion');
   await a.click('#btnCheckUpdate');
   await a.waitForFunction(() => !document.querySelector('#updateInfo').textContent.includes('Suche'));

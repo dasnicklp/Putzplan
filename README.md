@@ -2,7 +2,7 @@
 
 Gemeinsamer Putzplan für zwei Personen als Web-App (PWA). Läuft auf iPhone und Android über den Homescreen, ohne App Store und ohne Benutzerkonto.
 
-- Vier Reiter unten: Putzen (umschaltbar Heute · Woche · Monat · Bilanz), Einkauf (umschaltbar Liste · Rezepte · Essensplan), Notizen, Haushalt
+- Vier Reiter unten: Putzen (umschaltbar Heute · Woche · Monat · Bilanz), Einkauf (umschaltbar Liste · Rezepte · Essensplan), Notizen, Zuhause, Einstellungen
 - Rezepte: Zutaten untereinander eintragen, Portionen umrechnen, ausgewählte Zutaten mit einem Tipp auf die Einkaufsliste; Import und Export als JSON (siehe unten)
 - Essensplan: Rezepte oder freie Gerichte auf Wochentage legen, alle Zutaten der Woche zusammengefasst auf die Einkaufsliste
 - Checklisten in Aufgaben (z. B. Spiegel, Waschbecken, Fugen); Löschen mit „Rückgängig“; Komplett-Sicherung als Datei
@@ -76,7 +76,7 @@ cd tests && npm ci && npx playwright install chromium && npm test
 npm test -- rezept   # nur Tests, deren Dateiname „rezept“ enthält
 ```
 
-Namen ändert ihr direkt in der App im Reiter „Haushalt“. Dort steht auch die installierte Version, und „Nach Update suchen“ zeigt die aktuellste.
+Namen, Urlaub und Startpaket stehen in der App im Reiter „Zuhause“ (mit Überblick-Kacheln). Haushaltscode, Erinnerungen, Sicherung, installierte Version und „Nach Update suchen“ stehen unter „Einstellungen“.
 
 **Neue Version veröffentlichen:** Versionsnummer an zwei Stellen erhöhen, `APP_VERSION` in `docs/index.html` und `version` in `docs/version.json` (dort auch Datum und Neuerungen eintragen).
 

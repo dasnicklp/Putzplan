@@ -125,6 +125,13 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 - **Tests im Repo** (`tests/`, 8 Dateien, über 100 Prüfungen) und GitHub-Workflow; die Veröffentlichung wartet auf grüne Tests
 - Sync im Worker auf eine Liste der Sammlungen umgestellt (`COLLECTIONS`), damit neue Bereiche nur eine Zeile brauchen
 
+## Umgesetzt (Phase 11, 2.1.0)
+
+- Fünf Reiter: Putzen · Einkauf · Notizen · **Zuhause** · **Einstellungen**
+- Zuhause: Überblick-Kacheln (heute offen, Einkaufsliste, Essen heute, Serie; Antippen springt hin), Namen, Urlaub, Startpaket
+- Einstellungen: Haushaltscode und Synchronisation, Erinnerungen (pro Gerät), Sicherung, App-Version und Update, Abmelden
+- Beschriftung unten 11 px (unter 350 px Breite 10 px), damit „Einstellungen“ auch auf kleinen Handys passt
+
 ## Später möglich
 
 - Eigene Kategorien für Aufgaben, Erinnerung an einzelne Aufgaben zu einer Uhrzeit
