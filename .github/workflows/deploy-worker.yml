@@ -6,7 +6,7 @@ name: App und Backend veröffentlichen
 on:
   push:
     branches: [main]
-    paths: ['worker/**', 'docs/**', '.github/workflows/deploy-worker.yml']
+    paths: ['worker/**', 'docs/**', 'tests/**', '.github/workflows/deploy-worker.yml', '.github/workflows/tests.yml']
   workflow_dispatch:
 
 jobs:
