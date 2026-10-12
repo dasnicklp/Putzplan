@@ -136,7 +136,7 @@ module.exports = async ({ browser, ok, phone, newHousehold, api, BASE, day, slee
       };
     }, run);
     await newHousehold(p);
-    await p.click('[data-tab=settings]');
+    await p.click('[data-tab=settings]'); await p.click('[data-setview=push]');
     await p.selectOption('#pWho', 'partner'); await p.selectOption('#pTime', '07:30');
     await p.click('#btnPushOn');
     await p.waitForSelector('#btnPushTest:not([hidden])');

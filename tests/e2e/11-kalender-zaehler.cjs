@@ -116,8 +116,9 @@ module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored
   await a.click('#wifiClose');
 
   // Kalender-Abo
-  await a.click('[data-tab=settings]');
+  await a.click('[data-hview=cal]'); await a.click('[data-go=calsub]');
   await a.waitForSelector('#calLinks [data-copy]');
+  ok(await a.getAttribute('[data-tab=settings]', 'aria-current') === 'page' && await a.getAttribute('[data-setview=link]', 'aria-pressed') === 'true', '„Im Handy-Kalender anzeigen“ öffnet Einstellungen → Verbinden');
   const calUrl = await a.getAttribute('#calLinks [data-copy]', 'data-copy');
   ok(/\/api\/cal\/[\w-]{24}\.ics$/.test(calUrl) && (await a.getAttribute('#calLinks a.primary', 'href')).startsWith('webcal://'), 'Kalender-Link (webcal)');
   await a.evaluate(() => { const now = Date.now(); bdays.push({ id: 'b1', name: 'Mama', month: 3, day: 14, year: 1966, remind: 7, note: '', createdAt: now, updatedAt: now, deleted: false }); save(); });
@@ -136,7 +137,7 @@ module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored
   ok((await fetch(calUrl.replace(/\/cal\/[\w-]+/, '/cal/AAAAAAAAAAAAAAAAAAAAAAAA'))).status === 404, 'Falscher Link: nichts');
 
   // Sprachassistent
-  await a.selectOption('#pWho', 'nick');
+  await a.click('[data-setview=push]'); await a.selectOption('#pWho', 'nick'); await a.click('[data-setview=link]');
   await a.waitForFunction(() => document.querySelector('#voiceLinks [data-copy]') && document.querySelector('#voiceLinks [data-copy]').dataset.copy.endsWith('?w=nick'));
   const addUrl = await a.getAttribute('#voiceLinks [data-copy]', 'data-copy');
   const form = new FormData(); form.append('t', '2 Liter Milch und Eier');

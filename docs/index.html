@@ -291,7 +291,9 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 /* Konfetti */
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
 .confetti i{position:absolute;top:0;width:8px;height:12px;border-radius:2px}
-.page .bal:first-child{margin-top:14px}
+.page .bal:first-child,#settingsPage{margin-top:14px}
+#settingsPage .bal:not([hidden]) ~ .bal{margin-top:22px}
+#settingsPage .bal{margin-top:0}
 
 /* Termine, Vorrat, Kochen */
 .ev-day{margin:14px 0 6px;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
@@ -383,6 +385,12 @@ a.btn.primary{color:var(--accent-ink)}
       <button type="button" data-sview="recipes">Rezepte</button>
       <button type="button" data-sview="plan">Essen</button>
     </div>
+    <div class="seg seg4" id="setSeg" role="group" aria-label="Bereich">
+      <button type="button" data-setview="home">Haushalt</button>
+      <button type="button" data-setview="push">Mitteilungen</button>
+      <button type="button" data-setview="link">Verbinden</button>
+      <button type="button" data-setview="app">App</button>
+    </div>
     <div class="seg seg4" id="homeSeg" role="group" aria-label="Ansicht">
       <button type="button" data-hview="overview">Übersicht</button>
       <button type="button" data-hview="cal">Kalender</button>
@@ -421,13 +429,14 @@ a.btn.primary{color:var(--accent-ink)}
 
   <!-- Einstellungen: Verbindung, Erinnerungen auf diesem Gerät, Sicherung, App -->
   <section class="page" id="settingsPage" hidden>
-    <div class="bal">
-      <h3>Haushalt</h3>
+    <div class="bal" data-sgroup="link">
+      <h3>Handys verbinden</h3>
+      <p class="muted small" style="margin:0 0 6px">Mit diesem Code verbindet ihr ein weiteres Handy: dort „Code eingeben“ wählen.</p>
       <div class="setting-row"><span>Haushaltscode</span><span class="code-inline" id="sCode">—</span></div>
       <div class="setting-row"><span>Synchronisation</span><span id="sStatus" class="muted">—</span></div>
       <button class="btn big" id="btnSyncNow" type="button">Jetzt synchronisieren</button>
     </div>
-    <form class="bal" id="namesForm" novalidate>
+    <form class="bal" data-sgroup="home" id="namesForm" novalidate>
       <h3>Namen</h3>
       <div class="two">
         <div><label for="sName1">Person 1</label><input id="sName1" maxlength="30" autocomplete="off"></div>
@@ -436,7 +445,7 @@ a.btn.primary{color:var(--accent-ink)}
       <button class="btn big" type="submit">Namen speichern</button>
       <p class="muted small" style="margin:6px 0 0">Gilt für beide Geräte.</p>
     </form>
-    <div class="bal" id="pushBox">
+    <div class="bal" data-sgroup="push" id="pushBox">
       <h3>Mitteilungen</h3>
       <div class="two">
         <div><label for="pWho">Dieses Handy gehört</label><select id="pWho"></select></div>
@@ -451,14 +460,14 @@ a.btn.primary{color:var(--accent-ink)}
       <button class="btn big" id="btnPushOff" type="button" hidden>Mitteilungen ausschalten</button>
       <div class="update-info" id="pushInfo" aria-live="polite"></div>
     </div>
-    <div class="bal" id="calBox">
+    <div class="bal" data-sgroup="link" id="calBox">
       <h3>Kalender-Abo</h3>
       <p class="muted small" style="margin:0">Termine, Geburtstage und Garantie-Enden erscheinen im Kalender eures Handys und bleiben von selbst aktuell.</p>
       <div class="pin-row"><span>Putzaufgaben<small class="muted">Die nächste Fälligkeit jeder Aufgabe</small></span><button class="btn toggle" id="cTasks" type="button" aria-pressed="false">Nein</button></div>
       <div class="pin-row"><span>Essensplan<small class="muted">Was es an welchem Tag gibt</small></span><button class="btn toggle" id="cMeals" type="button" aria-pressed="false">Nein</button></div>
       <div id="calLinks"></div>
     </div>
-    <div class="bal" id="voiceBox">
+    <div class="bal" data-sgroup="link" id="voiceBox">
       <h3>Sprachassistent</h3>
       <p class="muted small" style="margin:0">„Hey Siri, Einkaufsliste“ → „Milch und Eier“ → steht auf der Liste, beim anderen mit Mitteilung (wenn eingeschaltet).</p>
       <div id="voiceLinks"></div>
@@ -473,21 +482,21 @@ a.btn.primary{color:var(--accent-ink)}
       </ol></details>
       <details><summary>Und auf Android?</summary><p class="muted small">Der Google Assistant kann leider keine eigenen Links aufrufen. Am schnellsten: lange auf das App-Symbol drücken → „Einkaufsliste“ und das Mikrofon der Tastatur benutzen. Wer es per Sprache will: Mit der kostenlosen App „HTTP Shortcuts“ einen Shortcut anlegen (Methode POST, Adresse = Link, Formular-Feld <b>t</b> = eingegebener Text) und auf den Startbildschirm legen.</p></details>
     </div>
-    <div class="bal">
+    <div class="bal" data-sgroup="home">
       <h3>Urlaub</h3>
       <div id="awayBody"></div>
     </div>
-    <div class="bal">
+    <div class="bal" data-sgroup="home">
       <h3>Laden-Reihenfolge</h3>
       <p class="muted small" style="margin:0 0 6px">So sortiert die Einkaufsliste die Bereiche. Stellt sie so ein, wie ihr durch euren Laden lauft.</p>
       <div id="orderList"></div>
     </div>
-    <div class="bal">
+    <div class="bal" data-sgroup="home">
       <h3>Startpaket</h3>
       <p class="muted small" style="margin:0">Typische Putzaufgaben mit passendem Rhythmus auf einmal anlegen.</p>
       <button class="btn big" type="button" data-open-pack>Startpaket ansehen</button>
     </div>
-    <div class="bal">
+    <div class="bal" data-sgroup="app">
       <h3>Sicherung</h3>
       <p class="muted small" style="margin:0">Alles in einer Datei: Aufgaben, Einkaufsliste, Vorrat, Rezepte, Essensplan, Notizen, Termine, Geburtstage, Wünsche, Geräte, Zähler und Einstellungen. Beim Einspielen kommt Fehlendes und Gelöschtes zurück, Vorhandenes bleibt.</p>
       <button class="btn big" id="btnBackup" type="button">Sicherung speichern</button>
@@ -495,14 +504,14 @@ a.btn.primary{color:var(--accent-ink)}
       <input id="restoreFile" type="file" accept=".json,application/json" hidden>
       <div class="update-info" id="restoreInfo" aria-live="polite"></div>
     </div>
-    <div class="bal">
+    <div class="bal" data-sgroup="app">
       <h3>App</h3>
       <div class="setting-row"><span>Installierte Version</span><span class="code-inline" id="sVersion">—</span></div>
       <button class="btn big" id="btnCheckUpdate" type="button">Nach Update suchen</button>
       <div class="update-info" id="updateInfo" aria-live="polite"></div>
       <button class="btn primary big" id="btnApplyUpdate" type="button" hidden>Jetzt aktualisieren</button>
     </div>
-    <div class="bal">
+    <div class="bal" data-sgroup="app">
       <button class="btn danger big" id="btnLogout" type="button">Abmelden</button>
       <p class="muted small" style="margin:10px 0 0">Zum Wechseln in einen anderen Haushalt. Die Aufgaben bleiben online erhalten.</p>
       <p class="muted small" style="margin:10px 0 0">iPhone: Teilen-Symbol in Safari, dann „Zum Home-Bildschirm“. Android: Chrome-Menü ⋮, dann „App installieren“.</p>
@@ -792,7 +801,7 @@ a.btn.primary{color:var(--accent-ink)}
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '3.1.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '3.2.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Zuhause“ änderbar
@@ -2083,6 +2092,14 @@ const newItem = (data) => { const now = Date.now(); return { id: uid(), ...data,
 const httpOk = (l) => (/^https?:\/\//i.test(l || '') ? l : '');
 
 /* ================= Zuhause: Pinnwand, Kalender (Termine, Geburtstage), Wünsche, Geräte und Zähler ================= */
+// Einstellungen: Haushalt, Mitteilungen, Verbinden (Code, Kalender, Siri), App (Version, Sicherung, Abmelden)
+let setview = ['push', 'link', 'app'].includes(lsGet('putzplan.setview')) ? lsGet('putzplan.setview') : 'home';
+function setSetview(v) {
+  setview = v; lsSet('putzplan.setview', v);
+  window.scrollTo(0, 0);
+  render();
+  if (v === 'link') renderLinks();
+}
 let hview = { bdays: 'cal', cal: 'cal', wishes: 'wishes', devices: 'devices' }[lsGet('putzplan.hview')] || 'overview'; // bis 3.0: „bdays“
 const HVIEW_TITLE = { overview: 'Zuhause', cal: 'Kalender', wishes: 'Wünsche', devices: 'Geräte & Zähler' };
 const live_ = (list) => list.filter((x) => !x.deleted);
@@ -2769,6 +2786,9 @@ function render() {
   document.querySelectorAll('[data-hview]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.hview === hview)));
   $('#shopSeg').hidden = tab !== 'shop';
   $('#homeSeg').hidden = tab !== 'home';
+  $('#setSeg').hidden = tab !== 'settings';
+  document.querySelectorAll('[data-setview]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.setview === setview)));
+  document.querySelectorAll('#settingsPage [data-sgroup]').forEach((el) => { el.hidden = el.dataset.sgroup !== setview; });
   const bar = tab === 'shop' && (shopView === 'list' || shopView === 'pantry');
   $('#shopBar').hidden = !bar;
   if (bar) $('#shopInput').placeholder = shopView === 'pantry' ? 'Was habt ihr da? z. B. Spülmittel' : 'Was fehlt? z. B. 2 Milch';
@@ -2883,7 +2903,7 @@ function tilesHtml() {
 }
 function go(where) {
   if (where === 'list' || where === 'plan' || where === 'pantry') { shopView = where; lsSet(LS.shopView, shopView); setTab('shop'); return; }
-  if (where === 'calsub') { setTab('settings'); $('#calBox').scrollIntoView({ block: 'start' }); return; }
+  if (where === 'calsub') { setview = 'link'; lsSet('putzplan.setview', setview); setTab('settings'); $('#calBox').scrollIntoView({ block: 'start' }); return; }
   view = where; lsSet(LS.view, view);
   setTab('clean');
 }
@@ -2898,7 +2918,7 @@ function fillHome() {
   renderAway();
   renderPush();
   renderOrder();
-  if (tab === 'settings') renderLinks();
+  if (tab === 'settings' && setview === 'link') renderLinks();
 }
 function move(dir) {
   if (view === 'week') {
@@ -3161,7 +3181,7 @@ async function renderLinks(reset) {
     const url = `${API_ABS}/api/add/${add}${me() ? '?w=' + me() : ''}`;
     $('#voiceLinks').innerHTML = `<p class="link-box">${esc(url)}</p>
       <button class="btn big" type="button" data-copy="${esc(url)}">Link kopieren</button>
-      ${me() ? '' : '<p class="muted small" style="margin:6px 0 0">Tipp: Oben bei „Dieses Handy gehört“ auswählen, dann bekommt nur der andere die Mitteilung.</p>'}
+      ${me() ? '' : '<p class="muted small" style="margin:6px 0 0">Tipp: Unter „Mitteilungen“ bei „Dieses Handy gehört“ auswählen, dann bekommt nur der andere die Mitteilung.</p>'}
       <button class="btn ghost small-btn" type="button" id="addReset" style="margin-top:8px">Neuen Link erzeugen (alter hört auf zu gehen)</button>`;
   } catch (e) {
     $('#voiceLinks').innerHTML = '<p class="muted small">Keine Verbindung. Bitte später nochmal öffnen.</p>';
@@ -3520,6 +3540,8 @@ $('#btnLogout').addEventListener('click', () => {
 
 /* Navigation und Aufgaben (Ereignis-Weiterleitung) */
 document.addEventListener('click', (e) => {
+  const sv_ = e.target.closest('[data-setview]');
+  if (sv_) return setSetview(sv_.dataset.setview);
   const hv = e.target.closest('[data-hview]');
   if (hv) return setHview(hv.dataset.hview);
   const hg = e.target.closest('[data-hgo]');

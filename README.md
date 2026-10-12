@@ -84,7 +84,7 @@ cd tests && npm ci && npx playwright install chromium && npm test
 npm test -- rezept   # nur Tests, deren Dateiname „rezept“ enthält
 ```
 
-Unter „Einstellungen“ stehen Haushaltscode, Namen, Mitteilungen („Dieses Handy gehört“), Kalender-Abo, Sprachassistent, Urlaub, Laden-Reihenfolge, Startpaket, Sicherung, installierte Version und „Nach Update suchen“.
+„Einstellungen“ ist in vier Bereiche geteilt: Haushalt (Namen, Urlaub, Laden-Reihenfolge, Startpaket), Mitteilungen („Dieses Handy gehört“, Uhrzeit, Arten), Verbinden (Haushaltscode, Kalender-Abo, Sprachassistent) und App (Version, „Nach Update suchen“, Sicherung, Abmelden).
 
 **Neue Version veröffentlichen:** Versionsnummer an zwei Stellen erhöhen, `APP_VERSION` in `docs/index.html` und `version` in `docs/version.json` (dort auch Datum und Neuerungen eintragen).
 

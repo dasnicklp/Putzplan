@@ -59,7 +59,18 @@ module.exports = async ({ browser, ok, phone, newHousehold, BASE, day, sleep }) 
 
   // Einstellungen: Version und Update-Prüfung
   await a.click('[data-tab=settings]');
-  ok(await a.isVisible('#sCode') && await a.isVisible('#namesForm') && await a.isVisible('#orderList'), 'Einstellungen: Code, Namen, Laden-Reihenfolge');
+  ok((await a.locator('[data-setview]').allTextContents()).join('|') === 'Haushalt|Mitteilungen|Verbinden|App', 'Einstellungen: vier Bereiche');
+  const segCut = await a.$$eval('#setSeg button', (bs) => bs.filter((b) => b.scrollWidth > b.clientWidth + 1).length);
+  ok(!segCut, 'Beschriftung passt (360 px)');
+  ok(await a.isVisible('#namesForm') && await a.isVisible('#orderList') && await a.isVisible('#awayBody') && !(await a.isVisible('#pushBox')) && !(await a.isVisible('#sCode')), 'Haushalt: Namen, Urlaub, Laden-Reihenfolge, sonst nichts');
+  await a.click('[data-setview=push]');
+  ok(await a.isVisible('#pushBox') && !(await a.isVisible('#namesForm')), 'Mitteilungen');
+  await a.click('[data-setview=link]');
+  ok(await a.isVisible('#sCode') && await a.isVisible('#calBox') && await a.isVisible('#voiceBox'), 'Verbinden: Code, Kalender, Sprachassistent');
+  await a.click('[data-setview=app]');
+  ok(await a.isVisible('#btnCheckUpdate') && await a.isVisible('#btnBackup') && await a.isVisible('#btnLogout'), 'App: Version, Sicherung, Abmelden');
+  await a.reload(); await a.waitForSelector('#app:not([hidden])');
+  ok(await a.getAttribute('[data-setview=app]', 'aria-pressed') === 'true', 'Bereich bleibt gemerkt');
   const v = await a.textContent('#sVersion');
   await a.click('#btnCheckUpdate');
   await a.waitForFunction(() => !document.querySelector('#updateInfo').textContent.includes('Suche'));

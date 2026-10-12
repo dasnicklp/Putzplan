@@ -157,6 +157,10 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 - **WLAN für Gäste** (`settings.wifi`): QR-Code im WIFI-Format, eigener QR-Generator in der App (geprüft mit jsQR)
 - Tägliche Mitteilung zusätzlich mit Terminen (heute/morgen), Ablaufendem und Zählerständen; 11 Testdateien, rund 200 Prüfungen
 
+## Umgesetzt (3.2.0)
+
+- Einstellungen in vier Bereiche geteilt (oben umschaltbar, wird gemerkt): Haushalt, Mitteilungen, Verbinden, App
+
 ## Später möglich
 
 - Eigene Kategorien für Aufgaben, Erinnerung an einzelne Aufgaben zu einer Uhrzeit
