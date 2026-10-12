@@ -30,7 +30,7 @@ jobs:
       - name: Worker lokal starten
         working-directory: worker
         run: |
-          npx wrangler dev --port 8787 --ip 127.0.0.1 --test-scheduled --var ALLOW_LOCAL_PUSH:1 > ../wrangler.log 2>&1 &
+          npx wrangler dev --env test --port 8787 --ip 127.0.0.1 --test-scheduled --var ALLOW_LOCAL_PUSH:1 > ../wrangler.log 2>&1 &
           for i in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:8787/api >/dev/null 2>&1; then echo "Worker läuft."; exit 0; fi
             sleep 2

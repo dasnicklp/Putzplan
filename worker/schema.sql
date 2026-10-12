@@ -32,3 +32,7 @@ CREATE TABLE IF NOT EXISTS links (
   kind TEXT NOT NULL,           -- 'cal' (Kalender-Abo) oder 'add' (auf die Einkaufsliste, z. B. per Siri)
   created INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS usage (
+  k TEXT PRIMARY KEY,           -- z. B. 'scan:<Haushalt>:<Datum>': gescannte Kassenbons pro Tag
+  n INTEGER NOT NULL
+);

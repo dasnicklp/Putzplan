@@ -166,6 +166,11 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 
 - Essensplan wie die Wochenansicht beim Putzen: Tagesleiste mit Anzahl, gewählter Tag darunter, „Diese Woche“ als Liste, Wischen wechselt die Woche
 
+## Umgesetzt (3.4.0)
+
+- **Kassenbon scannen** im Vorrat: Foto wird in der App verkleinert (JPEG, unter 900 KB), `POST /api/receipt` lässt es von Workers AI lesen (Binding `AI`, mehrere Vision-Modelle der Reihe nach, das erste funktionierende wird gemerkt), Pfand/Summen/Doppeltes werden herausgefiltert; Prüffenster, dann in den Vorrat (neu oder wieder „Da“) und passende Einträge auf der Liste abhaken. 25 Bons pro Haushalt und Tag (Tabelle `usage`)
+- Tests laufen mit `wrangler dev --env test` (ohne KI, festes Beispiel über `FAKE_RECEIPT`); die echte KI prüft der Workflow „Bon-Scan prüfen“ (von Hand, mit `tests/fixtures/kassenbon.jpg`)
+
 ## Später möglich
 
 - Eigene Kategorien für Aufgaben, Erinnerung an einzelne Aufgaben zu einer Uhrzeit

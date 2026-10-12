@@ -159,6 +159,7 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 .code-inline{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:.08em}
 .update-box{margin-top:16px;padding-top:6px;border-top:1px solid var(--line)}
 .update-info{font-size:14px;margin:10px 0 0}
+.update-info.bad{color:var(--warn)}
 .update-info ul{margin:6px 0 0;padding-left:20px;color:var(--muted)}
 .update-info.new{color:var(--accent);font-weight:600}
 
@@ -760,6 +761,19 @@ a.btn.primary{color:var(--accent-ink)}
   </form>
 </div>
 
+<!-- Kassenbon scannen -->
+<input id="receiptFile" type="file" accept="image/*" hidden>
+<div class="overlay" id="receiptSheet" hidden>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2>Kassenbon</h2></div>
+    <div class="update-info" id="rcInfo" aria-live="polite"></div>
+    <div id="rcList"></div>
+    <button class="btn primary big" id="rcAdd" type="button" hidden>In den Vorrat</button>
+    <div class="actions"><button class="btn wide" id="rcCancel" type="button">Abbrechen</button></div>
+  </div>
+</div>
+
 <!-- Auswahl beim „+“ -->
 <div class="overlay" id="pickSheet" hidden>
   <div class="sheet">
@@ -809,7 +823,7 @@ a.btn.primary{color:var(--accent-ink)}
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '3.3.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '3.4.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Zuhause“ änderbar
@@ -2681,10 +2695,11 @@ function bestInfo(p) {
 const expiring = (maxDays) => livePantry().map((p) => ({ p, b: bestInfo(p) })).filter((x) => x.b && x.b.days <= maxDays).sort((a, b) => a.b.days - b.b.days);
 function pantryHtml() {
   const all = livePantry();
-  if (!all.length) return '<p class="empty" style="margin-top:18px">Noch nichts im Vorrat. Oben eintragen, was ihr zu Hause habt (z. B. Spülmittel, Kaffee, Nudeln). Wird etwas knapp oder ist leer, kommt es automatisch auf die Einkaufsliste.</p>';
+  const scanBtn = '<button class="btn big" type="button" data-scan style="margin-top:14px">🧾 Kassenbon scannen</button>';
+  if (!all.length) return scanBtn + '<p class="empty" style="margin-top:14px">Noch nichts im Vorrat. Oben eintragen, was ihr zu Hause habt (z. B. Spülmittel, Kaffee, Nudeln), oder nach dem Einkaufen den Kassenbon scannen. Wird etwas knapp oder ist leer, kommt es automatisch auf die Einkaufsliste.</p>';
   const low = all.filter((p) => p.status !== 'ok').length;
   const exp = expiring(3).length;
-  let html = low ? `<p class="subtitle">${low} knapp oder leer, steht auf der Einkaufsliste</p>` : '';
+  let html = scanBtn + (low ? `<p class="subtitle">${low} knapp oder leer, steht auf der Einkaufsliste</p>` : '');
   if (exp) html += `<p class="subtitle warn">⏳ ${exp === 1 ? '1 Sache läuft' : `${exp} Sachen laufen`} bald ab</p>`;
   if (!all.some((p) => p.best)) html += '<p class="muted small" style="margin:10px 0 0">Tipp: Auf eine Sache tippen, um das Mindesthaltbarkeitsdatum einzutragen. Die App erinnert dann rechtzeitig.</p>';
   for (const c of shopOrder()) {
@@ -2727,6 +2742,85 @@ function editPantry(id) {
     onDelete: () => removeWithUndo(() => pantry, [p], `„${p.name}“ aus dem Vorrat genommen`),
   });
 }
+/* Kassenbon scannen: Foto verkleinern, vom Server lesen lassen, Artikel prüfen und in den Vorrat übernehmen */
+let receipt = null; // { items: [{ name, qty, sel, pantry, shop }] }
+const sameThing = (a, b) => { a = nameKey(a); b = nameKey(b); return a === b || stem(a) === stem(b); };
+function shrinkImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let max = 1600, out = '';
+      for (let i = 0; i < 4; i++) {
+        const f = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.naturalWidth * f); c.height = Math.round(img.naturalHeight * f);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        out = c.toDataURL('image/jpeg', 0.8);
+        if (out.length < 900000) break;
+        max = Math.round(max * 0.75);
+      }
+      resolve(out);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bild')); };
+    img.src = url;
+  });
+}
+async function scanReceipt(file) {
+  receipt = null;
+  $('#rcList').innerHTML = '';
+  $('#rcInfo').textContent = 'Der Bon wird gelesen … das dauert ein paar Sekunden.';
+  $('#rcInfo').className = 'update-info';
+  $('#rcAdd').hidden = true;
+  $('#receiptSheet').hidden = false;
+  try {
+    const image = await shrinkImage(file);
+    const r = await api('/api/receipt', { image });
+    const openList = openShop();
+    receipt = { store: r.store, items: r.items.map((it) => ({ ...it, sel: true,
+      pantry: livePantry().find((p) => sameThing(p.name, it.name)), shop: openList.find((i) => sameThing(i.name, it.name)) })) };
+    renderReceipt();
+  } catch (e) {
+    $('#rcInfo').className = 'update-info bad';
+    $('#rcInfo').textContent = e.status === 422 ? 'Auf dem Foto habe ich keine Artikel erkannt. Bitte den Bon gerade, ganz und gut beleuchtet fotografieren.'
+      : e.status === 429 ? 'Für heute sind genug Bons gescannt. Morgen geht es wieder.'
+      : e.status === 503 ? 'Das Lesen von Bons klappt gerade nicht. Bitte später nochmal versuchen.'
+      : e.message === 'bild' ? 'Das Bild ließ sich nicht öffnen. Bitte ein Foto (JPG oder PNG) wählen.'
+      : 'Keine Verbindung. Bitte später nochmal versuchen.';
+  }
+}
+function renderReceipt() {
+  if (!receipt) return;
+  const n = receipt.items.filter((x) => x.sel).length;
+  $('#rcInfo').className = 'update-info';
+  $('#rcInfo').textContent = `${receipt.items.length} Artikel erkannt${receipt.store ? ` (${receipt.store})` : ''}. Antippen zum Ab- oder Auswählen.`;
+  $('#rcList').innerHTML = receipt.items.map((it, i) => `<button type="button" class="pack-row" data-rc="${i}" aria-pressed="${it.sel}"><span class="pk">${it.sel ? '✓' : ''}</span>
+    <span>${esc(it.name)}${it.qty ? ` <span class="muted">× ${esc(it.qty)}</span>` : ''}<small>${it.pantry ? `im Vorrat${it.pantry.status !== 'ok' ? ', wird wieder „Da“' : ''}` : `neu im Vorrat · ${esc(guessShopCat(it.name))}`}${it.shop ? ' · wird auf der Liste abgehakt' : ''}</small></span></button>`).join('');
+  $('#rcAdd').hidden = false;
+  $('#rcAdd').disabled = !n;
+  $('#rcAdd').textContent = n ? `${n} ${n === 1 ? 'Sache' : 'Sachen'} in den Vorrat` : 'Nichts ausgewählt';
+}
+function applyReceipt() {
+  if (!receipt) return;
+  let added = 0, refilled = 0, checked = 0;
+  for (const it of receipt.items.filter((x) => x.sel)) {
+    const p = livePantry().find((x) => sameThing(x.name, it.name));
+    if (p) { if (p.status !== 'ok' || p.best) { p.status = 'ok'; p.best = ''; touch(p); } refilled++; }
+    else { pantry.push(newItem({ name: it.name, cat: guessShopCat(it.name), status: 'ok', best: '' })); added++; }
+    const i = openShop().find((x) => sameThing(x.name, it.name));
+    if (i) { i.done = true; i.doneAt = Date.now(); touch(i); checked++; }
+  }
+  $('#receiptSheet').hidden = true;
+  receipt = null;
+  save();
+  toast([added && `${added} neu im Vorrat`, refilled && `${refilled} aufgefüllt`, checked && `${checked} auf der Liste abgehakt`].filter(Boolean).join(', ') || 'Nichts übernommen');
+}
+$('#receiptFile').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) scanReceipt(f); });
+$('#rcList').addEventListener('click', (e) => { const b = e.target.closest('[data-rc]'); if (!b || !receipt) return; const it = receipt.items[Number(b.dataset.rc)]; it.sel = !it.sel; renderReceipt(); });
+$('#rcAdd').addEventListener('click', applyReceipt);
+$('#rcCancel').addEventListener('click', () => { $('#receiptSheet').hidden = true; receipt = null; });
+$('#receiptSheet').addEventListener('click', (e) => { if (e.target.id === 'receiptSheet') { $('#receiptSheet').hidden = true; receipt = null; } });
+
 // Vorschläge für den Vorrat: Einkäufe aus dem Verlauf, die noch nicht im Vorrat stehen
 const pantrySuggestions = () => shopSuggestions().concat(openShop().map((i) => i.name)).filter((n, i, a) => !pantryOf(n) && a.indexOf(n) === i).slice(0, 12);
 
@@ -3592,6 +3686,7 @@ document.addEventListener('click', (e) => {
   const bar = e.target.closest('[data-cap]');
   if (bar) return showCap(bar);
   if (e.target.closest('[data-wifi]')) return openWifi();
+  if (e.target.closest('[data-scan]')) return $('#receiptFile').click();
   if (e.target.closest('[data-cook]')) { cookMode = !cookMode; window.scrollTo(0, 0); return render(); }
   const cp = e.target.closest('[data-copy]');
   if (cp) return copyText(cp.dataset.copy, 'Link kopiert');

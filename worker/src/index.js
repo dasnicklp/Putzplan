@@ -12,7 +12,8 @@ const ORIGINS = [
   'https://dasnicklp.github.io',
   'http://localhost:8765', 'http://127.0.0.1:8765',
 ];
-const MAX_BODY = 1024 * 1024;
+const MAX_BODY = 1024 * 1024; // auch für das Foto eines Kassenbons (die App verkleinert es vorher)
+const MAX_SCANS = 25; // Kassenbons pro Haushalt und Tag (das kostenlose KI-Kontingent reicht für weit mehr)
 const MAX_TASKS = 2000;
 const MAX_NOTES = 1000;
 const MAX_SHOP = 1000;
@@ -66,6 +67,7 @@ async function init(env) {
     env.DB.prepare('CREATE TABLE IF NOT EXISTS households (id TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at INTEGER NOT NULL)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS attempts (ip TEXT PRIMARY KEY, fails INTEGER NOT NULL, locked_until INTEGER NOT NULL)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS config (k TEXT PRIMARY KEY, v TEXT NOT NULL)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS usage (k TEXT PRIMARY KEY, n INTEGER NOT NULL)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS links (token TEXT PRIMARY KEY, household TEXT NOT NULL, kind TEXT NOT NULL, created INTEGER NOT NULL)'),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, household TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL,
       person TEXT NOT NULL, time TEXT NOT NULL, tz TEXT NOT NULL, last_sent TEXT NOT NULL DEFAULT '', created INTEGER NOT NULL)`),
@@ -751,6 +753,74 @@ async function addByVoice(env, id, text, who) {
 const listText = (a) => (a.length > 1 ? a.slice(0, -1).join(', ') + ' und ' + a[a.length - 1] : a[0] || '');
 
 /* ------------------------------------------------------------------ */
+/* Kassenbon lesen (Workers AI): Foto rein, Liste der Artikel raus     */
+/* ------------------------------------------------------------------ */
+const RECEIPT_PROMPT = `Das Bild zeigt einen Kassenbon aus einem deutschen Supermarkt oder einer Drogerie.
+Liste alle gekauften Artikel auf. Schreibe abgekürzte Bezeichnungen als normale deutsche Wörter aus, so wie man sie auf einen Einkaufszettel schreibt
+(z. B. "BIO VOLLM.3,5%" -> "Vollmilch", "GOUDA JG.SCHB." -> "Gouda", "BANANEN LOSE" -> "Bananen", "SPUELM.ZITR" -> "Spülmittel").
+Kauft jemand etwas mehrfach, gib die Anzahl als qty an.
+Lass Pfand, Leergut, Tüten, Rabatte, Coupons, Summen, Steuern und Zahlungsangaben weg.
+Antworte nur mit JSON in dieser Form, ohne weiteren Text:
+{"store": "Name des Ladens", "items": [{"name": "Vollmilch", "qty": "2"}]}`;
+// Was kein Artikel ist (falls das Modell es trotzdem aufführt)
+const NOT_ITEM = /pfand|leergut|t(ü|ue)te|tragetasche|summe|gesamt|zwischensumme|r(ü|ue)ckgeld|mwst|steuer|rabatt|coupon|payback|kartenzahlung|ec-?karte|bar\b|gegeben|netto|brutto|bonus/i;
+// Modelle in dieser Reihenfolge; das erste, das antwortet, wird gemerkt
+const VISION_MODELS = [
+  ['@cf/meta/llama-4-scout-17b-16e-instruct', 'parts'],
+  ['@cf/google/gemma-3-12b-it', 'parts'],
+  ['@cf/mistralai/mistral-small-3.1-24b-instruct', 'parts'],
+  ['@cf/meta/llama-3.2-11b-vision-instruct', 'image'],
+];
+let goodModel = null;
+async function askVision(env, model, kind, dataUrl) {
+  const input = kind === 'parts'
+    ? { messages: [{ role: 'user', content: [{ type: 'text', text: RECEIPT_PROMPT }, { type: 'image_url', image_url: { url: dataUrl } }] }], max_tokens: 1500, temperature: 0.1 }
+    : { messages: [{ role: 'user', content: RECEIPT_PROMPT }], image: dataUrl, max_tokens: 1500, temperature: 0.1 };
+  try { return await env.AI.run(model, input); }
+  catch (e) {
+    // Llama 3.2 Vision verlangt einmalig die Zustimmung zur Lizenz
+    if (/agree/i.test(String(e && e.message))) { await env.AI.run(model, { prompt: 'agree' }).catch(() => {}); return env.AI.run(model, input); }
+    throw e;
+  }
+}
+function parseReceipt(out) {
+  let text = out && (out.response ?? out.result ?? out);
+  if (text && typeof text === 'object') text = JSON.stringify(text);
+  text = String(text || '');
+  const a = text.indexOf('{'), b = text.lastIndexOf('}');
+  let data = null;
+  try { data = JSON.parse(text.slice(a, b + 1)); } catch (e) { /* vielleicht nur eine Liste */ }
+  if (!data) { const x = text.indexOf('['), y = text.lastIndexOf(']'); try { data = { items: JSON.parse(text.slice(x, y + 1)) }; } catch (e) { return null; } }
+  const seen = new Set(), items = [];
+  for (const it of Array.isArray(data.items) ? data.items : []) {
+    const name = clampStr(typeof it === 'string' ? it : it && (it.name || it.artikel || it.item), 60).replace(/\s+/g, ' ');
+    if (!name || NOT_ITEM.test(name) || /^[\d.,\s€-]+$/.test(name)) continue;
+    const key = name.toLowerCase();
+    const qty = clampStr(String((it && (it.qty ?? it.menge ?? it.anzahl)) ?? ''), 20).replace(/^1$/, '');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    items.push({ name: name[0].toUpperCase() + name.slice(1), qty: qty === '0' ? '' : qty });
+    if (items.length >= 60) break;
+  }
+  return { store: clampStr(data.store || data.laden || '', 60), items };
+}
+async function readReceipt(env, dataUrl) {
+  if (env.FAKE_RECEIPT === '1') { // nur in den Tests: festes Beispiel, inkl. Dingen, die herausgefiltert werden
+    return parseReceipt({ response: 'Hier: {"store":"Testmarkt","items":[{"name":"Vollmilch","qty":"2"},{"name":"bananen","qty":"1"},{"name":"Spülmittel"},{"name":"Pfand"},{"name":"Vollmilch","qty":"2"},{"name":"Summe"},{"name":"Kaffee"}]}' });
+  }
+  if (!env.AI) return { error: 'ai' };
+  const tried = [];
+  for (const [model, kind] of goodModel ? [goodModel, ...VISION_MODELS.filter((m) => m !== goodModel)] : VISION_MODELS) {
+    try {
+      const r = parseReceipt(await askVision(env, model, kind, dataUrl));
+      if (r) { goodModel = [model, kind]; return { ...r, model }; }
+      tried.push(model + ': keine Liste');
+    } catch (e) { tried.push(model + ': ' + String(e && e.message || e).slice(0, 200)); }
+  }
+  return { error: 'ai', tried };
+}
+
+/* ------------------------------------------------------------------ */
 /* HTTP-API                                                            */
 /* ------------------------------------------------------------------ */
 async function readJson(req) {
@@ -865,6 +935,22 @@ async function handle(req, env, ctx) {
     const { added, ...rest } = out;
     if (added && (added.board.length || added.shop) && ctx) ctx.waitUntil(notifyOthers(env, auth.id, out, me, String(body.device || '')));
     return json(req, { ...rest, serverTime: Date.now() });
+  }
+
+  // Kassenbon lesen: { image: 'data:image/jpeg;base64,…' } → { store, items: [{ name, qty }] }
+  if (path === '/api/receipt' && req.method === 'POST') {
+    const body = await readJson(req);
+    const img = String(body.image || '');
+    if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]{100,}$/.test(img)) return json(req, { error: 'image' }, 400);
+    const day = new Date().toISOString().slice(0, 10), key = `scan:${auth.id}:${day}`;
+    const used = await env.DB.prepare('SELECT n FROM usage WHERE k = ?').bind(key).first();
+    if (used && used.n >= MAX_SCANS) return json(req, { error: 'limit' }, 429);
+    await env.DB.prepare('INSERT INTO usage (k, n) VALUES (?, 1) ON CONFLICT(k) DO UPDATE SET n = n + 1').bind(key).run();
+    await env.DB.prepare("DELETE FROM usage WHERE k LIKE 'scan:%' AND k NOT LIKE ?").bind(`scan:%:${day}`).run(); // alte Tage vergessen
+    const r = await readReceipt(env, img);
+    if (r.error) return json(req, { error: r.error, ...(body.debug ? { tried: r.tried } : {}) }, 503);
+    if (!r.items.length) return json(req, { error: 'empty', ...(body.debug ? { model: r.model } : {}) }, 422);
+    return json(req, { store: r.store, items: r.items, ...(body.debug ? { model: r.model } : {}) });
   }
 
   // Gerät für Erinnerungen anmelden (oder Einstellungen ändern)

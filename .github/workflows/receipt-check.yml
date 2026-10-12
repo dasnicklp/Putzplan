@@ -1,0 +1,23 @@
+# Prüft den Bon-Scan gegen die echte KI bei Cloudflare (die läuft nur online, nicht in den lokalen Tests).
+# Nur von Hand starten: legt dafür einen leeren Test-Haushalt an und schickt den Beispiel-Bon tests/fixtures/kassenbon.jpg.
+name: Bon-Scan prüfen
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Beispiel-Bon lesen lassen
+        env:
+          URL: https://putzplan-api.n-kudenholdt2000.workers.dev
+        run: |
+          CODE=$(curl -fsS -X POST "$URL/api/household" | node -pe 'JSON.parse(require("fs").readFileSync(0)).code')
+          node -e 'const fs=require("fs"); fs.writeFileSync("body.json", JSON.stringify({ debug: true, image: "data:image/jpeg;base64," + fs.readFileSync("tests/fixtures/kassenbon.jpg").toString("base64") }))'
+          START=$(date +%s)
+          curl -sS -X POST "$URL/api/receipt" -H "Authorization: Bearer $CODE" -H 'Content-Type: application/json' --data @body.json -o result.json -w 'HTTP %{http_code}\n'
+          echo "Dauer: $(( $(date +%s) - START )) s"
+          cat result.json; echo
+          node -e 'const r=JSON.parse(require("fs").readFileSync("result.json")); if (!r.items || r.items.length < 5) process.exit(1); console.log("Erkannt:", r.items.map((i) => i.name + (i.qty ? " ×" + i.qty : "")).join(", "))'

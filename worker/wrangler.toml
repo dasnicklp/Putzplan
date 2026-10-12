@@ -16,3 +16,13 @@ database_id = "HIER-DATENBANK-ID-EINTRAGEN"
 # Erinnerungen: alle 15 Minuten nachsehen, wer seine tägliche Push-Nachricht bekommt
 [triggers]
 crons = ["*/15 * * * *"]
+
+# Kassenbon lesen: KI-Modell von Cloudflare (Workers AI, im kostenlosen Kontingent), kein eigener Schlüssel nötig
+[ai]
+binding = "AI"
+
+# Für die Tests (wrangler dev --env test): ohne KI, denn die läuft nur bei Cloudflare.
+# Die Datenbank ist dann eine lokale Test-Datenbank; der Bon-Scan liefert ein festes Beispiel (FAKE_RECEIPT).
+[env.test]
+d1_databases = [{ binding = "DB", database_name = "putzplan", database_id = "lokal-test" }]
+vars = { FAKE_RECEIPT = "1" }

@@ -93,6 +93,8 @@ Die App-Adresse ist **<https://putzplan-api.n-kudenholdt2000.workers.dev/>**.
 
 **Mitteilungen (optional):** In der App im Reiter „Einstellungen“ unter „Mitteilungen“ wählen, wem das Handy gehört, Uhrzeit und Arten einstellen (täglich, Wochenrückblick, Pinnwand, Einkaufsliste), dann „Mitteilungen einschalten“ und erlauben. Das macht jedes Handy für sich. In Cloudflare ist dafür nichts einzurichten, der Worker legt seine Schlüssel selbst an. Auf dem iPhone geht das nur in der App vom Home-Bildschirm (ab iOS 16.4).
 
+**Kassenbon scannen:** nutzt Workers AI (Binding `AI` in `wrangler.toml`), im kostenlosen Tageskontingent von Cloudflare. Nichts einzurichten. Ob es online klappt, zeigt der Workflow „Bon-Scan prüfen“ (Actions → Run workflow).
+
 **Kalender-Abo und Sprachassistent (optional):** In der App unter „Einstellungen“. Die Links erzeugt der Worker selbst (Tabelle `links`), in Cloudflare ist nichts einzurichten.
 
 ---

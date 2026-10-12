@@ -12,7 +12,7 @@ const lib = require('./lib.cjs');
     const r = await fetch(new URL('/api', lib.BASE));
     if (!(await r.text()).includes('putzplan-api')) throw new Error();
   } catch (e) {
-    console.error(`Kein Worker unter ${lib.BASE}. Erst im Ordner worker/ starten:\n  npx wrangler dev --port 8787 --ip 127.0.0.1 --test-scheduled --var ALLOW_LOCAL_PUSH:1`);
+    console.error(`Kein Worker unter ${lib.BASE}. Erst im Ordner worker/ starten:\n  npx wrangler dev --env test --port 8787 --ip 127.0.0.1 --test-scheduled --var ALLOW_LOCAL_PUSH:1`);
     process.exit(2);
   }
   const filter = process.argv[2] || '';
