@@ -2411,9 +2411,24 @@ function showSetup() {
   $('#setupCode').hidden = true;
   $('#joinErr').textContent = '';
 }
+// Beschriftung unten verkleinern, falls sie mit der Schrift des Geräts nicht in die Breite passt
+function fitTabs() {
+  const bs = [...document.querySelectorAll('.tabbar button')];
+  bs.forEach((b) => { b.style.fontSize = ''; });
+  let size = parseFloat(getComputedStyle(bs[0]).fontSize);
+  while (size > 8.5 && bs.some((b) => b.scrollWidth > b.clientWidth)) {
+    size -= 0.5;
+    bs.forEach((b) => { b.style.fontSize = size + 'px'; });
+  }
+}
+window.addEventListener('resize', () => { if (code) fitTabs(); });
+window.addEventListener('load', () => { if (code) fitTabs(); });
+if (document.fonts) document.fonts.ready.then(() => { if (code) fitTabs(); });
+
 function startApp() {
   $('#setup').hidden = true;
   $('#app').hidden = false;
+  fitTabs();
   $('#sCode').textContent = fmtCode(code);
   fillHome();
   render();
