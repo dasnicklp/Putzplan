@@ -115,6 +115,16 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 - Gleicher Name ersetzt das vorhandene Rezept; Schutz vor zu großen Datenmengen (Server-Grenze ca. 1,5 MB)
 - Export im selben Format (auf dem Handy über das Teilen-Menü, sonst als Download)
 
+## Umgesetzt (Phase 10, 2.0.0)
+
+- **Aufräumen:** Der Server entfernt erledigte Aufgaben, die älter als 180 Tage sind, und vergangene Essenspläne nach 60 Tagen. Für „Zuletzt geputzt“ bleibt pro Bereich das zuletzt Erledigte in `history.lastByCat`. Wird es trotzdem eng, fallen zuerst Gelöschtes und Erledigtes weg, nie offene Einträge.
+- **Rückgängig:** Löschen (Aufgabe, Notiz, Rezept, Eintrag, Gericht) und „Erledigte entfernen“ ohne Rückfrage, dafür mit „Rückgängig“ in der Meldung
+- **Sicherung:** alles als eine Datei (`type: backup`); Einspielen ergänzt Fehlendes und holt Gelöschtes zurück, Vorhandenes bleibt
+- **Checklisten** in Aufgaben (`checklist: [{id, text, done}]`, bis 30 Punkte), abhaken direkt an der Aufgabe; sind alle abgehakt, bietet die Meldung „Aufgabe erledigen“ an; der Folgetermin startet mit leerer Checkliste
+- **Essensplan** (`meals: [{id, date, title, recipeId, servings, shopped}]`) im Reiter „Einkauf“: Woche mit Navigation, Rezepte oder freie Gerichte pro Tag, Wocheneinkauf rechnet alle Zutaten auf die Portionen um und fasst gleiche zusammen; „Heute gibt's …“ unter Putzen
+- **Tests im Repo** (`tests/`, 8 Dateien, über 100 Prüfungen) und GitHub-Workflow; die Veröffentlichung wartet auf grüne Tests
+- Sync im Worker auf eine Liste der Sammlungen umgestellt (`COLLECTIONS`), damit neue Bereiche nur eine Zeile brauchen
+
 ## Später möglich
 
 - Eigene Kategorien für Aufgaben, Erinnerung an einzelne Aufgaben zu einer Uhrzeit

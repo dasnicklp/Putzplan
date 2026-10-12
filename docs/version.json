@@ -1,9 +1,11 @@
 {
-  "version": "1.10.0",
-  "date": "2026-10-11",
+  "version": "2.0.0",
+  "date": "2026-10-12",
   "notes": [
-    "Rezepte importieren: JSON einfügen oder Datei wählen, ein oder mehrere Rezepte auf einmal, mit Vorschau",
-    "Versteht auch das Rezept-Format von Rezeptseiten (schema.org) und JSON aus einem Chat",
-    "Rezepte exportieren (zum Sichern oder Weitergeben)"
+    "Essensplan: Rezepte auf Wochentage legen und alle Zutaten der Woche mit einem Tipp auf die Einkaufsliste setzen",
+    "Checklisten in Aufgaben, z. B. Spiegel, Waschbecken, Fugen beim Bad",
+    "Löschen ohne Rückfrage, dafür mit „Rückgängig“",
+    "Sicherung: alles in einer Datei speichern und wieder einspielen",
+    "Im Hintergrund: alte erledigte Aufgaben werden nach einem halben Jahr aufgeräumt"
   ]
 }

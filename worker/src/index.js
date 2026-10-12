@@ -1,7 +1,7 @@
 // Putzplan-Backend (Cloudflare Worker + D1)
 // - Liefert außerdem die App (docs/) als statische Dateien aus, siehe [assets] in wrangler.toml
 // - Zugang über einen 6-stelligen Haushaltscode, kein Konto
-// - Sync: Geräte schicken Aufgaben, Notizen, Einkaufsliste und Rezepte, der Server führt sie zusammen (neueste Änderung gewinnt pro Eintrag)
+// - Sync: Geräte schicken Aufgaben, Notizen, Einkaufsliste, Rezepte und Essensplan, der Server führt sie zusammen (neueste Änderung gewinnt pro Eintrag)
 // - Nach 5 falschen Codes von einer IP wird diese IP 15 Minuten gesperrt
 // - Erinnerungen: Geräte melden sich für Web Push an, ein Zeitplan (alle 15 Minuten) schickt einmal am Tag die offenen Aufgaben
 
@@ -14,6 +14,9 @@ const MAX_TASKS = 2000;
 const MAX_NOTES = 1000;
 const MAX_SHOP = 1000;
 const MAX_RECIPES = 300;
+const MAX_MEALS = 500;
+const ARCHIVE_MS = 180 * 864e5; // erledigte Aufgaben nach einem halben Jahr aufräumen (nur „Zuletzt geputzt“ merkt sich das Letzte pro Bereich)
+const MEAL_KEEP_DAYS = 60;      // Essensplan: vergangene Tage nach 60 Tagen löschen
 const MAX_DATA = 1500 * 1024; // D1 erlaubt ca. 2 MB pro Zeile
 const TOMBSTONE_MS = 60 * 864e5; // gelöschte Aufgaben 60 Tage merken, damit andere Geräte sie auch löschen
 const MAX_FAILS = 5;
@@ -105,6 +108,8 @@ function cleanTask(t) {
     every: Number.isInteger(t.every) && t.every >= 1 && t.every <= 365 ? t.every : 1, // alle N Tage/Wochen/Monate
     fromDone: t.fromDone === true, // nächster Termin ab dem Erledigen statt ab dem Fälligkeitstag
     rotate: t.rotate === true,     // Zuweisung wechselt bei jedem Erledigen
+    checklist: Array.isArray(t.checklist) ? t.checklist.slice(0, 30).map((c) => (c && typeof c === 'object' && typeof c.id === 'string'
+      && /^[\w-]{1,24}$/.test(c.id) && clampStr(c.text, 120) ? { id: c.id, text: clampStr(c.text, 120), done: c.done === true } : null)).filter(Boolean) : [],
     done: t.done === true,
     doneAt: Number.isFinite(t.doneAt) ? t.doneAt : null,
     createdAt: Number.isFinite(t.createdAt) ? t.createdAt : t.updatedAt,
@@ -174,6 +179,36 @@ function cleanRecipe(r) {
   };
 }
 
+// Essensplan: ein Gericht an einem Tag, aus einem Rezept oder frei („Pizza bestellen“)
+function cleanMeal(m) {
+  if (!m || typeof m !== 'object') return null;
+  if (typeof m.id !== 'string' || !/^[\w-]{1,64}$/.test(m.id)) return null;
+  if (!Number.isFinite(m.updatedAt)) return null;
+  const deleted = m.deleted === true;
+  const title = clampStr(m.title, 200);
+  if (!deleted && (!isDate(m.date) || !title)) return null;
+  return {
+    id: m.id,
+    date: isDate(m.date) ? m.date : '',
+    title,
+    recipeId: typeof m.recipeId === 'string' && /^[\w-]{1,64}$/.test(m.recipeId) ? m.recipeId : '',
+    servings: Number.isInteger(m.servings) && m.servings >= 1 && m.servings <= 50 ? m.servings : 2,
+    shopped: m.shopped === true, // Zutaten schon auf die Einkaufsliste gesetzt
+    createdAt: Number.isFinite(m.createdAt) ? m.createdAt : m.updatedAt,
+    updatedAt: m.updatedAt,
+    deleted,
+  };
+}
+
+// Alle Listen, die synchronisiert werden: Prüffunktion und Höchstzahl
+const COLLECTIONS = {
+  tasks: [cleanTask, MAX_TASKS],
+  notes: [cleanNote, MAX_NOTES],
+  shop: [cleanShopItem, MAX_SHOP],
+  recipes: [cleanRecipe, MAX_RECIPES],
+  meals: [cleanMeal, MAX_MEALS],
+};
+
 // Gemeinsame Einstellungen (Namen, Urlaub): als Ganzes, die neuere Änderung gewinnt
 function cleanSettings(s) {
   if (!s || typeof s !== 'object' || !Number.isFinite(s.updatedAt)) return null;
@@ -182,7 +217,8 @@ function cleanSettings(s) {
   return { names: { nick: clampStr(n.nick, 30), partner: clampStr(n.partner, 30) }, away, updatedAt: s.updatedAt };
 }
 
-// Pro Eintrag (Aufgabe, Notiz, Einkaufsartikel) gewinnt die neuere Änderung. Alte Löschmarkierungen fallen weg.
+// Pro Eintrag gewinnt die neuere Änderung. Alte Löschmarkierungen fallen weg.
+// Wird es zu viel, fallen zuerst Gelöschtes und Erledigtes weg, nie offene Einträge vor diesen.
 function mergeItems(current, incoming, max) {
   const map = new Map();
   for (const t of current) map.set(t.id, t);
@@ -193,29 +229,46 @@ function mergeItems(current, incoming, max) {
   const cutoff = Date.now() - TOMBSTONE_MS;
   return [...map.values()]
     .filter((t) => !(t.deleted && t.updatedAt < cutoff))
-    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .sort((a, b) => (active(b) - active(a)) || b.updatedAt - a.updatedAt)
     .slice(0, max);
+}
+const active = (t) => (t.deleted || t.done ? 0 : 1);
+
+// Aufräumen: erledigte Aufgaben älter als ein halbes Jahr und vergangene Essenspläne entfernen.
+// Für „Zuletzt geputzt“ bleibt pro Bereich das zuletzt Erledigte in history.lastByCat.
+// Schickt ein Gerät die alten Einträge noch einmal, werden sie hier einfach wieder entfernt.
+function archive(out, history) {
+  const h = { lastByCat: { ...((history && history.lastByCat) || {}) } };
+  const cutoff = Date.now() - ARCHIVE_MS;
+  out.tasks = out.tasks.filter((t) => {
+    if (!(t.done && !t.deleted && t.doneAt && t.doneAt < cutoff)) return true;
+    const last = h.lastByCat[t.category];
+    if (!last || last.doneAt < t.doneAt) h.lastByCat[t.category] = { title: t.title, doneAt: t.doneAt, assignee: t.assignee };
+    return false;
+  });
+  const oldDay = new Date(Date.now() - MEAL_KEEP_DAYS * 864e5).toISOString().slice(0, 10);
+  out.meals = out.meals.filter((m) => m.deleted || m.date >= oldDay);
+  return Object.keys(h.lastByCat).length ? h : null;
 }
 
 // Lesen, zusammenführen, schreiben. Bei gleichzeitigem Schreiben wird wiederholt (optimistische Sperre).
-async function sync(env, id, incoming, incomingNotes, incomingShop, incomingRecipes, incomingSettings) {
+async function sync(env, id, incoming, incomingSettings) {
   for (let i = 0; i < 6; i++) {
     const row = await env.DB.prepare('SELECT data, updated_at FROM households WHERE id = ?').bind(id).first();
     if (!row) return null;
     const cur = JSON.parse(row.data);
-    const merged = mergeItems(cur.tasks || [], incoming, MAX_TASKS);
-    const notes = mergeItems(cur.notes || [], incomingNotes, MAX_NOTES);
-    const shop = mergeItems(cur.shop || [], incomingShop, MAX_SHOP);
-    const recipes = mergeItems(cur.recipes || [], incomingRecipes, MAX_RECIPES);
+    const out = {};
+    for (const [k, [, max]] of Object.entries(COLLECTIONS)) out[k] = mergeItems(cur[k] || [], incoming[k] || [], max);
+    const history = archive(out, cur.history);
     let settings = cur.settings || null;
     if (incomingSettings && (!settings || incomingSettings.updatedAt > settings.updatedAt)) settings = incomingSettings;
-    const out = { tasks: merged, notes, shop, recipes, settings };
-    // Gespeichert wird nur, was es gibt (alte Datensätze ohne Notizen/Einkaufsliste bleiben unverändert)
-    const stored = { tasks: merged };
-    if (notes.length || cur.notes) stored.notes = notes;
-    if (shop.length || cur.shop) stored.shop = shop;
-    if (recipes.length || cur.recipes) stored.recipes = recipes;
+    out.settings = settings;
+    out.history = history;
+    // Gespeichert wird nur, was es gibt (alte Datensätze ohne Notizen, Einkaufsliste usw. bleiben unverändert)
+    const stored = { tasks: out.tasks };
+    for (const k of Object.keys(COLLECTIONS)) if (k !== 'tasks' && (out[k].length || cur[k])) stored[k] = out[k];
     if (settings) stored.settings = settings;
+    if (history) stored.history = history;
     const data = JSON.stringify(stored);
     if (data === row.data) return out; // nichts geändert, nichts schreiben
     if (data.length > MAX_DATA) return { tooBig: true };
@@ -427,14 +480,12 @@ async function handle(req, env) {
 
   if (path === '/api/sync' && req.method === 'POST') {
     const body = await readJson(req);
-    const incoming = (Array.isArray(body.tasks) ? body.tasks.slice(0, MAX_TASKS) : []).map(cleanTask).filter(Boolean);
-    const incomingNotes = (Array.isArray(body.notes) ? body.notes.slice(0, MAX_NOTES) : []).map(cleanNote).filter(Boolean);
-    const incomingShop = (Array.isArray(body.shop) ? body.shop.slice(0, MAX_SHOP) : []).map(cleanShopItem).filter(Boolean);
-    const incomingRecipes = (Array.isArray(body.recipes) ? body.recipes.slice(0, MAX_RECIPES) : []).map(cleanRecipe).filter(Boolean);
-    const out = await sync(env, auth.id, incoming, incomingNotes, incomingShop, incomingRecipes, cleanSettings(body.settings));
+    const incoming = {};
+    for (const [k, [clean, max]] of Object.entries(COLLECTIONS)) incoming[k] = (Array.isArray(body[k]) ? body[k].slice(0, max) : []).map(clean).filter(Boolean);
+    const out = await sync(env, auth.id, incoming, cleanSettings(body.settings));
     if (!out) return json(req, { error: 'unknown' }, 404);
     if (out.tooBig) return json(req, { error: 'too_big' }, 413);
-    return json(req, { tasks: out.tasks, notes: out.notes, shop: out.shop, recipes: out.recipes, settings: out.settings, serverTime: Date.now() });
+    return json(req, { ...out, serverTime: Date.now() });
   }
 
   // Gerät für Erinnerungen anmelden (oder Einstellungen ändern)

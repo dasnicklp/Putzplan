@@ -1,0 +1,11 @@
+{
+  "name": "putzplan-tests",
+  "private": true,
+  "description": "Ende-zu-Ende-Tests: echter Browser gegen den lokalen Worker (wrangler dev)",
+  "scripts": {
+    "test": "node run.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

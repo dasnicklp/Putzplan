@@ -1,6 +1,6 @@
 # Veröffentlicht Backend (worker/) und App (docs/) auf Cloudflare.
 # Braucht zwei Repository-Secrets: CLOUDFLARE_API_TOKEN und CLOUDFLARE_ACCOUNT_ID (siehe SETUP.md).
-# Legt die D1-Datenbank "putzplan" beim ersten Lauf selbst an.
+# Legt die D1-Datenbank "putzplan" beim ersten Lauf selbst an. Vorher laufen die Tests (tests.yml).
 name: App und Backend veröffentlichen
 
 on:
@@ -10,7 +10,12 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Erst testen: Veröffentlicht wird nur, wenn alle Tests bestehen
+  test:
+    uses: ./.github/workflows/tests.yml
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     defaults:
       run:

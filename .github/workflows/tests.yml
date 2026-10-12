@@ -1,0 +1,46 @@
+# Ende-zu-Ende-Tests: startet den Worker lokal (wrangler dev, eigene Test-Datenbank) und prüft die App in einem echten Chromium.
+# Läuft bei jedem Push auf andere Branches, bei Pull Requests und vor jeder Veröffentlichung (siehe deploy-worker.yml).
+name: Tests
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Abhängigkeiten installieren
+        run: |
+          npm ci --prefix worker
+          npm ci --prefix tests
+          cd tests && npx playwright install --with-deps chromium
+
+      - name: Worker lokal starten
+        working-directory: worker
+        run: |
+          npx wrangler dev --port 8787 --ip 127.0.0.1 --test-scheduled --var ALLOW_LOCAL_PUSH:1 > ../wrangler.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8787/api >/dev/null 2>&1; then echo "Worker läuft."; exit 0; fi
+            sleep 2
+          done
+          cat ../wrangler.log
+          exit 1
+
+      - name: Tests
+        run: npm test --prefix tests
+
+      - name: Worker-Protokoll (bei Fehlern)
+        if: failure()
+        run: cat wrangler.log

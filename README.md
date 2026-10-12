@@ -2,8 +2,10 @@
 
 Gemeinsamer Putzplan für zwei Personen als Web-App (PWA). Läuft auf iPhone und Android über den Homescreen, ohne App Store und ohne Benutzerkonto.
 
-- Vier Reiter unten: Putzen (umschaltbar Heute · Woche · Monat · Bilanz), Einkauf (umschaltbar Liste · Rezepte), Notizen, Haushalt
+- Vier Reiter unten: Putzen (umschaltbar Heute · Woche · Monat · Bilanz), Einkauf (umschaltbar Liste · Rezepte · Essensplan), Notizen, Haushalt
 - Rezepte: Zutaten untereinander eintragen, Portionen umrechnen, ausgewählte Zutaten mit einem Tipp auf die Einkaufsliste; Import und Export als JSON (siehe unten)
+- Essensplan: Rezepte oder freie Gerichte auf Wochentage legen, alle Zutaten der Woche zusammengefasst auf die Einkaufsliste
+- Checklisten in Aufgaben (z. B. Spiegel, Waschbecken, Fugen); Löschen mit „Rückgängig“; Komplett-Sicherung als Datei
 - Gemeinsame Einkaufsliste: schnell eintippen („2 Milch“), automatisch nach Bereichen im Laden sortiert, Abhaken, Vorschläge aus dem Verlauf
 - Gemeinsame Notizen mit Kategorien (Filter, eigene Kategorien, Anheften)
 - Heute-Ansicht (Überfälliges, heute, morgen), Monatsansicht und Wochenansicht mit den 7 Tagen nebeneinander, darunter die Aufgaben des gewählten Tags
@@ -56,9 +58,22 @@ docs/      App (statisch; ausgeliefert vom Worker und zusätzlich von GitHub Pag
   sw.js                 Offline-Cache
   manifest.webmanifest  Name und Icons für die Installation
 worker/    Backend (Cloudflare Worker + D1-Datenbank)
-  src/index.js          API: Haushalt anlegen, Code prüfen, Aufgaben/Einkaufsliste/Rezepte/Notizen synchronisieren, Erinnerungen
+  src/index.js          API: Haushalt anlegen, Code prüfen, alles synchronisieren, Erinnerungen, Aufräumen
   wrangler.toml         Worker-Name, Datenbank-Verknüpfung, Ordner der App
-.github/workflows/deploy-worker.yml   veröffentlicht App und Backend automatisch bei Änderungen auf main
+tests/     Ende-zu-Ende-Tests (Playwright gegen den lokalen Worker)
+.github/workflows/tests.yml           Tests bei jedem Push und vor jeder Veröffentlichung
+.github/workflows/deploy-worker.yml   veröffentlicht App und Backend auf main, nur wenn die Tests bestehen
+```
+
+## Tests
+
+Die Tests öffnen die App in einem echten Chromium (Handy-Größe), mit zwei „Geräten“ und einem nachgebauten Push-Dienst. Auf GitHub laufen sie automatisch. Lokal:
+
+```bash
+cd worker && npm ci && npx wrangler dev --port 8787 --ip 127.0.0.1 --test-scheduled --var ALLOW_LOCAL_PUSH:1
+# in einem zweiten Terminal:
+cd tests && npm ci && npx playwright install chromium && npm test
+npm test -- rezept   # nur Tests, deren Dateiname „rezept“ enthält
 ```
 
 Namen ändert ihr direkt in der App im Reiter „Haushalt“. Dort steht auch die installierte Version, und „Nach Update suchen“ zeigt die aktuellste.

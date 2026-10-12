@@ -164,6 +164,8 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(156px + env(safe-area-inset-bottom));background:var(--surface2);border:1px solid var(--line);padding:10px 14px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20;max-width:90vw}
 .toast.show{opacity:1}
+.toast.act.show{pointer-events:auto}
+.toast button{margin-left:12px;border:0;background:none;color:var(--accent);font-weight:700;font-size:14px;padding:6px 2px}
 
 /* Tab-Leiste unten */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
@@ -186,6 +188,20 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 .shop-row .qty{color:var(--muted);font-size:14px;white-space:nowrap}
 .shop-row .ttl small{display:block;color:var(--muted);font-weight:400;font-size:13px}
 .seg.seg2{grid-template-columns:repeat(2,1fr)}
+.seg.seg3{grid-template-columns:repeat(3,1fr)}
+
+/* Checkliste in Aufgaben */
+.tmain{flex:1;min-width:0;display:flex;flex-direction:column}
+.cl{display:flex;flex-direction:column;padding:0 12px 8px 0}
+.cl-item{display:flex;gap:10px;align-items:center;text-align:left;background:none;border:0;padding:5px 0;font-size:15px;min-height:36px}
+.cl-item .box{flex:0 0 22px;height:22px;border-radius:6px;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--accent-ink)}
+.cl-item.on{color:var(--muted);text-decoration:line-through}
+.cl-item.on .box{background:var(--ok);border-color:var(--ok)}
+
+/* Essensplan */
+.plan-nav{margin-top:14px}
+.meal-row .tbody{min-height:52px;justify-content:center}
+.meal-free{flex:1;min-width:0;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
 .servings{display:flex;align-items:center;gap:12px;margin:10px 0 4px}
 .servings span{flex:1;color:var(--muted)}
 .servings b{min-width:28px;text-align:center;font-size:18px}
@@ -294,9 +310,10 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
       </div>
     </div>
     <div class="filters" id="filters" role="group" aria-label="Filter nach Person"></div>
-    <div class="seg seg2" id="shopSeg" role="group" aria-label="Ansicht">
+    <div class="seg seg3" id="shopSeg" role="group" aria-label="Ansicht">
       <button type="button" data-sview="list">Liste</button>
       <button type="button" data-sview="recipes">Rezepte</button>
+      <button type="button" data-sview="plan">Essensplan</button>
     </div>
     <div class="toolbar" id="recipeBar">
       <input id="recipeSearch" type="search" placeholder="Rezept suchen" autocomplete="off" aria-label="Rezept suchen">
@@ -348,6 +365,14 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
       <h3>Startpaket</h3>
       <p class="muted small" style="margin:0">Typische Putzaufgaben mit passendem Rhythmus auf einmal anlegen.</p>
       <button class="btn big" type="button" data-open-pack>Startpaket ansehen</button>
+    </div>
+    <div class="bal">
+      <h3>Sicherung</h3>
+      <p class="muted small" style="margin:0">Alles in einer Datei: Aufgaben, Einkaufsliste, Rezepte, Essensplan, Notizen und Namen. Beim Einspielen kommt Fehlendes und Gelöschtes zurück, Vorhandenes bleibt.</p>
+      <button class="btn big" id="btnBackup" type="button">Sicherung speichern</button>
+      <button class="btn big" id="btnRestore" type="button">Sicherung einspielen</button>
+      <input id="restoreFile" type="file" accept=".json,application/json" hidden>
+      <div class="update-info" id="restoreInfo" aria-live="polite"></div>
     </div>
     <div class="bal">
       <h3>App</h3>
@@ -425,6 +450,9 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
       <div class="pin-row" id="fRotateRow"><span>Abwechselnd zuweisen<small class="muted">Nach dem Erledigen ist die andere Person dran</small></span>
         <button class="btn toggle" id="fRotate" type="button" aria-pressed="false">Nein</button></div>
     </div>
+
+    <label for="fChecklist">Checkliste (optional, ein Punkt pro Zeile)</label>
+    <textarea id="fChecklist" maxlength="3000" style="min-height:90px" placeholder="Spiegel&#10;Waschbecken&#10;Fugen"></textarea>
 
     <div class="actions">
       <button class="btn danger wide" id="btnDelete" type="button" hidden>Aufgabe löschen</button>
@@ -546,6 +574,39 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
   </div>
 </div>
 
+<!-- Essensplan: Gericht für einen Tag -->
+<div class="overlay" id="mealSheet" hidden>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2 id="mealTitle">Essen</h2></div>
+    <div class="servings">
+      <span>Portionen</span>
+      <button class="icon-btn" id="mLess" type="button" aria-label="Weniger Portionen">−</button>
+      <b id="mServ">2</b>
+      <button class="icon-btn" id="mMore" type="button" aria-label="Mehr Portionen">+</button>
+    </div>
+    <form class="quickadd" id="mealFree" novalidate style="margin-top:10px">
+      <input id="mealText" maxlength="200" placeholder="Ohne Rezept, z. B. Pizza bestellen" autocomplete="off" enterkeyhint="done" aria-label="Gericht ohne Rezept">
+      <button class="btn primary" type="submit" aria-label="Eintragen">+</button>
+    </form>
+    <h2>Aus den Rezepten</h2>
+    <div id="mealRecipes"></div>
+    <div class="actions"><button class="btn wide" id="mealCancel" type="button">Abbrechen</button></div>
+  </div>
+</div>
+
+<!-- Essensplan: Zutaten der Woche auf die Einkaufsliste -->
+<div class="overlay" id="planShopSheet" hidden>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2>Einkauf für die Woche</h2></div>
+    <p class="muted small" style="margin:0 0 4px">Gleiche Zutaten sind zusammengefasst. Was ihr schon dahabt, abwählen.</p>
+    <div id="psList"></div>
+    <button class="btn primary big" id="psAdd" type="button">Auf die Einkaufsliste</button>
+    <div class="actions"><button class="btn wide" id="psCancel" type="button">Abbrechen</button></div>
+  </div>
+</div>
+
 <!-- Einkaufs-Eintrag bearbeiten -->
 <div class="overlay" id="shopSheet" hidden>
   <form class="sheet" id="shopForm" novalidate>
@@ -569,7 +630,7 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '1.10.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '2.0.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Haushalt“ änderbar
@@ -597,7 +658,7 @@ const PACK = [
 ];
 
 /* ================= Zustand ================= */
-const LS = { push: 'putzplan.push', code: 'putzplan.code', tasks: 'putzplan.tasks', notes: 'putzplan.notes', shop: 'putzplan.shop', recipes: 'putzplan.recipes', shopView: 'putzplan.shopView', tab: 'putzplan.tab', view: 'putzplan.view', settings: 'putzplan.settings', filter: 'putzplan.filter', noteCat: 'putzplan.noteCat' };
+const LS = { push: 'putzplan.push', code: 'putzplan.code', tasks: 'putzplan.tasks', notes: 'putzplan.notes', shop: 'putzplan.shop', recipes: 'putzplan.recipes', meals: 'putzplan.meals', history: 'putzplan.history', shopView: 'putzplan.shopView', tab: 'putzplan.tab', view: 'putzplan.view', settings: 'putzplan.settings', filter: 'putzplan.filter', noteCat: 'putzplan.noteCat' };
 const TABS = { clean: 'Putzen', shop: 'Einkaufsliste', notes: 'Notizen', home: 'Haushalt' };
 const VIEWS = { today: 'Heute', week: 'Woche', month: 'Monat', stats: 'Bilanz' }; // Unteransichten im Reiter „Putzen“
 const NOTE_CAT_SUGGESTIONS = ['Putztipps', 'Info', 'Ideen'];
@@ -632,7 +693,11 @@ let shop = [];                           // gemeinsame Einkaufsliste, wird mit s
 try { shop = JSON.parse(lsGet(LS.shop) || '[]'); } catch (e) { shop = []; }
 let recipes = [];                        // gemeinsame Rezepte, werden mit synchronisiert
 try { recipes = JSON.parse(lsGet(LS.recipes) || '[]'); } catch (e) { recipes = []; }
-let shopView = lsGet(LS.shopView) === 'recipes' ? 'recipes' : 'list'; // Reiter Einkauf: Liste oder Rezepte
+let meals = [];                          // Essensplan, wird mit synchronisiert
+try { meals = JSON.parse(lsGet(LS.meals) || '[]'); } catch (e) { meals = []; }
+let archived = null;                     // vom Server: das zuletzt Erledigte pro Bereich aus aufgeräumten Aufgaben
+try { archived = JSON.parse(lsGet(LS.history) || 'null'); } catch (e) { archived = null; }
+let shopView = ['recipes', 'plan'].includes(lsGet(LS.shopView)) ? lsGet(LS.shopView) : 'list'; // Reiter Einkauf: Liste, Rezepte, Essensplan
 let filter = ['nick', 'partner', 'none'].includes(lsGet(LS.filter)) ? lsGet(LS.filter) : 'all';
 // Reiter und Unteransicht; bis 1.6 waren Heute/Woche/Monat/Bilanz eigene Reiter, das wird übernommen
 let tab = lsGet(LS.tab), view = lsGet(LS.view);
@@ -670,12 +735,36 @@ function touch(t) { t.updatedAt = Math.max(Date.now(), (t.updatedAt || 0) + 1); 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 let selected = keyOf(new Date());        // ausgewählter Tag (nach den Hilfsfunktionen, die er braucht)
 
-function toast(msg) {
+// Kurze Meldung unten; mit action erscheint ein Knopf (z. B. „Rückgängig“) und die Meldung bleibt länger stehen
+function toast(msg, action, label = 'Rückgängig') {
   const el = $('#toast');
   el.textContent = msg;
+  if (action) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.addEventListener('click', () => { el.classList.remove('show', 'act'); action(); });
+    el.append(b);
+  }
+  el.classList.toggle('act', !!action);
   el.classList.add('show');
   clearTimeout(toast.t);
-  toast.t = setTimeout(() => el.classList.remove('show'), 2400);
+  toast.t = setTimeout(() => el.classList.remove('show', 'act'), action ? 6000 : 2400);
+}
+// Löschen mit „Rückgängig“: Einträge bekommen die Löschmarkierung, der Knopf holt den alten Stand zurück
+function removeWithUndo(getList, items, msg) {
+  if (!items.length) return;
+  const snap = items.map((i) => ({ ...i }));
+  items.forEach((i) => { i.deleted = true; touch(i); });
+  save();
+  toast(msg, () => {
+    for (const old of snap) {
+      const cur = getList().find((x) => x.id === old.id);
+      if (cur) { Object.assign(cur, old, { deleted: false }); touch(cur); } // touch: neuer als die Löschmarkierung
+      else getList().push({ ...old, updatedAt: Date.now() });
+    }
+    save();
+  });
 }
 
 /* ================= Aufgaben-Logik ================= */
@@ -695,6 +784,7 @@ function save() {
   lsSet(LS.notes, JSON.stringify(notes));
   lsSet(LS.shop, JSON.stringify(shop));
   lsSet(LS.recipes, JSON.stringify(recipes));
+  lsSet(LS.meals, JSON.stringify(meals));
   lsSet(LS.settings, JSON.stringify(settings));
   localVer++;
   scheduleSync();
@@ -741,6 +831,7 @@ function toggleDone(id) {
         const now = Date.now();
         tasks.push({ id: uid(), title: t.title, due: next, category: t.category, minutes: t.minutes, assignee: who,
           repeat: t.repeat, every: t.every || 1, fromDone: !!t.fromDone, rotate: !!t.rotate,
+          checklist: (t.checklist || []).map((c) => ({ id: uid(), text: c.text, done: false })),
           done: false, doneAt: null, createdAt: now, updatedAt: now, deleted: false });
       }
       msg = `Nächster Termin: ${dayLabel(next)}` + (t.rotate && who ? ` · ${names()[who]} ist dran` : '');
@@ -801,10 +892,30 @@ function streak() {
 // Urlaub: settings.away.until = Tag der Rückkehr
 const awayUntil = () => (settings && settings.away && settings.away.until > keyOf(new Date()) ? settings.away.until : null);
 
+// Checkliste aus dem Textfeld: gleiche Punkte behalten ihren Haken
+function checklistFrom(text, old) {
+  const pool = [...(old || [])];
+  return String(text || '').split(/\r?\n/).map((x) => x.replace(/^\s*(?:[-•*·–]|\[[ x]?\])\s*/i, '').trim().slice(0, 120)).filter(Boolean).slice(0, 30)
+    .map((text) => {
+      const i = pool.findIndex((c) => c.text === text);
+      return i >= 0 ? pool.splice(i, 1)[0] : { id: uid(), text, done: false };
+    });
+}
+function toggleCheck(taskId, itemId) {
+  const t = live().find((x) => x.id === taskId);
+  const c = t && (t.checklist || []).find((x) => x.id === itemId);
+  if (!c) return;
+  c.done = !c.done; touch(t);
+  save();
+  if (c.done && !t.done && t.checklist.every((x) => x.done)) toast('Alles abgehakt.', () => toggleDone(t.id), 'Aufgabe erledigen');
+}
+
 function taskRow(t, showDue) {
   const who = t.assignee ? `<span class="chip p-${t.assignee}">${esc(names()[t.assignee])}</span>` : '<span class="chip">offen</span>';
+  const cl = t.checklist || [];
   return `<div class="task${t.done ? ' done' : ''}">
     <button class="check" type="button" data-act="toggle" data-id="${t.id}" aria-label="${t.done ? 'Nicht erledigt' : 'Erledigt'}"><span>${t.done ? '✓' : ''}</span></button>
+    <div class="tmain">
     <button class="tbody" type="button" data-act="edit" data-id="${t.id}">
       <span class="ttl">${esc(t.title)}</span>
       <span class="meta">
@@ -814,8 +925,12 @@ function taskRow(t, showDue) {
         ${who}
         ${repeats(t) ? `<span class="chip">${repeatLabel(t)}</span>` : ''}
         ${repeats(t) && t.rotate ? '<span class="chip">⇄ abwechselnd</span>' : ''}
+        ${cl.length ? `<span class="chip">☑ ${cl.filter((c) => c.done).length}/${cl.length}</span>` : ''}
       </span>
     </button>
+    ${cl.length && !t.done ? `<div class="cl">${cl.map((c) => `<button type="button" class="cl-item${c.done ? ' on' : ''}" data-cl="${t.id}" data-ci="${c.id}"
+      aria-pressed="${c.done}"><span class="box">${c.done ? '✓' : ''}</span>${esc(c.text)}</button>`).join('')}</div>` : ''}
+    </div>
     ${!t.done && t.due ? `<button class="later" type="button" data-act="later" data-id="${t.id}" aria-label="${esc(t.title)} verschieben">↷</button>` : ''}
   </div>`;
 }
@@ -867,7 +982,8 @@ function lastCleanHtml() {
   const rows = CATS.map((c) => {
     const list = live().filter((t) => t.category === c);
     if (!list.length) return '';
-    const last = list.filter((t) => t.done && t.doneAt).sort((a, b) => b.doneAt - a.doneAt)[0];
+    const arch = archived && archived.lastByCat && archived.lastByCat[c];
+    const last = [...list.filter((t) => t.done && t.doneAt), ...(arch ? [arch] : [])].sort((a, b) => b.doneAt - a.doneAt)[0];
     const limit = Math.min(14, ...list.filter(repeats).map(intervalDays));
     const days = last ? Math.round((today - fromKey(keyOf(new Date(last.doneAt)))) / 864e5) : null;
     const when = days === null ? 'noch nie' : days === 0 ? 'heute' : days === 1 ? 'gestern' : `vor ${days} Tagen`;
@@ -1014,9 +1130,9 @@ $('#noteForm').addEventListener('submit', (e) => {
 });
 $('#nDelete').addEventListener('click', () => {
   const n = liveNotes().find((x) => x.id === noteDraft.id);
-  if (!n || !confirm(`Notiz „${n.title || 'Ohne Titel'}“ löschen?`)) return;
-  n.deleted = true; touch(n);
-  closeNoteSheet(); save();
+  if (!n) return;
+  closeNoteSheet();
+  removeWithUndo(() => notes, [n], `Notiz „${n.title || 'Ohne Titel'}“ gelöscht`);
 });
 $('#nCancel').addEventListener('click', closeNoteSheet);
 $('#noteSheet').addEventListener('click', (e) => { if (e.target.id === 'noteSheet') closeNoteSheet(); });
@@ -1056,6 +1172,9 @@ function splitQty(raw) {
 // from = Rezept: Mengen werden dann zusammengezählt statt ersetzt („500 g + 200 g“)
 function putShop(raw, from) {
   const { qty, name } = splitQty(raw);
+  return putShopParts(qty, name, from);
+}
+function putShopParts(qty, name, from) {
   if (!name) return null;
   const ex = liveShop().find((i) => nameKey(i.name) === nameKey(name));
   if (ex && !ex.done) {
@@ -1100,8 +1219,7 @@ function toggleShop(id) {
 }
 function clearShopDone() {
   const done = liveShop().filter((i) => i.done);
-  done.forEach((i) => { i.deleted = true; touch(i); });
-  if (done.length) { save(); toast(done.length === 1 ? '1 Eintrag entfernt' : `${done.length} Einträge entfernt`); }
+  removeWithUndo(() => shop, done, done.length === 1 ? '1 Eintrag entfernt' : `${done.length} Einträge entfernt`);
 }
 // Vorschläge aus dem Verlauf (auch abgehakte und entfernte Einträge der letzten 60 Tage), häufigste zuerst
 function shopSuggestions() {
@@ -1176,8 +1294,8 @@ $('#shopForm').addEventListener('submit', (e) => {
 });
 $('#sDelete').addEventListener('click', () => {
   const i = shopDraft && liveShop().find((x) => x.id === shopDraft.id);
-  if (i) { i.deleted = true; touch(i); }
-  closeShopSheet(); save();
+  closeShopSheet();
+  if (i) removeWithUndo(() => shop, [i], `„${i.name}“ von der Liste genommen`);
 });
 $('#sCancel').addEventListener('click', closeShopSheet);
 $('#shopSheet').addEventListener('click', (e) => { if (e.target.id === 'shopSheet') closeShopSheet(); });
@@ -1421,13 +1539,13 @@ async function exportRecipes() {
 }
 
 let rv = null; // angezeigtes Rezept: { id, serv, sel: Set der gewählten Zeilen }
-function openRecipe(id) {
+function openRecipe(id, serv) {
   const r = liveRecipes().find((x) => x.id === id);
   if (!r) return;
   const open = new Set(openShop().map((i) => nameKey(i.name)));
   const sel = new Set();
   ingrLines(r).forEach((l, i) => { const n = nameKey(splitQty(l).name); if (!STAPLES.includes(n) && !open.has(n)) sel.add(i); });
-  rv = { id, serv: r.servings, sel };
+  rv = { id, serv: serv || r.servings, sel };
   renderRecipe();
   $('#recipeSheet').hidden = false;
 }
@@ -1503,9 +1621,9 @@ $('#recipeForm').addEventListener('submit', (e) => {
 });
 $('#rDelete').addEventListener('click', () => {
   const r = liveRecipes().find((x) => x.id === reId);
-  if (!r || !confirm(`Rezept „${r.title}“ löschen?`)) return;
-  r.deleted = true; touch(r);
-  closeRecipeEdit(); save();
+  if (!r) return;
+  closeRecipeEdit();
+  removeWithUndo(() => recipes, [r], `Rezept „${r.title}“ gelöscht`);
 });
 $('#rCancel').addEventListener('click', closeRecipeEdit);
 $('#recipeEditSheet').addEventListener('click', (e) => { if (e.target.id === 'recipeEditSheet') closeRecipeEdit(); });
@@ -1516,6 +1634,183 @@ function addExampleRecipe() {
     steps: '1. Zwiebel, Knoblauch und Möhre fein würfeln.\n2. Hackfleisch im Olivenöl krümelig braten, Gemüse dazugeben und kurz mitbraten.\n3. Tomatenmark kurz anrösten, passierte Tomaten dazu, salzen, pfeffern und 30 Minuten köcheln lassen.\n4. Spaghetti nach Packung kochen, mit der Soße und geriebenem Parmesan servieren.' });
   save();
 }
+
+/* Essensplan */
+const liveMeals = () => meals.filter((m) => !m.deleted);
+let mealWeek = weekStart(new Date());
+const todayMeals = (k) => liveMeals().filter((m) => m.date === k).map((m) => m.title).join(', ');
+const recipeOf = (m) => m.recipeId && liveRecipes().find((r) => r.id === m.recipeId);
+function planHtml() {
+  const today = keyOf(new Date());
+  const days = [...Array(7)].map((_, i) => addDays(mealWeek, i));
+  const range = `${fromKey(days[0]).getDate()}. – ${fromKey(days[6]).getDate()}. ${MONTH_SHORT[fromKey(days[6]).getMonth()]}`;
+  let html = `<div class="nav plan-nav"><button class="icon-btn" type="button" data-mweek="-1" aria-label="Vorige Woche">‹</button>
+    <div class="range">${range}</div><button class="btn ghost small-btn" type="button" data-mweek="0">Heute</button>
+    <button class="icon-btn" type="button" data-mweek="1" aria-label="Nächste Woche">›</button></div>`;
+  for (const k of days) {
+    const list = liveMeals().filter((m) => m.date === k).sort((a, b) => a.createdAt - b.createdAt);
+    html += `<section class="day${list.length ? '' : ' empty-day'}"><div class="dayhead">
+      <span class="dayname${k === today ? ' today' : ''}">${longDayLabel(k)}</span>
+      <button class="add-day" type="button" data-meal-add="${k}" aria-label="Essen für ${longDayLabel(k)}">+</button></div>
+      ${list.map((m) => {
+        const r = recipeOf(m);
+        const meta = `<span class="meta"><span class="chip">🍽 ${m.servings} ${m.servings === 1 ? 'Portion' : 'Portionen'}</span>${r ? '<span class="chip">📖 Rezept</span>' : ''}${m.shopped ? '<span class="chip">🛒 auf der Liste</span>' : ''}</span>`;
+        return `<div class="task meal-row">${r
+          ? `<button class="tbody" type="button" data-meal="${m.id}" style="padding-left:14px"><span class="ttl">${esc(m.title)}</span>${meta}</button>`
+          : `<div class="meal-free"><span class="ttl">${esc(m.title)}</span>${meta}</div>`}
+          <button class="later" type="button" data-meal-del="${m.id}" aria-label="${esc(m.title)} aus dem Plan nehmen">✕</button></div>`;
+      }).join('')}</section>`;
+  }
+  const pending = liveMeals().filter((m) => days.includes(m.date) && !m.shopped && recipeOf(m));
+  if (pending.length) html += `<button class="btn primary big" type="button" data-plan-shop style="margin-top:20px">Zutaten für ${pending.length} ${pending.length === 1 ? 'Gericht' : 'Gerichte'} auf die Liste</button>`;
+  else if (liveMeals().some((m) => days.includes(m.date) && recipeOf(m))) html += '<p class="weeksum">Alle Zutaten dieser Woche sind auf der Liste.</p>';
+  else html += '<p class="weeksum">Mit „+“ ein Rezept oder ein Gericht ohne Rezept eintragen.</p>';
+  return html;
+}
+
+let mealDay = null, mealServ = 2;
+function openMealSheet(k) {
+  mealDay = k;
+  $('#mealTitle').textContent = `Essen am ${longDayLabel(k)}`;
+  $('#mServ').textContent = mealServ;
+  $('#mealText').value = '';
+  const rs = liveRecipes().sort((a, b) => a.title.localeCompare(b.title, 'de'));
+  $('#mealRecipes').innerHTML = rs.length ? rs.map((r) => `<button type="button" class="note" data-pick-recipe="${r.id}">
+      <span class="ttl">${esc(r.title)}</span><span class="meta"><span class="chip">${zutaten(ingrLines(r).length)}</span></span></button>`).join('')
+    : '<p class="empty">Noch keine Rezepte. Legt welche unter „Rezepte“ an oder tragt oben ein Gericht ohne Rezept ein.</p>';
+  $('#mealSheet').hidden = false;
+}
+function closeMealSheet() { $('#mealSheet').hidden = true; mealDay = null; }
+function addMeal(title, recipeId) {
+  const now = Date.now();
+  meals.push({ id: uid(), date: mealDay, title: title.slice(0, 200), recipeId: recipeId || '', servings: mealServ, shopped: false, createdAt: now, updatedAt: now, deleted: false });
+  closeMealSheet(); save();
+}
+$('#mLess').addEventListener('click', () => { if (mealServ > 1) $('#mServ').textContent = --mealServ; });
+$('#mMore').addEventListener('click', () => { if (mealServ < 50) $('#mServ').textContent = ++mealServ; });
+$('#mealRecipes').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pick-recipe]');
+  const r = b && liveRecipes().find((x) => x.id === b.dataset.pickRecipe);
+  if (r) addMeal(r.title, r.id);
+});
+$('#mealFree').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const t = $('#mealText').value.trim();
+  if (!t) return $('#mealText').focus();
+  addMeal(t, '');
+});
+$('#mealCancel').addEventListener('click', closeMealSheet);
+$('#mealSheet').addEventListener('click', (e) => { if (e.target.id === 'mealSheet') closeMealSheet(); });
+
+// Wocheneinkauf: Zutaten aller noch nicht eingekauften Rezepte der Woche, auf die Portionen umgerechnet und zusammengefasst
+let ps = null; // { meals, items: [{ key, name, qty, from: [Titel] }], sel: Set }
+function openPlanShop() {
+  const days = [...Array(7)].map((_, i) => addDays(mealWeek, i));
+  const todo = liveMeals().filter((m) => days.includes(m.date) && !m.shopped && recipeOf(m));
+  const map = new Map();
+  for (const m of todo) {
+    const r = recipeOf(m);
+    for (const line of ingrLines(r)) {
+      const { qty, name } = splitQty(scaleLine(line, m.servings / r.servings));
+      const key = nameKey(name);
+      const it = map.get(key);
+      if (!it) map.set(key, { key, name, qty, from: [r.title] });
+      else {
+        it.qty = it.qty && qty ? addQty(it.qty, qty) : it.qty || qty;
+        if (!it.from.includes(r.title)) it.from.push(r.title);
+      }
+    }
+  }
+  const open = new Set(openShop().map((i) => nameKey(i.name)));
+  const items = [...map.values()];
+  ps = { meals: todo.map((m) => m.id), items, sel: new Set(items.filter((i) => !STAPLES.includes(i.key) && !open.has(i.key)).map((i) => i.key)) };
+  renderPlanShop();
+  $('#planShopSheet').hidden = false;
+}
+function renderPlanShop() {
+  const open = new Set(openShop().map((i) => nameKey(i.name)));
+  $('#psList').innerHTML = ps.items.map((i) => {
+    const on = ps.sel.has(i.key);
+    return `<button type="button" class="pack-row" data-ps="${esc(i.key)}" aria-pressed="${on}"><span class="pk">${on ? '✓' : ''}</span>
+      <span>${esc(((i.qty ? i.qty + ' ' : '') + i.name))}<small>${esc(i.from.join(', '))}${open.has(i.key) ? ' · steht schon auf der Liste' : ''}</small></span></button>`;
+  }).join('') || '<p class="empty">Die Rezepte haben keine Zutaten.</p>';
+  const n = ps.sel.size;
+  $('#psAdd').textContent = n ? `${n} ${n === 1 ? 'Zutat' : 'Zutaten'} auf die Einkaufsliste` : 'Nur als eingekauft markieren';
+}
+$('#psList').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-ps]');
+  if (!b || !ps) return;
+  if (ps.sel.has(b.dataset.ps)) ps.sel.delete(b.dataset.ps); else ps.sel.add(b.dataset.ps);
+  renderPlanShop();
+});
+$('#psAdd').addEventListener('click', () => {
+  if (!ps) return;
+  let n = 0;
+  for (const i of ps.items) if (ps.sel.has(i.key) && putShopParts(i.qty, i.name, i.from.length === 1 ? i.from[0] : 'Essensplan')) n++;
+  for (const id of ps.meals) { const m = liveMeals().find((x) => x.id === id); if (m) { m.shopped = true; touch(m); } }
+  $('#planShopSheet').hidden = true; ps = null;
+  shopView = 'list'; lsSet(LS.shopView, shopView);
+  save();
+  window.scrollTo(0, 0);
+  toast(`${n} ${n === 1 ? 'Zutat' : 'Zutaten'} für die Woche auf der Liste`);
+});
+$('#psCancel').addEventListener('click', () => { $('#planShopSheet').hidden = true; ps = null; });
+$('#planShopSheet').addEventListener('click', (e) => { if (e.target.id === 'planShopSheet') { $('#planShopSheet').hidden = true; ps = null; } });
+
+/* Sicherung: alles in einer Datei */
+async function saveFile(name, text, title) {
+  const file = new File([text], name, { type: 'application/json' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title }); return true; }
+  } catch (e) { if (e && e.name === 'AbortError') return false; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  return true;
+}
+$('#btnBackup').addEventListener('click', async () => {
+  const data = { app: 'Putzplan', type: 'backup', version: APP_VERSION, exported: new Date().toISOString(), tasks, notes, shop, recipes, meals, settings, history: archived };
+  if (await saveFile(`putzplan-sicherung-${keyOf(new Date())}.json`, JSON.stringify(data), 'Putzplan-Sicherung')) $('#restoreInfo').textContent = 'Sicherung erstellt.';
+});
+$('#btnRestore').addEventListener('click', () => $('#restoreFile').click());
+// Einspielen: Fehlendes wird ergänzt, Gelöschtes wiederhergestellt; was es noch gibt, bleibt wie es ist
+function restoreInto(list, items) {
+  let n = 0;
+  for (const it of Array.isArray(items) ? items : []) {
+    if (!it || typeof it.id !== 'string' || it.deleted) continue;
+    const cur = list.find((x) => x.id === it.id);
+    if (!cur) { list.push({ ...it, updatedAt: Date.now() }); n++; }
+    else if (cur.deleted) { Object.assign(cur, it, { deleted: false }); touch(cur); n++; }
+  }
+  return n;
+}
+$('#restoreFile').addEventListener('change', async (e) => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  const info = $('#restoreInfo');
+  let d;
+  try { d = JSON.parse(await f.text()); } catch (err) { info.textContent = 'Die Datei ist keine Putzplan-Sicherung.'; return; }
+  if (!d || d.app !== 'Putzplan' || d.type !== 'backup') {
+    info.textContent = d && Array.isArray(d.recipes) ? 'Das ist ein Rezept-Export. Den bitte unter Einkauf → Rezepte → Importieren einlesen.' : 'Die Datei ist keine Putzplan-Sicherung.';
+    return;
+  }
+  const count = (a) => (Array.isArray(a) ? a.filter((x) => x && !x.deleted).length : 0);
+  const when = d.exported ? new Date(d.exported).toLocaleDateString('de-DE') : '?';
+  if (!confirm(`Sicherung vom ${when} einspielen?\n${count(d.tasks)} Aufgaben, ${count(d.shop)} Einkaufseinträge, ${count(d.recipes)} Rezepte, ${count(d.meals)} Essen, ${count(d.notes)} Notizen.\nVorhandenes bleibt, Fehlendes kommt dazu.`)) return;
+  const before = JSON.stringify({ tasks, notes, shop, recipes, meals });
+  const n = restoreInto(tasks, d.tasks) + restoreInto(notes, d.notes) + restoreInto(shop, d.shop) + restoreInto(recipes, d.recipes) + restoreInto(meals, d.meals);
+  if (JSON.stringify({ tasks, notes, shop, recipes, meals }).length > 1.4e6) {
+    ({ tasks, notes, shop, recipes, meals } = JSON.parse(before));
+    info.textContent = 'Das wären zu viele Daten für euren Haushalt.';
+    return;
+  }
+  if (!settings && d.settings) settings = d.settings;
+  save();
+  info.textContent = n ? `${n} Einträge wiederhergestellt.` : 'Alles aus der Sicherung ist schon da.';
+});
 
 // Heute: Überfälliges, heute, morgen
 function todayHtml(today) {
@@ -1537,6 +1832,7 @@ function todayHtml(today) {
     <button class="btn primary" type="button" data-open-pack>Startpaket ansehen</button></div>`;
   return `<p class="subtitle">${longDayLabel(today)}</p>`
     + (s >= 2 ? `<p class="streak">🔥 ${s} Putztage in Folge alles geschafft</p>` : '')
+    + (todayMeals(today) ? `<p class="banner">🍽 Heute gibt's: ${esc(todayMeals(today))}</p>` : '')
     + (away ? `<p class="banner">🏖 Urlaub bis ${dayLabel(addDays(away, -1))}. Erinnerungen sind pausiert.</p>` : '')
     + starter
     + (overdue.length ? `<h2>Überfällig</h2>${overdue.map((t) => taskRow(t, true)).join('')}` : '')
@@ -1546,7 +1842,7 @@ function todayHtml(today) {
 function render() {
   if (!code) return;
   const today = keyOf(new Date());
-  $('#pageTitle').textContent = tab === 'shop' && shopView === 'recipes' ? 'Rezepte' : TABS[tab];
+  $('#pageTitle').textContent = tab === 'shop' && shopView !== 'list' ? (shopView === 'plan' ? 'Essensplan' : 'Rezepte') : TABS[tab];
   document.querySelectorAll('[data-tab]').forEach((b) => (b.dataset.tab === tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
   const clean = tab === 'clean';
@@ -1571,7 +1867,7 @@ function render() {
   updateAppBadge();
 
   if (tab === 'home') return;
-  if (tab === 'shop') { $('#view').innerHTML = shopView === 'recipes' ? recipesHtml() : shopHtml(); return; }
+  if (tab === 'shop') { $('#view').innerHTML = shopView === 'recipes' ? recipesHtml() : shopView === 'plan' ? planHtml() : shopHtml(); return; }
   if (tab === 'notes') { $('#view').innerHTML = notesHtml(); return; }
   if (view === 'today') { $('#view').innerHTML = todayHtml(today); return; }
   if (view === 'stats') { $('#view').innerHTML = statsHtml(); return; }
@@ -1716,6 +2012,7 @@ function openSheet(id, dueKey) {
   $('#fMin').value = t ? t.minutes : 15;
   $('#fWho').value = t && t.assignee ? t.assignee : '';
   setRepeatForm(t);
+  $('#fChecklist').value = t && t.checklist ? t.checklist.map((c) => c.text).join('\n') : '';
   $('#btnDelete').hidden = !t;
   $('#taskSheet').hidden = false;
   if (!t) setTimeout(() => $('#fTitle').focus(), 50);
@@ -1732,6 +2029,7 @@ $('#fTitle').addEventListener('input', () => {
   $('#fMin').value = prev.minutes;
   $('#fWho').value = prev.assignee || '';
   setRepeatForm(prev);
+  if (!$('#fChecklist').value.trim() && prev.checklist) $('#fChecklist').value = prev.checklist.map((c) => c.text).join('\n');
 });
 
 $('#taskForm').addEventListener('submit', (e) => {
@@ -1751,6 +2049,7 @@ $('#taskForm').addEventListener('submit', (e) => {
   Object.assign(data, { repeat, every, fromDone: repeat !== 'none' && toggled($('#fFromDone')),
     rotate: repeat !== 'none' && !!data.assignee && toggled($('#fRotate')) });
   const t = editingId ? live().find((x) => x.id === editingId) : null;
+  data.checklist = checklistFrom($('#fChecklist').value, t && t.checklist);
   if (t) {
     Object.assign(t, data);
     touch(t);
@@ -1763,9 +2062,9 @@ $('#taskForm').addEventListener('submit', (e) => {
 });
 $('#btnDelete').addEventListener('click', () => {
   const t = live().find((x) => x.id === editingId);
-  if (!t || !confirm(`"${t.title}" löschen?`)) return;
-  t.deleted = true; touch(t);
-  closeSheet(); save();
+  if (!t) return;
+  closeSheet();
+  removeWithUndo(() => tasks, [t], `„${t.title}“ gelöscht`);
 });
 $('#btnCancel').addEventListener('click', closeSheet);
 $('#taskSheet').addEventListener('click', (e) => { if (e.target.id === 'taskSheet') closeSheet(); });
@@ -2027,20 +2326,24 @@ async function sync() {
   syncing = true;
   const sentVer = localVer;
   try {
-    const r = await api('/api/sync', settings ? { tasks, notes, shop, recipes, settings } : { tasks, notes, shop, recipes });
+    const r = await api('/api/sync', settings ? { tasks, notes, shop, recipes, meals, settings } : { tasks, notes, shop, recipes, meals });
     if (localVer === sentVer) {
-      const before = JSON.stringify([tasks, notes, shop, recipes, settings]);
+      const before = JSON.stringify([tasks, notes, shop, recipes, meals, settings, archived]);
       tasks = r.tasks;
       if (Array.isArray(r.notes)) notes = r.notes;
       if (Array.isArray(r.shop)) shop = r.shop;
       if (Array.isArray(r.recipes)) recipes = r.recipes;
+      if (Array.isArray(r.meals)) meals = r.meals;
+      if ('history' in r) archived = r.history;
       if (r.settings) settings = r.settings;
       lsSet(LS.tasks, JSON.stringify(tasks));
       lsSet(LS.notes, JSON.stringify(notes));
       lsSet(LS.shop, JSON.stringify(shop));
       lsSet(LS.recipes, JSON.stringify(recipes));
+      lsSet(LS.meals, JSON.stringify(meals));
+      lsSet(LS.history, JSON.stringify(archived));
       lsSet(LS.settings, JSON.stringify(settings));
-      if (JSON.stringify([tasks, notes, shop, recipes, settings]) !== before) render(); // nur neu zeichnen, wenn sich etwas geändert hat
+      if (JSON.stringify([tasks, notes, shop, recipes, meals, settings, archived]) !== before) render(); // nur neu zeichnen, wenn sich etwas geändert hat
     } else {
       again = true; // während der Anfrage wurde etwas geändert: gleich noch einmal senden
     }
@@ -2097,7 +2400,7 @@ $('#btnNew').addEventListener('click', async () => {
 $('#btnNewDone').addEventListener('click', () => {
   code = pendingCode;
   lsSet(LS.code, code);
-  tasks = []; notes = []; shop = []; recipes = [];
+  tasks = []; notes = []; shop = []; recipes = []; meals = []; archived = null;
   startApp();
 });
 $('#joinForm').addEventListener('submit', async (e) => {
@@ -2109,7 +2412,7 @@ $('#joinForm').addEventListener('submit', async (e) => {
     await api('/api/join', {}, c);
     code = c;
     lsSet(LS.code, code);
-    tasks = []; notes = []; shop = []; recipes = [];
+    tasks = []; notes = []; shop = []; recipes = []; meals = []; archived = null;
     startApp();
   } catch (err) {
     if (err.status === 401) $('#joinErr').textContent = 'Den Code kenne ich nicht. Bitte nochmal prüfen.';
@@ -2183,14 +2486,16 @@ $('#btnLogout').addEventListener('click', () => {
   if (!confirm('Auf diesem Gerät abmelden? Aufgaben, Einkaufsliste und Notizen bleiben online erhalten und sind mit dem Code wieder da.')) return;
   if (pushPrefs().on) pushOff(code);
   if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
-  code = ''; tasks = []; notes = []; shop = []; recipes = []; settings = null; localVer = 0;
-  lsDel(LS.code); lsDel(LS.tasks); lsDel(LS.notes); lsDel(LS.shop); lsDel(LS.recipes); lsDel(LS.settings);
+  code = ''; tasks = []; notes = []; shop = []; recipes = []; meals = []; archived = null; settings = null; localVer = 0;
+  [LS.code, LS.tasks, LS.notes, LS.shop, LS.recipes, LS.meals, LS.history, LS.settings].forEach(lsDel);
   tab = 'clean'; view = 'today'; lsSet(LS.tab, tab); lsSet(LS.view, view);
   showSetup();
 });
 
 /* Navigation und Aufgaben (Ereignis-Weiterleitung) */
 document.addEventListener('click', (e) => {
+  const ck = e.target.closest('[data-cl]');
+  if (ck) return toggleCheck(ck.dataset.cl, ck.dataset.ci);
   const tb = e.target.closest('[data-tab]');
   if (tb) return setTab(tb.dataset.tab);
   const vb = e.target.closest('[data-view]');
@@ -2208,6 +2513,15 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('[data-example-recipe]')) return addExampleRecipe();
   if (e.target.closest('[data-recipe-import]')) return openImport('');
   if (e.target.closest('[data-recipe-export]')) return exportRecipes();
+  const mw = e.target.closest('[data-mweek]');
+  if (mw) { mealWeek = Number(mw.dataset.mweek) ? addDays(mealWeek, 7 * Number(mw.dataset.mweek)) : weekStart(new Date()); return render(); }
+  const ma = e.target.closest('[data-meal-add]');
+  if (ma) return openMealSheet(ma.dataset.mealAdd);
+  const md = e.target.closest('[data-meal-del]');
+  if (md) { const m = liveMeals().find((x) => x.id === md.dataset.mealDel); if (m) removeWithUndo(() => meals, [m], `„${m.title}“ aus dem Plan genommen`); return; }
+  const mo = e.target.closest('[data-meal]');
+  if (mo) { const m = liveMeals().find((x) => x.id === mo.dataset.meal); if (m && m.recipeId) openRecipe(m.recipeId, m.servings); return; }
+  if (e.target.closest('[data-plan-shop]')) return openPlanShop();
   const sg = e.target.closest('[data-sugg]');
   if (sg) return addShop(sg.dataset.sugg);
   const tip = e.target.closest('[data-tip]');
