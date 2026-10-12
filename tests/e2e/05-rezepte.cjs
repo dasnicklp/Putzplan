@@ -1,6 +1,6 @@
 // Rezepte: Mengen erkennen und umrechnen, anlegen, Portionen, auf die Liste (zusammengefasst), Import-Formate, Import, Export
 const fs = require('fs');
-module.exports = async ({ browser, ok, phone, newHousehold, join, stored, api, BASE, sleep }) => {
+module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored, api, BASE, sleep }) => {
   const a = await phone(browser, { acceptDownloads: true });
   const code = await newHousehold(a);
 
@@ -66,7 +66,7 @@ module.exports = async ({ browser, ok, phone, newHousehold, join, stored, api, B
   ok(exp.recipes.length === 3 && await a.evaluate((t) => parseRecipeImport(t).length, JSON.stringify(exp)) === 3, 'Export lässt sich wieder importieren');
 
   // Zweites Gerät, ältere App-Version
-  await sleep(800);
+  await settle(a);
   const b = await phone(browser);
   await join(b, code);
   ok((await stored(b, 'recipes')).length === 3, 'Zweites Gerät hat die Rezepte');

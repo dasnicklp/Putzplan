@@ -1,6 +1,6 @@
 // Version 2: Checklisten, Rückgängig, Essensplan mit Wocheneinkauf, Sicherung, Aufräumen alter Aufgaben
 const fs = require('fs');
-module.exports = async ({ browser, ok, phone, newHousehold, join, stored, api, day, sleep }) => {
+module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored, api, day, sleep }) => {
   const a = await phone(browser, { acceptDownloads: true });
   const code = await newHousehold(a);
 
@@ -79,11 +79,11 @@ module.exports = async ({ browser, ok, phone, newHousehold, join, stored, api, d
   const backup = JSON.parse(fs.readFileSync(file, 'utf8'));
   ok(backup.type === 'backup' && backup.recipes.length === 2 && backup.meals.length === 3, 'Sicherung enthält alles');
   await a.evaluate(() => { recipes.forEach((r) => { r.deleted = true; touch(r); }); meals.forEach((m) => { m.deleted = true; touch(m); }); save(); });
-  await sleep(800);
+  await settle(a);
   await a.setInputFiles('#restoreFile', file);
   await a.waitForFunction(() => document.querySelector('#restoreInfo').textContent.includes('wiederhergestellt'));
   ok((await stored(a, 'recipes')).length === 2 && (await stored(a, 'meals')).length === 3, 'Gelöschtes kommt zurück: ' + await a.textContent('#restoreInfo'));
-  await sleep(800);
+  await settle(a);
   const b = await phone(browser);
   await join(b, code);
   ok((await stored(b, 'recipes')).length === 2 && (await stored(b, 'meals')).length === 3, 'Auch auf dem anderen Gerät');
@@ -95,7 +95,7 @@ module.exports = async ({ browser, ok, phone, newHousehold, join, stored, api, d
     meals: [{ id: 'm-alt', date: '2020-01-01', title: 'Alt', servings: 2, createdAt: old, updatedAt: old, deleted: false }] }, code);
   ok(!r.data.tasks.some((x) => x.id === 'alt1') && r.data.history.lastByCat.Wohnzimmer.title === 'Fenster putzen', 'Alte Aufgabe aufgeräumt, zuletzt Erledigtes gemerkt');
   ok(!r.data.meals.some((m) => m.id === 'm-alt'), 'Alter Essensplan aufgeräumt');
-  await a.evaluate(() => sync()); await sleep(500);
+  await settle(a);
   await a.click('[data-tab=clean]'); await a.click('[data-view=stats]');
   ok((await a.textContent('.lc-row:has-text("Wohnzimmer")')).includes('vor 200 Tagen'), '„Zuletzt geputzt“ nutzt die gemerkten Daten');
   const r2 = await api('/api/sync', { tasks: [], notes: [], shop: [], recipes: [] }, code);

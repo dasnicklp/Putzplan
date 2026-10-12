@@ -1,5 +1,5 @@
 // Startpaket, eigene Wiederholung, abwechselnd, verschieben, Konfetti, Serie, Zuletzt geputzt, Urlaub, Zahl am App-Symbol
-module.exports = async ({ browser, ok, phone, newHousehold, stored, api, day, sleep }) => {
+module.exports = async ({ browser, ok, settle, phone, newHousehold, stored, api, day, sleep }) => {
   const a = await phone(browser);
   await a.context().addInitScript(() => {
     window.__badges = [];
@@ -70,7 +70,7 @@ module.exports = async ({ browser, ok, phone, newHousehold, stored, api, day, sl
   ts = await stored(a, 'tasks');
   const sauger = ts.find((t) => t.title === 'Staubsaugen' && !t.done);
   ok(!ts.some((t) => !t.done && t.due < day(10)) && sauger.due >= day(10) && sauger.due < day(17), 'Urlaub: alles hinter den Urlaub geschoben, Rhythmus bleibt');
-  await sleep(800);
+  await settle(a);
   const s = (await api('/api/sync', { tasks: [] }, code)).data.settings;
   ok(s.away && s.away.until === day(10) && s.names, 'Urlaub beim Server, Namen bleiben');
   await a.click('#btnAwayEnd');

@@ -29,13 +29,21 @@ async function newHousehold(page) {
   return code;
 }
 
+// Sofort abgleichen und warten, bis kein Abgleich mehr läuft (statt fester Wartezeiten)
+async function settle(page) {
+  await page.evaluate(async () => {
+    clearTimeout(syncTimer);
+    await sync();
+    while (syncing) await new Promise((r) => setTimeout(r, 30));
+  });
+}
+
 async function join(page, code) {
   await page.goto(BASE);
   await page.fill('#joinCode', code);
   await page.click('#joinForm button[type=submit]');
   await page.waitForSelector('#app:not([hidden])');
-  await page.evaluate(() => sync());
-  await sleep(400);
+  await settle(page);
 }
 
 // Gespeicherte Liste aus dem Gerät (ohne Gelöschtes)
@@ -51,4 +59,4 @@ async function api(path, body, code) {
   return { status: r.status, data: await r.json() };
 }
 
-module.exports = { BASE, PHONE, pageErrors, day, keyOf, sleep, phone, newHousehold, join, stored, api };
+module.exports = { BASE, PHONE, pageErrors, day, keyOf, sleep, phone, newHousehold, join, settle, stored, api };

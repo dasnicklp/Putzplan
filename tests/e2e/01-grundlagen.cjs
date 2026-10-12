@@ -1,5 +1,5 @@
 // Haushalt anlegen, Aufgabe eintragen und erledigen, zweites Gerät verbinden, Abgleich, falscher Code
-module.exports = async ({ browser, ok, phone, newHousehold, join, stored, day, sleep }) => {
+module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored, day, sleep }) => {
   const a = await phone(browser);
   await a.goto(require('../lib.cjs').BASE);
   ok(await a.isVisible('#setup') && await a.$eval('#joinCode', (e) => getComputedStyle(e).fontSize) === '16px', 'Startseite, Eingabefeld 16 px (kein Zoom auf dem iPhone)');
@@ -25,23 +25,23 @@ module.exports = async ({ browser, ok, phone, newHousehold, join, stored, day, s
   ok((await a.textContent('#toast')).includes('Nächster Termin'), 'Hinweis auf den nächsten Termin');
 
   // Zweites Gerät
-  await sleep(800);
+  await settle(a);
   const b = await phone(browser);
   await join(b, code);
   ok((await stored(b, 'tasks')).length === 2, 'Zweites Gerät hat beide Aufgaben');
   await b.click('#fab'); await sleep(120);
   await b.fill('#fTitle', 'Müll raus');
   await b.click('#taskForm button[type=submit]');
-  await sleep(800);
-  await a.evaluate(() => sync()); await sleep(500);
+  await settle(b);
+  await settle(a);
   ok((await stored(a, 'tasks')).some((x) => x.title === 'Müll raus'), 'Änderung von Gerät B kommt bei A an');
 
   // Namen gelten für beide
   await a.click('[data-tab=home]');
   await a.fill('#sName2', 'Lena');
   await a.click('#namesForm button[type=submit]');
-  await sleep(800);
-  await b.evaluate(() => sync()); await sleep(500);
+  await settle(a);
+  await settle(b);
   await b.click('[data-tab=clean]');
   ok((await b.textContent('#filters')).includes('Lena'), 'Name kommt auf dem anderen Gerät an');
 

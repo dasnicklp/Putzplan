@@ -1,6 +1,6 @@
 // Einkaufsliste: schnell eintragen, Mengen, Bereiche im Laden, doppelt, abhaken, aufräumen mit Rückgängig,
 // Vorschläge, mehrere auf einmal, Teilen (Android), zweites Gerät, ältere App-Version
-module.exports = async ({ browser, ok, phone, newHousehold, join, stored, api, BASE, sleep }) => {
+module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored, api, BASE, sleep }) => {
   const a = await phone(browser);
   const code = await newHousehold(a);
   await a.click('[data-tab=shop]');
@@ -46,7 +46,7 @@ module.exports = async ({ browser, ok, phone, newHousehold, join, stored, api, B
   ok((await stored(a, 'shop')).some((i) => i.name === 'Käse') && !a.url().includes('text='), 'Geteilter Text landet auf der Liste');
 
   // Zweites Gerät und ältere App-Version
-  await sleep(800);
+  await settle(a);
   const b = await phone(browser);
   await join(b, code);
   ok((await stored(b, 'shop')).some((i) => i.name === 'Kerzen'), 'Zweites Gerät sieht die Liste');
