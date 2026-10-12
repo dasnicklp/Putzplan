@@ -267,6 +267,7 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 .later-opts{display:grid;gap:8px;margin-top:10px}
 .later-opts .btn{display:flex;justify-content:space-between;align-items:center;width:100%}
 .later-opts .btn span{color:var(--muted);font-weight:500}
+#pickList .btn span:first-child{color:var(--text);font-weight:600}
 
 /* Zuletzt geputzt */
 .lc-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
@@ -291,6 +292,40 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
 .confetti i{position:absolute;top:0;width:8px;height:12px;border-radius:2px}
 .page .bal:first-child{margin-top:14px}
+
+/* Termine, Vorrat, Kochen */
+.ev-day{margin:14px 0 6px;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.ev-time{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:700}
+.shop-row .ttl small.warn,.subtitle.warn{color:var(--warn)}
+.chip.ok-chip{color:var(--ok)}
+#homeBody > h2:first-child{margin-top:18px}
+
+/* Zähler */
+.meter{margin-top:12px}
+.meter-head{display:flex;align-items:center;gap:10px}
+.meter-name{flex:1;min-width:0;text-align:left;background:none;border:0;padding:6px 0;font-size:17px;color:var(--text)}
+.meter-name small{display:block;color:var(--muted);font-size:13px}
+.meter-now{margin:6px 0 0;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.meter-now small{font-size:13px;font-weight:400;color:var(--muted)}
+.chart-cap{margin:12px 0 4px;font-size:14px;color:var(--text);min-height:20px}
+.chart{display:block;width:100%;height:auto;overflow:visible}
+.chart line{stroke:var(--line);stroke-width:1}
+.chart .bar{fill:var(--accent)}
+.chart .bar-g.on .bar{fill:var(--text)}
+.chart text{fill:var(--muted);font-size:10px}
+.meter details,#voiceBox details{margin-top:10px}
+details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:14px;padding:6px 0;min-height:36px}
+.x-btn{border:0;background:none;color:var(--muted);font-size:15px;min-width:36px;min-height:36px}
+.howto{margin:6px 0 0;padding-left:20px;font-size:14px;line-height:1.5}
+.howto li{margin-bottom:6px}
+
+/* WLAN-QR-Code (immer schwarz auf weiß, sonst erkennt ihn die Kamera nicht) */
+.qr{display:flex;justify-content:center;margin:6px 0}
+.qr svg{width:min(260px,72vw);height:auto;border-radius:10px}
+.pw{font-family:ui-monospace,Menlo,Consolas,monospace;word-break:break-all;text-align:right}
+.link-box{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;word-break:break-all;background:var(--surface2);border-radius:10px;padding:8px 10px;margin:10px 0 0;color:var(--muted)}
+a.btn{display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--text)}
+a.btn.primary{color:var(--accent-ink)}
 </style>
 </head>
 <body>
@@ -350,7 +385,7 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
     </div>
     <div class="seg seg4" id="homeSeg" role="group" aria-label="Ansicht">
       <button type="button" data-hview="overview">Übersicht</button>
-      <button type="button" data-hview="bdays">Geburtstage</button>
+      <button type="button" data-hview="cal">Kalender</button>
       <button type="button" data-hview="wishes">Wünsche</button>
       <button type="button" data-hview="devices">Geräte</button>
     </div>
@@ -407,7 +442,7 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
         <div><label for="pWho">Dieses Handy gehört</label><select id="pWho"></select></div>
         <div><label for="pTime">Erinnerung um</label><select id="pTime"></select></div>
       </div>
-      <div class="pin-row"><span>Tägliche Erinnerung<small class="muted">Offene Aufgaben und Geburtstage, nur wenn etwas ansteht</small></span><button class="btn toggle" id="pDaily" type="button" aria-pressed="true">Ja</button></div>
+      <div class="pin-row"><span>Tägliche Erinnerung<small class="muted">Aufgaben, Termine, Geburtstage, was abläuft und am Monatsersten die Zähler. Nur wenn etwas ansteht.</small></span><button class="btn toggle" id="pDaily" type="button" aria-pressed="true">Ja</button></div>
       <div class="pin-row"><span>Wochenrückblick<small class="muted">Sonntags um 19 Uhr: was erledigt wurde</small></span><button class="btn toggle" id="pWeekly" type="button" aria-pressed="true">Ja</button></div>
       <div class="pin-row"><span>Pinnwand<small class="muted">Wenn der andere eine Nachricht schreibt</small></span><button class="btn toggle" id="pMsgs" type="button" aria-pressed="true">Ja</button></div>
       <div class="pin-row"><span>Einkaufsliste<small class="muted">Wenn der andere etwas draufsetzt</small></span><button class="btn toggle" id="pShop" type="button" aria-pressed="false">Nein</button></div>
@@ -415,6 +450,28 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
       <button class="btn big" id="btnPushTest" type="button" hidden>Test senden</button>
       <button class="btn big" id="btnPushOff" type="button" hidden>Mitteilungen ausschalten</button>
       <div class="update-info" id="pushInfo" aria-live="polite"></div>
+    </div>
+    <div class="bal" id="calBox">
+      <h3>Kalender-Abo</h3>
+      <p class="muted small" style="margin:0">Termine, Geburtstage und Garantie-Enden erscheinen im Kalender eures Handys und bleiben von selbst aktuell.</p>
+      <div class="pin-row"><span>Putzaufgaben<small class="muted">Die nächste Fälligkeit jeder Aufgabe</small></span><button class="btn toggle" id="cTasks" type="button" aria-pressed="false">Nein</button></div>
+      <div class="pin-row"><span>Essensplan<small class="muted">Was es an welchem Tag gibt</small></span><button class="btn toggle" id="cMeals" type="button" aria-pressed="false">Nein</button></div>
+      <div id="calLinks"></div>
+    </div>
+    <div class="bal" id="voiceBox">
+      <h3>Sprachassistent</h3>
+      <p class="muted small" style="margin:0">„Hey Siri, Einkaufsliste“ → „Milch und Eier“ → steht auf der Liste, beim anderen mit Mitteilung (wenn eingeschaltet).</p>
+      <div id="voiceLinks"></div>
+      <details><summary>So geht's auf dem iPhone</summary><ol class="howto">
+        <li>Oben „Link kopieren“ tippen.</li>
+        <li>App „Kurzbefehle“ öffnen, oben rechts „+“.</li>
+        <li>Aktion „Text diktieren“ hinzufügen.</li>
+        <li>Aktion „Inhalte von URL abrufen“ hinzufügen und als URL den kopierten Link einfügen.</li>
+        <li>In dieser Aktion auf den Pfeil tippen: Methode „POST“, Anfragetext „Formular“. Mit „Neues Feld hinzufügen → Text“ ein Feld anlegen: Schlüssel <b>t</b>, Wert „Diktierter Text“.</li>
+        <li>Aktion „Text sprechen“ hinzufügen. Siri sagt dann z. B. „Milch steht jetzt auf der Einkaufsliste.“</li>
+        <li>Den Kurzbefehl oben „Einkaufsliste“ nennen. Fertig: „Hey Siri, Einkaufsliste“.</li>
+      </ol></details>
+      <details><summary>Und auf Android?</summary><p class="muted small">Der Google Assistant kann leider keine eigenen Links aufrufen. Am schnellsten: lange auf das App-Symbol drücken → „Einkaufsliste“ und das Mikrofon der Tastatur benutzen. Wer es per Sprache will: Mit der kostenlosen App „HTTP Shortcuts“ einen Shortcut anlegen (Methode POST, Adresse = Link, Formular-Feld <b>t</b> = eingegebener Text) und auf den Startbildschirm legen.</p></details>
     </div>
     <div class="bal">
       <h3>Urlaub</h3>
@@ -432,7 +489,7 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
     </div>
     <div class="bal">
       <h3>Sicherung</h3>
-      <p class="muted small" style="margin:0">Alles in einer Datei: Aufgaben, Einkaufsliste, Rezepte, Essensplan, Notizen und Namen. Beim Einspielen kommt Fehlendes und Gelöschtes zurück, Vorhandenes bleibt.</p>
+      <p class="muted small" style="margin:0">Alles in einer Datei: Aufgaben, Einkaufsliste, Vorrat, Rezepte, Essensplan, Notizen, Termine, Geburtstage, Wünsche, Geräte, Zähler und Einstellungen. Beim Einspielen kommt Fehlendes und Gelöschtes zurück, Vorhandenes bleibt.</p>
       <button class="btn big" id="btnBackup" type="button">Sicherung speichern</button>
       <button class="btn big" id="btnRestore" type="button">Sicherung einspielen</button>
       <input id="restoreFile" type="file" accept=".json,application/json" hidden>
@@ -686,6 +743,32 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
   </form>
 </div>
 
+<!-- Auswahl beim „+“ -->
+<div class="overlay" id="pickSheet" hidden>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2 id="pickTitle"></h2></div>
+    <div class="later-opts" id="pickList"></div>
+    <div class="actions"><button class="btn wide" id="pickCancel" type="button">Abbrechen</button></div>
+  </div>
+</div>
+
+<!-- WLAN für Gäste -->
+<div class="overlay" id="wifiSheet" hidden>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2>WLAN für Gäste</h2></div>
+    <div class="qr" id="wifiQr"></div>
+    <p class="muted small" style="text-align:center;margin:8px 0">Mit der Kamera des Handys scannen, dann „Verbinden“ tippen.</p>
+    <div id="wifiInfo"></div>
+    <button class="btn big" id="wifiCopy" type="button">Passwort kopieren</button>
+    <div class="actions">
+      <button class="btn" id="wifiEdit" type="button">Ändern</button>
+      <button class="btn primary" id="wifiClose" type="button">Fertig</button>
+    </div>
+  </div>
+</div>
+
 <!-- Einkaufs-Eintrag bearbeiten -->
 <div class="overlay" id="shopSheet" hidden>
   <form class="sheet" id="shopForm" novalidate>
@@ -709,7 +792,7 @@ textarea{font:inherit;font-size:16px;color:inherit;width:100%;min-height:150px;p
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '3.0.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '3.1.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Zuhause“ änderbar
@@ -777,6 +860,7 @@ try { meals = JSON.parse(lsGet(LS.meals) || '[]'); } catch (e) { meals = []; }
 let archived = null;                     // vom Server: das zuletzt Erledigte pro Bereich aus aufgeräumten Aufgaben
 try { archived = JSON.parse(lsGet(LS.history) || 'null'); } catch (e) { archived = null; }
 let pantry = [], board = [], bdays = [], wishes = [], devices = []; // Vorrat, Pinnwand, Geburtstage, Anschaffungen, Geräte
+let events = [], meters = [], readings = []; // Termine, Zähler, Zählerstände
 // Alle synchronisierten Listen: Name → [lesen, setzen]. Gespeichert unter „putzplan.<Name>“.
 const SYNCED = {
   tasks: [() => tasks, (v) => { tasks = v; }],
@@ -789,8 +873,11 @@ const SYNCED = {
   bdays: [() => bdays, (v) => { bdays = v; }],
   wishes: [() => wishes, (v) => { wishes = v; }],
   devices: [() => devices, (v) => { devices = v; }],
+  events: [() => events, (v) => { events = v; }],
+  meters: [() => meters, (v) => { meters = v; }],
+  readings: [() => readings, (v) => { readings = v; }],
 };
-for (const k of ['pantry', 'board', 'bdays', 'wishes', 'devices']) {
+for (const k of ['pantry', 'board', 'bdays', 'wishes', 'devices', 'events', 'meters', 'readings']) {
   try { SYNCED[k][1](JSON.parse(lsGet('putzplan.' + k) || '[]')); } catch (e) { /* leer lassen */ }
 }
 const allData = () => Object.fromEntries(Object.entries(SYNCED).map(([k, [get]]) => [k, get()]));
@@ -1258,7 +1345,7 @@ function guessShopCat(name) {
 // „2 Milch“, „500 g Mehl“, „3x Joghurt“ → Menge und Name getrennt
 // Zahl am Zeilenanfang: 2 · 1,5 · ½ · 1½ · 1/2, auch als Spanne „2-3“
 const NUM = String.raw`(?:\d+\s?[½¼¾⅓⅔]|\d+\/\d+|\d+(?:[.,]\d+)?|[½¼¾⅓⅔])(?:\s*-\s*\d+(?:[.,]\d+)?)?`;
-const QTY_RE = new RegExp(String.raw`^(${NUM}\s*(?:x|×|stk|stück|g|gr|kg|ml|cl|l|el|tl|msp|prisen?|zehen?|scheiben?|tassen?|pck|päckchen|packungen?|pack|dosen?|flaschen?|becher|gläser|glas|bund|netz|köpfe?|stangen?|zweige?|handvoll|cm)?\.?)\s+(\S.*)$`, 'i');
+const QTY_RE = new RegExp(String.raw`^(${NUM}\s*(?:x|×|stk|stück|g|gr|gramm|kg|kilo|ml|cl|l|liter|el|tl|msp|prisen?|zehen?|scheiben?|tassen?|pck|päckchen|packungen?|pack|dosen?|flaschen?|becher|gläser|glas|bund|netz|köpfe?|stangen?|zweige?|handvoll|cm)?\.?)\s+(\S.*)$`, 'i');
 function splitQty(raw) {
   const s = String(raw || '').trim().replace(/\s+/g, ' ');
   const m = QTY_RE.exec(s);
@@ -1311,8 +1398,8 @@ function toggleShop(id) {
   if (!i) return;
   i.done = !i.done; i.doneAt = i.done ? Date.now() : null; touch(i);
   if (i.done && navigator.vibrate) navigator.vibrate(12);
-  const p = i.done && pantryOf(i.name); // gekauft: im Vorrat wieder „da“
-  if (p && p.status !== 'ok') { p.status = 'ok'; touch(p); }
+  const p = i.done && pantryOf(i.name); // gekauft: im Vorrat wieder „da“, das alte Haltbarkeitsdatum gilt nicht mehr
+  if (p && (p.status !== 'ok' || p.best)) { p.status = 'ok'; p.best = ''; touch(p); }
   save();
 }
 function clearShopDone() {
@@ -1417,8 +1504,12 @@ const zutaten = (n) => `${n} ${n === 1 ? 'Zutat' : 'Zutaten'}`;
 const ingrLines = (r) => String(r.ingredients || '').split(/\r?\n/).map((x) => x.replace(/^\s*(?:[-•*·–]|\[[ x]?\])\s*/, '').trim()).filter(Boolean);
 // Haben die meisten zu Hause: beim Übernehmen erst mal abgewählt
 const STAPLES = ['salz', 'pfeffer', 'wasser', 'salz und pfeffer', 'leitungswasser'];
+// Zutat ↔ Vorrat: „2 Zwiebeln (gewürfelt)“ passt zu „Zwiebel“ (Klammern, Zusätze nach dem Komma und Mehrzahl-Endungen zählen nicht)
+const stem = (k) => (k.length > 4 ? k.replace(/(en|n|e|s)$/, '') : k);
+const ingrKey = (line) => nameKey(splitQty(line).name.replace(/\(.*?\)/g, '').split(',')[0]);
+const pantryHas = (key, sts) => livePantry().some((p) => sts.includes(p.status) && (nameKey(p.name) === key || stem(nameKey(p.name)) === stem(key)));
 // Im Vorrat und nicht knapp/leer: muss nicht gekauft werden
-const inStock = (key) => livePantry().some((p) => p.status === 'ok' && nameKey(p.name) === key);
+const inStock = (key) => pantryHas(key, ['ok']);
 
 // Mengen umrechnen, wenn die Portionen geändert werden
 const FRAC = { '½': 1 / 2, '¼': 1 / 4, '¾': 3 / 4, '⅓': 1 / 3, '⅔': 2 / 3 };
@@ -1465,6 +1556,24 @@ function addQty(a, b) {
   return `${a} + ${b}`;
 }
 
+// „Was können wir kochen?“: wie viele Zutaten (ohne Salz, Pfeffer, Wasser) laut Vorrat da sind, auch wenn sie knapp werden
+let cookMode = false;
+function cookInfo(r) {
+  const ing = ingrLines(r).map((l) => ({ l, k: ingrKey(l) })).filter((x) => x.k && !STAPLES.includes(x.k));
+  const miss = ing.filter((x) => !pantryHas(x.k, ['ok', 'low']));
+  return { total: ing.length, have: ing.length - miss.length, miss: miss.map((x) => splitQty(x.l).name.replace(/\s*\(.*?\)/g, '').split(',')[0].trim()) };
+}
+function cookHtml(all) {
+  const head = '<button class="btn big" type="button" data-cook aria-pressed="true">← Alle Rezepte</button>';
+  if (!livePantry().length) return head + '<p class="empty" style="margin-top:14px">Dafür muss die App wissen, was ihr zu Hause habt: Tragt es unter „Vorrat“ ein.</p>';
+  const list = all.map((r) => ({ r, c: cookInfo(r) })).filter((x) => x.c.have)
+    .sort((a, b) => a.c.miss.length - b.c.miss.length || b.c.have / b.c.total - a.c.have / a.c.total || a.r.title.localeCompare(b.r.title, 'de'));
+  if (!list.length) return head + '<p class="empty" style="margin-top:14px">Für kein Rezept ist etwas im Vorrat. Tragt mehr im Vorrat ein oder legt Rezepte an.</p>';
+  return head + `<p class="subtitle">Sortiert nach dem, was ihr laut Vorrat schon dahabt</p><div style="margin-top:8px">${list.map(({ r, c }) => `<button type="button" class="note" data-recipe="${r.id}">
+    <span class="ttl">${esc(r.title)}</span>
+    <span class="meta">${c.miss.length ? `<span class="chip">${c.have} von ${c.total} da</span>` : '<span class="chip ok-chip">✓ alles da</span>'}</span>
+    ${c.miss.length ? `<span class="nbody">Fehlt: ${esc(c.miss.join(', '))}</span>` : ''}</button>`).join('')}</div>`;
+}
 function recipesHtml() {
   const all = liveRecipes();
   if (!all.length) return `<p class="empty" style="margin-top:18px">Noch keine Rezepte. Mit „+“ legt ihr eins an: Zutaten einfach untereinander schreiben. Danach kommen sie mit einem Tipp auf die Einkaufsliste.</p>
@@ -1476,8 +1585,9 @@ function recipesHtml() {
   const onList = new Set(openShop().map((i) => i.from).filter(Boolean));
   const tools = `<div class="two" style="margin-top:18px"><button class="btn" type="button" data-recipe-import>Importieren</button>
     <button class="btn" type="button" data-recipe-export>Exportieren</button></div>`;
+  if (cookMode) return cookHtml(all);
   if (!list.length) return '<p class="empty" style="margin-top:18px">Kein Rezept gefunden.</p>' + tools;
-  return `<div style="margin-top:14px">${list.map((r) => `<button type="button" class="note" data-recipe="${r.id}">
+  return `<button class="btn big" type="button" data-cook aria-pressed="false">🥕 Was können wir kochen?</button><div style="margin-top:14px">${list.map((r) => `<button type="button" class="note" data-recipe="${r.id}">
     <span class="ttl">${esc(r.title)}</span>
     <span class="meta"><span class="chip">🍽 ${r.servings} ${r.servings === 1 ? 'Portion' : 'Portionen'}</span><span class="chip">${zutaten(ingrLines(r).length)}</span>${onList.has(r.title) ? '<span class="chip">🛒 auf der Liste</span>' : ''}</span>
   </button>`).join('')}</div>` + tools;
@@ -1646,7 +1756,7 @@ function openRecipe(id, serv) {
   if (!r) return;
   const open = new Set(openShop().map((i) => nameKey(i.name)));
   const sel = new Set();
-  ingrLines(r).forEach((l, i) => { const n = nameKey(splitQty(l).name); if (!STAPLES.includes(n) && !open.has(n) && !inStock(n)) sel.add(i); });
+  ingrLines(r).forEach((l, i) => { const n = ingrKey(l); if (!STAPLES.includes(n) && !open.has(n) && !open.has(nameKey(splitQty(l).name)) && !inStock(n)) sel.add(i); });
   rv = { id, serv: serv || r.servings, sel };
   renderRecipe();
   $('#recipeSheet').hidden = false;
@@ -1659,7 +1769,7 @@ function renderRecipe() {
   $('#rvTitle').textContent = r.title;
   $('#rvServ').textContent = rv.serv;
   $('#rvIngr').innerHTML = lines.length ? lines.map((l, i) => {
-    const on = rv.sel.has(i), key = nameKey(splitQty(l).name), there = open.has(key);
+    const on = rv.sel.has(i), key = ingrKey(l), there = open.has(key) || open.has(nameKey(splitQty(l).name));
     return `<button type="button" class="pack-row" data-ing="${i}" aria-pressed="${on}"><span class="pk">${on ? '✓' : ''}</span>
       <span>${esc(scaleLine(l, f))}${there ? '<small>steht schon auf der Liste</small>' : inStock(key) ? '<small>im Vorrat</small>' : ''}</span></button>`;
   }).join('') : '<p class="empty">Noch keine Zutaten eingetragen.</p>';
@@ -1917,7 +2027,13 @@ $('#restoreFile').addEventListener('change', async (e) => {
 });
 
 /* ================= Allgemeines Eingabefenster ================= */
-// fields: [{ key, label, type: text|number|date|url|select|textarea, options: [[wert, text]], placeholder, half, required }]
+// fields: [{ key, label, type: text|number|decimal|date|time|url|select|textarea, options: [[wert, text]], placeholder, half, required }]
+// „12.345,6“ oder „12345.6“ → 12345.6
+function parseDec(v) {
+  v = String(v).replace(/\s/g, '');
+  if (v.includes(',')) v = v.replace(/\./g, '').replace(',', '.');
+  return v === '' ? NaN : Number(v);
+}
 let gf = null;
 function openForm({ title, fields, values = {}, onSave, onDelete }) {
   gf = { fields, onSave, onDelete };
@@ -1930,7 +2046,7 @@ function openForm({ title, fields, values = {}, onSave, onDelete }) {
       ? `<select id="${id}">${f.options.map(([o, l]) => `<option value="${esc(o)}"${String(o) === String(v) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`
       : f.type === 'textarea'
         ? `<textarea id="${id}" maxlength="1000" style="min-height:90px" placeholder="${esc(f.placeholder || '')}">${esc(v)}</textarea>`
-        : `<input id="${id}" type="${f.type === 'number' ? 'number' : f.type || 'text'}"${f.type === 'number' ? ' inputmode="numeric"' : ''}${f.type === 'url' ? ' inputmode="url"' : ''} value="${esc(v)}" placeholder="${esc(f.placeholder || '')}" autocomplete="off" maxlength="${f.max || 200}">`;
+        : `<input id="${id}" type="${f.type === 'number' ? 'number' : f.type === 'decimal' ? 'text' : f.type || 'text'}"${f.type === 'number' ? ' inputmode="numeric"' : ''}${f.type === 'decimal' ? ' inputmode="decimal"' : ''}${f.type === 'url' ? ' inputmode="url"' : ''} value="${esc(f.type === 'decimal' && typeof v === 'number' ? String(v).replace('.', ',') : v)}" placeholder="${esc(f.placeholder || '')}" autocomplete="off" maxlength="${f.max || 200}">`;
     return `<div><label for="${id}">${esc(f.label)}</label>${field}</div>`;
   };
   const flush = () => { if (half.length) { html += half.length === 2 ? `<div class="two">${half.join('')}</div>` : half[0]; half = []; } };
@@ -1952,6 +2068,7 @@ $('#genForm').addEventListener('submit', (e) => {
     const el = $('#gf_' + f.key);
     let v = el.value.trim();
     if (f.type === 'number') v = v === '' ? null : Math.round(Number(v));
+    if (f.type === 'decimal') v = v === '' ? null : parseDec(v);
     if (f.required && (v === '' || v == null || Number.isNaN(v))) { el.focus(); return; }
     vals[f.key] = v;
   }
@@ -1965,9 +2082,9 @@ $('#formSheet').addEventListener('click', (e) => { if (e.target.id === 'formShee
 const newItem = (data) => { const now = Date.now(); return { id: uid(), ...data, createdAt: now, updatedAt: now, deleted: false }; };
 const httpOk = (l) => (/^https?:\/\//i.test(l || '') ? l : '');
 
-/* ================= Zuhause: Pinnwand, Geburtstage, Wünsche, Geräte ================= */
-let hview = ['bdays', 'wishes', 'devices'].includes(lsGet('putzplan.hview')) ? lsGet('putzplan.hview') : 'overview';
-const HVIEW_TITLE = { overview: 'Zuhause', bdays: 'Geburtstage', wishes: 'Wünsche', devices: 'Geräte' };
+/* ================= Zuhause: Pinnwand, Kalender (Termine, Geburtstage), Wünsche, Geräte und Zähler ================= */
+let hview = { bdays: 'cal', cal: 'cal', wishes: 'wishes', devices: 'devices' }[lsGet('putzplan.hview')] || 'overview'; // bis 3.0: „bdays“
+const HVIEW_TITLE = { overview: 'Zuhause', cal: 'Kalender', wishes: 'Wünsche', devices: 'Geräte & Zähler' };
 const live_ = (list) => list.filter((x) => !x.deleted);
 const MONTHS_OPT = MONTH_LONG.map((m, i) => [i + 1, m]);
 function timeAgo(ts) {
@@ -2008,8 +2125,8 @@ function nextBday(b) {
 const bdayWhen = (n) => (n.days === 0 ? 'heute' : n.days === 1 ? 'morgen' : `in ${n.days} Tagen`);
 function bdaysHtml() {
   const list = live_(bdays).map((b) => ({ b, n: nextBday(b) })).sort((x, y) => x.n.days - y.n.days);
-  if (!list.length) return '<p class="empty" style="margin-top:18px">Noch keine Geburtstage. Mit „+“ eintragen; die tägliche Mitteilung erinnert dann rechtzeitig.</p>';
-  return '<div style="margin-top:14px">' + list.map(({ b, n }) => `<button type="button" class="note" data-bday="${b.id}">
+  if (!list.length) return '<p class="empty">Noch keine Geburtstage. Mit „+“ eintragen; die tägliche Mitteilung erinnert dann rechtzeitig.</p>';
+  return '<div>' + list.map(({ b, n }) => `<button type="button" class="note" data-bday="${b.id}">
     <span class="ttl">🎂 ${esc(b.name)}</span>
     <span class="meta"><span class="chip">${b.day}. ${MONTH_LONG[b.month - 1]}</span><span class="chip">${bdayWhen(n)}${n.age ? ` · wird ${n.age}` : ''}</span></span>
     ${b.note ? `<span class="nbody">${esc(b.note)}</span>` : ''}</button>`).join('') + '</div>';
@@ -2032,6 +2149,53 @@ function editBday(id) {
       if (b) { Object.assign(b, data); touch(b); } else bdays.push(newItem(data));
     },
     onDelete: b ? () => removeWithUndo(() => bdays, [b], `Geburtstag „${b.name}“ gelöscht`) : null,
+  });
+}
+
+// Termine: Tag, Uhrzeit (optional), für wen
+const liveEvents = () => live_(events);
+const evSort = (a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || ''));
+function dayWord(k) {
+  const t = keyOf(new Date());
+  return k === t ? 'Heute' : k === addDays(t, 1) ? 'Morgen' : longDayLabel(k);
+}
+function eventRow(e) {
+  const n = names();
+  return `<button type="button" class="note" data-event="${e.id}">
+    <span class="ttl">${e.time ? `<span class="ev-time">${e.time}</span> ` : ''}${esc(e.title)}</span>
+    ${e.who ? `<span class="meta"><span class="chip">${esc(n[e.who])}</span></span>` : ''}
+    ${e.note ? `<span class="nbody">${esc(e.note)}</span>` : ''}</button>`;
+}
+function calHtml() {
+  const today = keyOf(new Date());
+  const up = liveEvents().filter((e) => e.date >= today).sort(evSort);
+  let html = '<h2>Termine</h2>', last = '';
+  if (!up.length) html += '<p class="empty">Keine Termine. Mit „+“ eintragen, z. B. Handwerker, Arzt oder Besuch. Die tägliche Mitteilung erinnert am Vortag und am Tag selbst.</p>';
+  for (const e of up) {
+    if (e.date !== last) { html += `<p class="ev-day">${dayWord(e.date)}</p>`; last = e.date; }
+    html += eventRow(e);
+  }
+  return html + '<h2>Geburtstage</h2>' + bdaysHtml()
+    + '<button class="btn big" type="button" data-go="calsub" style="margin-top:18px">📆 Im Handy-Kalender anzeigen</button>';
+}
+function editEvent(id, date) {
+  const e = id && liveEvents().find((x) => x.id === id);
+  const n = names();
+  openForm({
+    title: e ? 'Termin bearbeiten' : 'Neuer Termin',
+    values: e || { date: date || keyOf(new Date()), who: '' },
+    fields: [
+      { key: 'title', label: 'Was?', required: true, placeholder: 'z. B. Handwerker kommt' },
+      { key: 'date', label: 'Tag', type: 'date', required: true, half: true },
+      { key: 'time', label: 'Uhrzeit (optional)', type: 'time', half: true },
+      { key: 'who', label: 'Für wen?', type: 'select', options: [['', 'Für beide'], ['nick', n.nick], ['partner', n.partner]] },
+      { key: 'note', label: 'Notizen', type: 'textarea', placeholder: 'z. B. Adresse, was mitbringen' },
+    ],
+    onSave: (v) => {
+      const data = { title: v.title, date: v.date, time: /^\d{2}:\d{2}$/.test(v.time) ? v.time : '', who: v.who, note: v.note };
+      if (e) { Object.assign(e, data); touch(e); } else events.push(newItem(data));
+    },
+    onDelete: e ? () => removeWithUndo(() => events, [e], `Termin „${e.title}“ gelöscht`) : null,
   });
 }
 
@@ -2089,8 +2253,9 @@ function warrantyInfo(d) {
 }
 function devicesHtml() {
   const list = live_(devices).sort((a, b) => a.name.localeCompare(b.name, 'de'));
-  if (!list.length) return '<p class="empty" style="margin-top:18px">Noch keine Geräte. Mit „+“ eintragen: Kaufdatum, Garantie und Link zur Anleitung, und daraus regelmäßige Wartung planen (z. B. entkalken).</p>';
-  return '<div style="margin-top:14px">' + list.map((d) => {
+  const meterPart = '<h2>Zähler</h2>' + metersHtml();
+  if (!list.length) return '<h2>Geräte</h2><p class="empty">Noch keine Geräte. Mit „+“ eintragen: Kaufdatum, Garantie und Link zur Anleitung, und daraus regelmäßige Wartung planen (z. B. entkalken).</p>' + meterPart;
+  return '<h2>Geräte</h2><div>' + list.map((d) => {
     const w = warrantyInfo(d);
     const maint = live().filter((t) => !t.done && t.title.toLowerCase().startsWith(d.name.toLowerCase() + ':'));
     return `<div class="task"><button class="tbody" type="button" data-device="${d.id}" style="padding-left:14px"><span class="ttl">${esc(d.name)}</span>
@@ -2098,8 +2263,116 @@ function devicesHtml() {
       ${maint.map((t) => `<span class="chip">🔧 ${esc(t.title.slice(d.name.length + 1).trim())} · ${dayLabel(t.due)}</span>`).join('')}</span></button>
       <div class="mini">${d.link ? `<a class="btn" href="${esc(d.link)}" target="_blank" rel="noopener" aria-label="Anleitung öffnen">📖</a>` : ''}
       <button class="btn" type="button" data-maint="${d.id}" aria-label="Wartung planen">🔧</button></div></div>`;
-  }).join('') + '</div>';
+  }).join('') + '</div>' + meterPart;
 }
+
+/* Zähler: Ablesungen, Verbrauch pro Monat */
+const liveMeters = () => live_(meters).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+const meterReadings = (id) => live_(readings).filter((r) => r.meter === id).sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
+const fmtVal = (v, d = 2) => v.toLocaleString('de-DE', { maximumFractionDigits: d });
+const meterIcon = (m) => (/strom/i.test(m.name) ? '⚡' : /gas/i.test(m.name) ? '🔥' : /wasser/i.test(m.name) ? '💧' : /heiz|wärme/i.test(m.name) ? '🌡' : '📟');
+// Verbrauch pro Monat: zwischen zwei Ablesungen gleichmäßig auf die Tage verteilt. Nur Monate, die ganz abgedeckt sind.
+// Wird der Stand kleiner (neuer Zähler), zählt der Abschnitt nicht.
+function monthlyUse(rs) {
+  if (rs.length < 2) return [];
+  const by = new Map(), gaps = new Set();
+  for (let i = 1; i < rs.length; i++) {
+    const a = rs[i - 1], b = rs[i], days = Math.round((fromKey(b.date) - fromKey(a.date)) / 864e5), diff = b.value - a.value;
+    if (days <= 0) continue;
+    for (let d = 0; d < days; d++) {
+      const m = addDays(a.date, d).slice(0, 7);
+      if (diff < 0) gaps.add(m); else by.set(m, (by.get(m) || 0) + diff / days);
+    }
+  }
+  const first = rs[0].date, last = rs[rs.length - 1].date;
+  return [...by.entries()].filter(([m]) => !gaps.has(m) && m + '-01' >= first && addMonths(m + '-01', 1) <= last)
+    .sort((a, b) => a[0].localeCompare(b[0])).map(([m, v]) => ({ m, v }));
+}
+const monthName = (m) => `${MONTH_LONG[Number(m.slice(5)) - 1]} ${m.slice(0, 4)}`;
+// Säulen: eine Farbe, dünne Säulen mit 2 px Abstand, oben abgerundet; Antippen/Überfahren zeigt den Wert in der Zeile darüber
+function useChart(id, list, unit) {
+  const W = 320, H = 120, T = 6, B = 18, n = list.length, max = Math.max(...list.map((x) => x.v)) || 1;
+  const slot = W / n, bw = Math.min(24, slot - 2);
+  const bars = list.map((x, i) => {
+    const h = Math.max(2, (x.v / max) * (H - T - B)), bx = i * slot + (slot - bw) / 2, by = H - B - h, r = Math.min(4, bw / 2, h);
+    const cap = `${monthName(x.m)}: ${fmtVal(x.v, x.v < 10 ? 1 : 0)} ${unit}`;
+    return `<g class="bar-g" data-cap="${esc(cap)}" data-chart="${id}"><rect x="${i * slot}" y="0" width="${slot}" height="${H}" fill="transparent"/>
+      <path class="bar" d="M${bx},${H - B} V${by + r} Q${bx},${by} ${bx + r},${by} H${bx + bw - r} Q${bx + bw},${by} ${bx + bw},${by + r} V${H - B} Z"/>
+      <text x="${i * slot + slot / 2}" y="${H - 5}" text-anchor="middle">${MONTH_SHORT[Number(x.m.slice(5)) - 1].slice(0, n > 8 ? 1 : 3)}</text></g>`;
+  }).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Verbrauch pro Monat in ${esc(unit)}"><line x1="0" x2="${W}" y1="${H - B}" y2="${H - B}"/>${bars}</svg>`;
+}
+function metersHtml() {
+  const list = liveMeters();
+  if (!list.length) return '<p class="empty">Noch keine Zähler. Mit „+“ Strom, Gas oder Wasser anlegen und regelmäßig ablesen: Die App zeigt euch den Verbrauch pro Monat und erinnert am Monatsersten.</p>';
+  return list.map((m) => {
+    const rs = meterReadings(m.id), last = rs[rs.length - 1], prev = rs[rs.length - 2], unit = m.unit || '';
+    const use = monthlyUse(rs).slice(-12);
+    let rate = '';
+    if (last && prev) {
+      const days = Math.round((fromKey(last.date) - fromKey(prev.date)) / 864e5);
+      if (days > 0 && last.value >= prev.value) rate = `Seit der Ablesung davor: ${fmtVal((last.value - prev.value) / days, 1)} ${esc(unit)} pro Tag`;
+    }
+    const avg = use.length ? use.reduce((t, x) => t + x.v, 0) / use.length : 0;
+    const cap = use.length ? `Ø ${fmtVal(avg, avg < 10 ? 1 : 0)} ${esc(unit)} pro Monat (${use.length} ${use.length === 1 ? 'Monat' : 'Monate'})` : '';
+    const steps = rs.map((r, i) => {
+      const d = i && r.value >= rs[i - 1].value ? ` <small>+${fmtVal(r.value - rs[i - 1].value)}</small>` : '';
+      return `<div class="lc-row"><span>${fmtDate(r.date)}${d}</span><span>${fmtVal(r.value, 3)} ${esc(unit)} <button type="button" class="x-btn" data-read-del="${r.id}" aria-label="Ablesung vom ${fmtDate(r.date)} löschen">✕</button></span></div>`;
+    }).reverse().join('');
+    return `<div class="bal meter">
+      <div class="meter-head"><button type="button" class="meter-name" data-meter="${m.id}">${meterIcon(m)} <b>${esc(m.name)}</b>${m.number ? `<small>Nr. ${esc(m.number)}</small>` : ''}</button>
+        <button class="btn primary small-btn" type="button" data-read="${m.id}">Ablesen</button></div>
+      ${last ? `<p class="meter-now">${fmtVal(last.value, 3)} ${esc(unit)} <small>am ${fmtDate(last.date)}</small></p>` : '<p class="muted small" style="margin:6px 0 0">Noch nicht abgelesen.</p>'}
+      ${rate ? `<p class="muted small" style="margin:2px 0 0">${rate}</p>` : ''}
+      ${use.length ? `<p class="chart-cap" id="cap-${m.id}" data-default="${esc(cap)}">${cap}</p>${useChart(m.id, use, unit)}`
+        : rs.length ? '<p class="muted small" style="margin:6px 0 0">Den Verbrauch pro Monat gibt es, sobald ein ganzer Monat zwischen zwei Ablesungen liegt.</p>' : ''}
+      ${rs.length ? `<details><summary>Alle Ablesungen (${rs.length})${use.length ? ' und Monatswerte' : ''}</summary>${steps}
+        ${use.length ? `<p class="ev-day">Verbrauch pro Monat</p>${use.slice().reverse().map((x) => `<div class="lc-row"><span>${monthName(x.m)}</span><span>${fmtVal(x.v, x.v < 10 ? 1 : 0)} ${esc(unit)}</span></div>`).join('')}` : ''}</details>` : ''}
+    </div>`;
+  }).join('');
+}
+function editMeter(id) {
+  const m = id && liveMeters().find((x) => x.id === id);
+  openForm({
+    title: m ? 'Zähler bearbeiten' : 'Neuer Zähler',
+    values: m ? { ...m, remind: m.remind ? '1' : '0' } : { unit: 'kWh', remind: '1' },
+    fields: [
+      { key: 'name', label: 'Name', required: true, placeholder: 'z. B. Strom', max: 60 },
+      { key: 'unit', label: 'Einheit', type: 'select', half: true, options: [['kWh', 'kWh'], ['m³', 'm³'], ['l', 'Liter'], ['', 'ohne']] },
+      { key: 'number', label: 'Zählernummer', half: true, placeholder: 'optional', max: 40 },
+      { key: 'remind', label: 'Am Monatsersten erinnern', type: 'select', options: [['1', 'Ja'], ['0', 'Nein']] },
+    ],
+    onSave: (v) => {
+      const data = { name: v.name, unit: v.unit, number: v.number, remind: v.remind === '1' };
+      if (m) { Object.assign(m, data); touch(m); } else meters.push(newItem(data));
+    },
+    onDelete: m ? () => removeWithUndo(() => meters, [m], `Zähler „${m.name}“ gelöscht`) : null,
+  });
+}
+function addReading(id) {
+  const m = liveMeters().find((x) => x.id === id);
+  if (!m) return;
+  const last = meterReadings(id).pop();
+  openForm({
+    title: `${m.name} ablesen`,
+    values: { date: keyOf(new Date()) },
+    fields: [
+      { key: 'value', label: `Zählerstand${m.unit ? ` in ${m.unit}` : ''}`, type: 'decimal', required: true, placeholder: last ? `zuletzt ${fmtVal(last.value, 3)}` : 'z. B. 12345,6' },
+      { key: 'date', label: 'Abgelesen am', type: 'date', required: true },
+    ],
+    onSave: (v) => {
+      if (!(v.value >= 0)) { $('#gf_value').focus(); return false; }
+      readings.push(newItem({ meter: id, date: v.date, value: v.value }));
+      if (last && v.date >= last.date && v.value < last.value) setTimeout(() => toast('Der Stand ist kleiner als zuletzt. Neuer Zähler? Dann zählt der Abschnitt nicht mit.'), 50);
+    },
+  });
+}
+// Ablesen fällig: noch nie oder seit über 30 Tagen nicht abgelesen
+const metersDue = () => liveMeters().filter((m) => {
+  if (!m.remind) return false;
+  const last = meterReadings(m.id).pop();
+  return !last || last.date <= addDays(keyOf(new Date()), -30);
+});
 function editDevice(id) {
   const d = id && live_(devices).find((x) => x.id === id);
   openForm({
@@ -2134,19 +2407,211 @@ function planMaintenance(id) {
 
 // Übersicht: Kacheln, Pinnwand, Demnächst
 function upcomingHtml() {
-  const items = [];
-  for (const b of live_(bdays)) { const n = nextBday(b); if (n.days <= 30) items.push({ d: n.days, text: `🎂 ${esc(b.name)} ${bdayWhen(n)}${n.age ? ` (wird ${n.age})` : ''}`, go: 'bdays' }); }
+  const items = [], today = keyOf(new Date());
+  for (const e of liveEvents()) {
+    const d = Math.round((fromKey(e.date) - fromKey(today)) / 864e5);
+    if (d >= 0 && d <= 14) items.push({ d: d - 0.5, text: `📅 ${dayWord(e.date)}${e.time ? ' ' + e.time : ''}: ${esc(e.title)}`, go: 'cal' });
+  }
+  for (const { p, b } of expiring(3)) items.push({ d: b.days, text: `⏳ ${esc(p.name)} ${b.text}`, go: 'pantry' });
+  for (const m of metersDue()) items.push({ d: 0.2, text: `${meterIcon(m)} Zählerstand ${esc(m.name)} ablesen`, go: 'devices' });
+  for (const b of live_(bdays)) { const n = nextBday(b); if (n.days <= 30) items.push({ d: n.days, text: `🎂 ${esc(b.name)} ${bdayWhen(n)}${n.age ? ` (wird ${n.age})` : ''}`, go: 'cal' }); }
   for (const d of live_(devices)) { const w = warrantyInfo(d); if (w && w.soon) items.push({ d: w.days, text: `⚠ Garantie ${esc(d.name)} endet in ${w.days} Tagen`, go: 'devices' }); }
   const soon = live_(wishes).filter((w) => !w.done && w.prio === 'high');
   if (soon.length) items.push({ d: 999, text: `🛍 ${soon.length === 1 ? `„${esc(soon[0].title)}“ steht` : `${soon.length} Anschaffungen stehen`} bald an`, go: 'wishes' });
-  if (!items.length) return '';
-  return `<div class="bal"><h3>Demnächst</h3>${items.sort((a, b) => a.d - b.d).map((i) => `<button type="button" class="wk-row" data-hgo="${i.go}" style="grid-template-columns:1fr">${i.text}</button>`).join('')}</div>`;
+  const wifi = settings && settings.wifi;
+  const wifiBox = `<div class="bal"><h3>📶 WLAN für Gäste</h3>${wifi ? `<p class="muted small" style="margin:0">${esc(wifi.ssid)}: Besuch scannt den QR-Code mit der Kamera und ist sofort im WLAN.</p>
+    <button class="btn big" type="button" data-wifi>QR-Code zeigen</button>` : `<p class="muted small" style="margin:0">Einmal eintragen, dann scannt Besuch einfach einen QR-Code statt das Passwort abzutippen.</p>
+    <button class="btn big" type="button" data-wifi>WLAN eintragen</button>`}</div>`;
+  if (!items.length) return wifiBox;
+  const go = (i) => (i.go === 'pantry' ? `data-go="pantry"` : `data-hgo="${i.go}"`);
+  return `<div class="bal"><h3>Demnächst</h3>${items.sort((a, b) => a.d - b.d).map((i) => `<button type="button" class="wk-row" ${go(i)} style="grid-template-columns:1fr">${i.text}</button>`).join('')}</div>` + wifiBox;
 }
 function renderHome() {
   const ov = hview === 'overview';
   $('#homeTiles').hidden = $('#boardBox').hidden = !ov;
   if (ov) { $('#homeTiles').innerHTML = tilesHtml(); renderBoard(); }
-  $('#homeBody').innerHTML = ov ? upcomingHtml() : hview === 'bdays' ? bdaysHtml() : hview === 'wishes' ? wishesHtml() : devicesHtml();
+  const open = [...document.querySelectorAll('#homeBody details[open]')].map((d) => d.closest('.meter') && d.closest('.meter').querySelector('[data-meter]').dataset.meter);
+  $('#homeBody').innerHTML = ov ? upcomingHtml() : hview === 'cal' ? calHtml() : hview === 'wishes' ? wishesHtml() : devicesHtml();
+  for (const id of open) { const b = id && document.querySelector(`#homeBody [data-meter="${id}"]`); if (b) b.closest('.meter').querySelector('details').open = true; }
+}
+
+/* Auswahl beim „+“ (z. B. Termin oder Geburtstag) */
+function openPick(title, opts) {
+  $('#pickTitle').textContent = title;
+  $('#pickList').innerHTML = opts.map(([icon, label, sub], i) => `<button class="btn" type="button" data-pick="${i}"><span>${icon} ${esc(label)}</span><span>${esc(sub)}</span></button>`).join('');
+  $('#pickSheet').hidden = false;
+  $('#pickSheet').onclick = (e) => {
+    const b = e.target.closest('[data-pick]');
+    if (b || e.target.id === 'pickSheet' || e.target.id === 'pickCancel') $('#pickSheet').hidden = true;
+    if (b) opts[Number(b.dataset.pick)][3]();
+  };
+}
+
+// QR-Code (Byte-Modus, Fehlerkorrektur M, Version 1–10): gibt eine Matrix aus true/false zurück
+function qrMatrix(text) {
+  const data = [...new TextEncoder().encode(text)];
+  // [Gesamt-Codewörter, Korrektur pro Block, Blöcke]
+  const V = [null, [26, 10, 1], [44, 16, 1], [70, 26, 1], [100, 18, 2], [134, 24, 2], [172, 16, 4], [196, 18, 4], [242, 22, 4], [292, 22, 5], [346, 26, 5]];
+  const ALIGN = [null, [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]];
+  let ver = 1;
+  const cap = (v) => V[v][0] - V[v][1] * V[v][2];
+  while (ver <= 10 && 4 + (ver < 10 ? 8 : 16) + data.length * 8 > cap(ver) * 8) ver++;
+  if (ver > 10) return null;
+  const [total, ecLen, nb] = V[ver], dataLen = cap(ver);
+  // Bits: Modus 0100, Länge, Daten, Abschluss, Füllbytes
+  const bits = [];
+  const put = (v, n) => { for (let i = n - 1; i >= 0; i--) bits.push((v >>> i) & 1); };
+  put(4, 4); put(data.length, ver < 10 ? 8 : 16); data.forEach((b) => put(b, 8));
+  put(0, Math.min(4, dataLen * 8 - bits.length));
+  while (bits.length % 8) bits.push(0);
+  const cw = [];
+  for (let i = 0; i < bits.length; i += 8) cw.push(parseInt(bits.slice(i, i + 8).join(''), 2));
+  for (let p = 0xec; cw.length < dataLen; p ^= 0xec ^ 0x11) cw.push(p);
+  // Reed-Solomon über GF(256)
+  const EXP = [], LOG = [];
+  for (let i = 0, x = 1; i < 255; i++) { EXP[i] = x; LOG[x] = i; x = (x << 1) ^ (x & 0x80 ? 0x11d : 0); }
+  const mul = (a, b) => (a && b ? EXP[(LOG[a] + LOG[b]) % 255] : 0);
+  let gen = [1];
+  for (let i = 0; i < ecLen; i++) gen = [...gen, 0].map((g, j) => g ^ (j ? mul(gen[j - 1], EXP[i]) : 0));
+  const rs = (msg) => {
+    const r = new Array(ecLen).fill(0);
+    for (const m of msg) {
+      const f = m ^ r.shift(); r.push(0);
+      for (let j = 0; j < ecLen; j++) r[j] ^= mul(gen[j + 1], f);
+    }
+    return r;
+  };
+  // Blöcke: die letzten (dataLen % nb) Blöcke sind ein Byte länger
+  const short = Math.floor(dataLen / nb), longFrom = nb - (dataLen % nb);
+  const blocks = [];
+  for (let b = 0, o = 0; b < nb; b++) { const n = short + (b >= longFrom ? 1 : 0); blocks.push(cw.slice(o, o + n)); o += n; }
+  const ecs = blocks.map(rs), out = [];
+  for (let i = 0; i <= short; i++) blocks.forEach((bl) => { if (i < bl.length) out.push(bl[i]); });
+  for (let i = 0; i < ecLen; i++) ecs.forEach((e) => out.push(e[i]));
+  // Matrix mit Funktionsmustern
+  const size = ver * 4 + 17;
+  const m = [...Array(size)].map(() => new Array(size).fill(false));
+  const fn = [...Array(size)].map(() => new Array(size).fill(false));
+  const set = (x, y, d) => { m[y][x] = !!d; fn[y][x] = true; };
+  for (let i = 0; i < size; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+  const finder = (cx, cy) => {
+    for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+      const x = cx + dx, y = cy + dy, d = Math.max(Math.abs(dx), Math.abs(dy));
+      if (x >= 0 && x < size && y >= 0 && y < size) set(x, y, d !== 2 && d !== 4);
+    }
+  };
+  finder(3, 3); finder(size - 4, 3); finder(3, size - 4);
+  const al = ALIGN[ver];
+  for (const ay of al) for (const ax of al) {
+    if ((ax === 6 && ay === 6) || (ax === 6 && ay === al[al.length - 1]) || (ay === 6 && ax === al[al.length - 1])) continue;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) set(ax + dx, ay + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+  }
+  const format = (mask) => { // Fehlerkorrektur M = 00
+    const d = mask;
+    let r = d;
+    for (let i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+    const b = ((d << 10) | r) ^ 0x5412, bit = (i) => (b >>> i) & 1;
+    for (let i = 0; i <= 5; i++) set(8, i, bit(i));
+    set(8, 7, bit(6)); set(8, 8, bit(7)); set(7, 8, bit(8));
+    for (let i = 9; i < 15; i++) set(14 - i, 8, bit(i));
+    for (let i = 0; i < 8; i++) set(size - 1 - i, 8, bit(i));
+    for (let i = 8; i < 15; i++) set(8, size - 15 + i, bit(i));
+    set(8, size - 8, 1);
+  };
+  format(0);
+  if (ver >= 7) {
+    let r = ver;
+    for (let i = 0; i < 12; i++) r = (r << 1) ^ ((r >>> 11) * 0x1f25);
+    const b = (ver << 12) | r;
+    for (let i = 0; i < 18; i++) { const a = size - 11 + (i % 3), c = Math.floor(i / 3), d = (b >>> i) & 1; set(a, c, d); set(c, a, d); }
+  }
+  // Daten im Zickzack von unten rechts
+  const all = [];
+  out.forEach((c) => { for (let i = 7; i >= 0; i--) all.push((c >>> i) & 1); });
+  let k = 0;
+  for (let right = size - 1; right >= 1; right -= 2) {
+    if (right === 6) right = 5;
+    for (let v = 0; v < size; v++) {
+      for (let j = 0; j < 2; j++) {
+        const x = right - j, up = ((right + 1) & 2) === 0, y = up ? size - 1 - v : v;
+        if (!fn[y][x]) { m[y][x] = k < all.length ? !!all[k] : false; k++; }
+      }
+    }
+  }
+  // Maske mit der geringsten Strafe wählen
+  const MASKS = [(x, y) => (x + y) % 2 === 0, (x, y) => y % 2 === 0, (x) => x % 3 === 0, (x, y) => (x + y) % 3 === 0,
+    (x, y) => (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0, (x, y) => ((x * y) % 2) + ((x * y) % 3) === 0,
+    (x, y) => (((x * y) % 2) + ((x * y) % 3)) % 2 === 0, (x, y) => (((x + y) % 2) + ((x * y) % 3)) % 2 === 0];
+  const apply = (mk) => { for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (!fn[y][x] && MASKS[mk](x, y)) m[y][x] = !m[y][x]; };
+  const penalty = () => {
+    let p = 0, dark = 0;
+    const line = (get) => {
+      for (let i = 0; i < size; i++) {
+        let run = 1, s = '';
+        for (let j = 0; j < size; j++) {
+          const c = get(i, j); s += c ? '1' : '0'; if (c) dark += 0.5;
+          if (j && c === get(i, j - 1)) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1;
+        }
+        p += 40 * ((s.match(/(?=10111010000|00001011101)/g) || []).length);
+      }
+    };
+    line((i, j) => m[i][j]); line((i, j) => m[j][i]);
+    for (let y = 0; y < size - 1; y++) for (let x = 0; x < size - 1; x++) { const c = m[y][x]; if (c === m[y][x + 1] && c === m[y + 1][x] && c === m[y + 1][x + 1]) p += 3; }
+    return p + Math.floor(Math.abs(dark * 20 / (size * size) - 10)) * 10;
+  };
+  let best = 0, bestP = Infinity;
+  for (let mk = 0; mk < 8; mk++) { apply(mk); format(mk); const p = penalty(); if (p < bestP) { bestP = p; best = mk; } apply(mk); }
+  apply(best); format(best);
+  return m;
+}
+
+/* WLAN für Gäste: QR-Code nach dem Standard, den iPhone- und Android-Kameras erkennen */
+const wifiEsc = (s) => String(s).replace(/([\\;,:"])/g, '\\$1');
+const wifiText = (w) => `WIFI:T:${w.type};S:${wifiEsc(w.ssid)};${w.type === 'nopass' ? '' : `P:${wifiEsc(w.pass)};`}${w.hidden ? 'H:true;' : ''};`;
+function qrSvg(text) {
+  const m = qrMatrix(text);
+  if (!m) return null;
+  const n = m.length, q = 4;
+  let d = '';
+  m.forEach((row, y) => row.forEach((on, x) => { if (on) d += `M${x + q},${y + q}h1v1h-1z`; }));
+  return `<svg viewBox="0 0 ${n + 2 * q} ${n + 2 * q}" shape-rendering="crispEdges" role="img" aria-label="QR-Code für das WLAN"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+}
+function openWifi() {
+  const w = settings && settings.wifi;
+  if (!w) return editWifi();
+  const svg = qrSvg(wifiText(w));
+  $('#wifiQr').innerHTML = svg || '<p class="empty">Name und Passwort sind zu lang für einen QR-Code.</p>';
+  $('#wifiInfo').innerHTML = `<div class="setting-row"><span>Netzwerk</span><b>${esc(w.ssid)}</b></div>`
+    + (w.type === 'nopass' ? '<div class="setting-row"><span>Passwort</span><span class="muted">keins</span></div>' : `<div class="setting-row"><span>Passwort</span><b class="pw">${esc(w.pass)}</b></div>`);
+  $('#wifiCopy').hidden = w.type === 'nopass';
+  $('#wifiSheet').hidden = false;
+}
+function editWifi() {
+  const w = (settings && settings.wifi) || { type: 'WPA', hidden: false };
+  openForm({
+    title: 'WLAN für Gäste',
+    values: { ...w, hidden: w.hidden ? '1' : '0' },
+    fields: [
+      { key: 'ssid', label: 'Name des WLANs', required: true, max: 64, placeholder: 'wie er im Handy angezeigt wird' },
+      { key: 'pass', label: 'Passwort', max: 64 },
+      { key: 'type', label: 'Verschlüsselung', type: 'select', half: true, options: [['WPA', 'WPA2/WPA3'], ['WEP', 'WEP (alt)'], ['nopass', 'ohne Passwort']] },
+      { key: 'hidden', label: 'Versteckt', type: 'select', half: true, options: [['0', 'Nein'], ['1', 'Ja']] },
+    ],
+    onSave: (v) => {
+      if (v.type !== 'nopass' && !v.pass) { $('#gf_pass').focus(); return false; }
+      setSettings({ wifi: { ssid: v.ssid, pass: v.type === 'nopass' ? '' : $('#gf_pass').value, type: v.type, hidden: v.hidden === '1' } });
+      setTimeout(openWifi, 50);
+    },
+    onDelete: settings && settings.wifi ? () => { setSettings({ wifi: null }); save(); toast('WLAN entfernt'); } : null,
+  });
+}
+$('#wifiClose').addEventListener('click', () => { $('#wifiSheet').hidden = true; });
+$('#wifiEdit').addEventListener('click', () => { $('#wifiSheet').hidden = true; editWifi(); });
+$('#wifiCopy').addEventListener('click', () => copyText(settings && settings.wifi ? settings.wifi.pass : '', 'Passwort kopiert'));
+$('#wifiSheet').addEventListener('click', (e) => { if (e.target.id === 'wifiSheet') $('#wifiSheet').hidden = true; });
+async function copyText(text, msg) {
+  try { await navigator.clipboard.writeText(text); toast(msg); }
+  catch (e) { prompt('Zum Kopieren gedrückt halten:', text); }
 }
 function setHview(v) { hview = v; lsSet('putzplan.hview', v); window.scrollTo(0, 0); render(); }
 
@@ -2159,16 +2624,28 @@ function shopOrder() {
   const o = ((settings && settings.shopOrder) || []).filter((c) => SHOP_CATS.includes(c));
   return [...o, ...SHOP_CATS.filter((c) => !o.includes(c))];
 }
+// Mindestens haltbar bis: Tage bis dahin und Text
+function bestInfo(p) {
+  if (!p.best || p.status === 'out') return null;
+  const days = Math.round((fromKey(p.best) - fromKey(keyOf(new Date()))) / 864e5);
+  const text = days < -1 ? `seit ${-days} Tagen abgelaufen` : days === -1 ? 'seit gestern abgelaufen' : days === 0 ? 'läuft heute ab'
+    : days === 1 ? 'läuft morgen ab' : days <= 3 ? `noch ${days} Tage haltbar` : `haltbar bis ${fmtDate(p.best).replace(/\d{4}$/, (y) => y.slice(2))}`;
+  return { days, text, soon: days <= 3 };
+}
+const expiring = (maxDays) => livePantry().map((p) => ({ p, b: bestInfo(p) })).filter((x) => x.b && x.b.days <= maxDays).sort((a, b) => a.b.days - b.b.days);
 function pantryHtml() {
   const all = livePantry();
   if (!all.length) return '<p class="empty" style="margin-top:18px">Noch nichts im Vorrat. Oben eintragen, was ihr zu Hause habt (z. B. Spülmittel, Kaffee, Nudeln). Wird etwas knapp oder ist leer, kommt es automatisch auf die Einkaufsliste.</p>';
   const low = all.filter((p) => p.status !== 'ok').length;
+  const exp = expiring(3).length;
   let html = low ? `<p class="subtitle">${low} knapp oder leer, steht auf der Einkaufsliste</p>` : '';
+  if (exp) html += `<p class="subtitle warn">⏳ ${exp === 1 ? '1 Sache läuft' : `${exp} Sachen laufen`} bald ab</p>`;
+  if (!all.some((p) => p.best)) html += '<p class="muted small" style="margin:10px 0 0">Tipp: Auf eine Sache tippen, um das Mindesthaltbarkeitsdatum einzutragen. Die App erinnert dann rechtzeitig.</p>';
   for (const c of shopOrder()) {
     const list = all.filter((p) => (SHOP_CATS.includes(p.cat) ? p.cat : 'Sonstiges') === c).sort((a, b) => a.name.localeCompare(b.name, 'de'));
     if (!list.length) continue;
     html += `<h2>${SHOP_ICON[c]} ${esc(c)}</h2>` + list.map((p) => `<div class="task shop-row">
-      <button class="tbody" type="button" data-pantry="${p.id}" style="padding-left:14px"><span class="ttl">${esc(p.name)}</span></button>
+      <button class="tbody" type="button" data-pantry="${p.id}" style="padding-left:14px"><span class="ttl">${esc(p.name)}${(() => { const b = bestInfo(p); return b ? `<small class="${b.soon ? 'warn' : ''}">${b.soon ? '⏳ ' : ''}${b.text}</small>` : ''; })()}</span></button>
       <div class="mini" role="group" aria-label="${esc(p.name)}">${['ok', 'low', 'out'].map((st) => `<button type="button" class="${st}" data-pst="${p.id}" data-st="${st}" aria-pressed="${p.status === st}">${PANTRY_LABEL[st]}</button>`).join('')}</div></div>`).join('');
   }
   return html;
@@ -2178,7 +2655,7 @@ function addPantry(text) {
   for (const raw of splitItems(text)) {
     const { name } = splitQty(raw);
     if (!name || pantryOf(name)) continue;
-    pantry.push(newItem({ name, cat: guessShopCat(name), status: 'ok' }));
+    pantry.push(newItem({ name, cat: guessShopCat(name), status: 'ok', best: '' }));
     n++;
   }
   if (n) save(); else toast('Steht schon im Vorrat');
@@ -2198,8 +2675,9 @@ function editPantry(id) {
   if (!p) return;
   openForm({
     title: 'Vorrat bearbeiten', values: p,
-    fields: [{ key: 'name', label: 'Was?', required: true, max: 100 }, { key: 'cat', label: 'Bereich im Laden', type: 'select', options: SHOP_CATS.map((c) => [c, `${SHOP_ICON[c]} ${c}`]) }],
-    onSave: (v) => { Object.assign(p, { name: v.name, cat: v.cat }); touch(p); },
+    fields: [{ key: 'name', label: 'Was?', required: true, max: 100 }, { key: 'cat', label: 'Bereich im Laden', type: 'select', options: SHOP_CATS.map((c) => [c, `${SHOP_ICON[c]} ${c}`]) },
+      { key: 'best', label: 'Mindestens haltbar bis (optional)', type: 'date' }],
+    onSave: (v) => { Object.assign(p, { name: v.name, cat: v.cat, best: v.best || '' }); touch(p); },
     onDelete: () => removeWithUndo(() => pantry, [p], `„${p.name}“ aus dem Vorrat genommen`),
   });
 }
@@ -2265,6 +2743,9 @@ function todayHtml(today) {
     + (todayMeals(today) ? `<p class="banner">🍽 Heute gibt's: ${esc(todayMeals(today))}</p>` : '')
     + live_(bdays).map((b) => ({ b, n: nextBday(b) })).filter((x) => x.n.days <= 1)
       .map(({ b, n }) => `<p class="banner">🎂 ${n.days ? 'Morgen' : 'Heute'}: ${esc(b.name)}${n.age ? ` wird ${n.age}` : ''}</p>`).join('')
+    + liveEvents().filter((e) => e.date === today || e.date === tomorrow).sort(evSort)
+      .map((e) => `<p class="banner">📅 ${e.date === today ? 'Heute' : 'Morgen'}${e.time ? ' ' + e.time : ''}: ${esc(e.title)}</p>`).join('')
+    + (expiring(1).length ? `<p class="banner">⏳ ${expiring(1).map(({ p, b }) => `${esc(p.name)} ${b.text}`).join(', ')}</p>` : '')
     + (away ? `<p class="banner">🏖 Urlaub bis ${dayLabel(addDays(away, -1))}. Erinnerungen sind pausiert.</p>` : '')
     + starter
     + (overdue.length ? `<h2>Überfällig</h2>${overdue.map((t) => taskRow(t, true)).join('')}` : '')
@@ -2295,7 +2776,7 @@ function render() {
   const homeList = tab === 'home' && hview !== 'overview';
   $('#fab').hidden = !(tasksView || tab === 'notes' || recipesView || homeList);
   $('#fab').setAttribute('aria-label', tab === 'notes' ? 'Neue Notiz' : recipesView ? 'Neues Rezept'
-    : homeList ? { bdays: 'Neuer Geburtstag', wishes: 'Neue Anschaffung', devices: 'Neues Gerät' }[hview] : 'Neue Aufgabe');
+    : homeList ? { cal: 'Neuer Termin oder Geburtstag', wishes: 'Neue Anschaffung', devices: 'Neues Gerät oder neuer Zähler' }[hview] : 'Neue Aufgabe');
   $('#view').hidden = tab === 'home' || tab === 'settings';
   $('#homePage').hidden = tab !== 'home';
   $('#settingsPage').hidden = tab !== 'settings';
@@ -2401,7 +2882,8 @@ function tilesHtml() {
   </div>`;
 }
 function go(where) {
-  if (where === 'list' || where === 'plan') { shopView = where; lsSet(LS.shopView, shopView); setTab('shop'); return; }
+  if (where === 'list' || where === 'plan' || where === 'pantry') { shopView = where; lsSet(LS.shopView, shopView); setTab('shop'); return; }
+  if (where === 'calsub') { setTab('settings'); $('#calBox').scrollIntoView({ block: 'start' }); return; }
   view = where; lsSet(LS.view, view);
   setTab('clean');
 }
@@ -2416,6 +2898,7 @@ function fillHome() {
   renderAway();
   renderPush();
   renderOrder();
+  if (tab === 'settings') renderLinks();
 }
 function move(dir) {
   if (view === 'week') {
@@ -2615,7 +3098,7 @@ function renderAway() {
        <button class="btn big" type="button" id="btnAwayStart">Urlaub eintragen</button>`;
 }
 function setSettings(patch) {
-  settings = { names: (settings && settings.names) || { nick: '', partner: '' }, away: (settings && settings.away) || null, ...patch, updatedAt: Date.now() };
+  settings = { names: { nick: '', partner: '' }, away: null, ...(settings || {}), ...patch, updatedAt: Date.now() };
 }
 // Alles Offene vor der Rückkehr auf danach schieben: wiederkehrende in ihrem Rhythmus, einmalige auf den Rückkehrtag
 function shiftForAway(back) {
@@ -2645,6 +3128,53 @@ $('#awayBody').addEventListener('click', (e) => {
     save(); renderAway();
     toast('Willkommen zurück!');
   }
+});
+
+/* ================= Kalender-Abo und Sprachassistent (geheime Links vom Server) ================= */
+const API_ABS = API_BASE || location.origin;
+const calOpts = () => { try { return { tasks: false, meals: false, ...JSON.parse(lsGet('putzplan.calOpts') || '{}') }; } catch (e) { return { tasks: false, meals: false }; } };
+// Link holen: einmal vom Server, danach aus dem Speicher dieses Geräts
+async function getToken(kind, reset) {
+  const key = 'putzplan.link.' + kind;
+  if (!reset && /^[\w-]{24}$/.test(lsGet(key) || '')) return lsGet(key);
+  const r = await api('/api/link', { kind, reset: !!reset });
+  lsSet(key, r.token);
+  return r.token;
+}
+async function renderLinks(reset) {
+  const o = calOpts();
+  setToggle($('#cTasks'), o.tasks); setToggle($('#cMeals'), o.meals);
+  try {
+    const cal = await getToken('cal', reset === 'cal');
+    const q = [o.tasks && 't=1', o.meals && 'm=1'].filter(Boolean).join('&');
+    const url = `${API_ABS}/api/cal/${cal}.ics${q ? '?' + q : ''}`, webcal = url.replace(/^https?:/, 'webcal:');
+    $('#calLinks').innerHTML = `<a class="btn primary big" href="${esc(webcal)}">Im iPhone-Kalender abonnieren</a>
+      <a class="btn big" href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}" target="_blank" rel="noopener">In Google Kalender abonnieren</a>
+      <button class="btn big" type="button" data-copy="${esc(url)}">Link kopieren</button>
+      <p class="muted small" style="margin:8px 0 0">Google Kalender (Android): am besten am Computer auf calendar.google.com unter „Weitere Kalender → Per URL“ den kopierten Link einfügen. Danach ist er auch auf dem Handy. Google aktualisiert nur alle paar Stunden.</p>
+      <button class="btn ghost small-btn" type="button" id="calReset" style="margin-top:8px">Neuen Link erzeugen (alter hört auf zu gehen)</button>`;
+  } catch (e) {
+    $('#calLinks').innerHTML = '<p class="muted small">Keine Verbindung. Bitte später nochmal öffnen.</p>';
+  }
+  try {
+    const add = await getToken('add', reset === 'add');
+    const url = `${API_ABS}/api/add/${add}${me() ? '?w=' + me() : ''}`;
+    $('#voiceLinks').innerHTML = `<p class="link-box">${esc(url)}</p>
+      <button class="btn big" type="button" data-copy="${esc(url)}">Link kopieren</button>
+      ${me() ? '' : '<p class="muted small" style="margin:6px 0 0">Tipp: Oben bei „Dieses Handy gehört“ auswählen, dann bekommt nur der andere die Mitteilung.</p>'}
+      <button class="btn ghost small-btn" type="button" id="addReset" style="margin-top:8px">Neuen Link erzeugen (alter hört auf zu gehen)</button>`;
+  } catch (e) {
+    $('#voiceLinks').innerHTML = '<p class="muted small">Keine Verbindung. Bitte später nochmal öffnen.</p>';
+  }
+}
+for (const [id, k] of [['#cTasks', 'tasks'], ['#cMeals', 'meals']]) {
+  $(id).addEventListener('click', () => { lsSet('putzplan.calOpts', JSON.stringify({ ...calOpts(), [k]: !calOpts()[k] })); renderLinks(); });
+}
+$('#calLinks').addEventListener('click', (e) => {
+  if (e.target.id === 'calReset' && confirm('Neuen Kalender-Link erzeugen? Abos mit dem alten Link bekommen dann nichts mehr.')) renderLinks('cal');
+});
+$('#voiceLinks').addEventListener('click', (e) => {
+  if (e.target.id === 'addReset' && confirm('Neuen Link erzeugen? Kurzbefehle mit dem alten Link funktionieren dann nicht mehr.')) renderLinks('add');
 });
 
 /* ================= Zähler am App-Symbol ================= */
@@ -2733,7 +3263,7 @@ async function pushSettingChanged() {
   if (!prefs.on || Notification.permission !== 'granted') return;
   try { await pushSubscribe(prefs); renderPush(); } catch (e) { renderPush('Keine Verbindung. Die Änderung wird beim nächsten Öffnen übernommen.'); }
 }
-$('#pWho').addEventListener('change', pushSettingChanged);
+$('#pWho').addEventListener('change', () => { pushSettingChanged(); renderLinks(); }); // der Sprach-Link enthält, wem das Handy gehört
 $('#pTime').addEventListener('change', pushSettingChanged);
 for (const sel of Object.values(OPT_BTNS)) $(sel).addEventListener('click', (e) => { setToggle(e.currentTarget, !toggled(e.currentTarget)); pushSettingChanged(); });
 $('#btnPushTest').addEventListener('click', async () => {
@@ -2794,6 +3324,16 @@ async function api(path, body, c = code) {
   return data;
 }
 
+// Vom Server (Sprachassistent) eingetragene Sachen haben noch keinen Bereich: „2 Liter Milch“ → Menge und Bereich ergänzen
+function tidyVoiceItems() {
+  let n = 0;
+  for (const i of openShop()) {
+    if (i.cat) continue;
+    const { qty, name } = splitQty(i.name);
+    i.name = name; i.qty = i.qty || qty; i.cat = guessShopCat(name); touch(i); n++;
+  }
+  return n;
+}
 function scheduleSync() { clearTimeout(syncTimer); syncTimer = setTimeout(sync, 400); }
 
 async function sync() {
@@ -2813,6 +3353,7 @@ async function sync() {
       for (const [k, [get]] of Object.entries(SYNCED)) lsSet('putzplan.' + k, JSON.stringify(get()));
       lsSet(LS.history, JSON.stringify(archived));
       lsSet(LS.settings, JSON.stringify(settings));
+      if (tidyVoiceItems()) save();
       if (JSON.stringify([allData(), settings, archived]) !== before) render(); // nur neu zeichnen, wenn sich etwas geändert hat
     } else {
       again = true; // während der Anfrage wurde etwas geändert: gleich noch einmal senden
@@ -2972,7 +3513,7 @@ $('#btnLogout').addEventListener('click', () => {
   if (pushPrefs().on) pushOff(code);
   if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
   code = ''; resetData(); settings = null; localVer = 0;
-  [LS.code, LS.history, LS.settings, 'putzplan.endpoint', ...Object.keys(SYNCED).map((k) => 'putzplan.' + k)].forEach(lsDel);
+  [LS.code, LS.history, LS.settings, 'putzplan.endpoint', 'putzplan.link.cal', 'putzplan.link.add', ...Object.keys(SYNCED).map((k) => 'putzplan.' + k)].forEach(lsDel);
   tab = 'clean'; view = 'today'; lsSet(LS.tab, tab); lsSet(LS.view, view);
   showSetup();
 });
@@ -2989,6 +3530,20 @@ document.addEventListener('click', (e) => {
   if (md_) { const m = live_(board).find((x) => x.id === md_.dataset.msgDel); if (m) removeWithUndo(() => board, [m], 'Nachricht entfernt'); return; }
   const bd = e.target.closest('[data-bday]');
   if (bd) return editBday(bd.dataset.bday);
+  const ev = e.target.closest('[data-event]');
+  if (ev) return editEvent(ev.dataset.event);
+  const rd = e.target.closest('[data-read]');
+  if (rd) return addReading(rd.dataset.read);
+  const rdd = e.target.closest('[data-read-del]');
+  if (rdd) { const r = live_(readings).find((x) => x.id === rdd.dataset.readDel); if (r) removeWithUndo(() => readings, [r], `Ablesung vom ${fmtDate(r.date)} gelöscht`); return; }
+  const mtr = e.target.closest('[data-meter]');
+  if (mtr) return editMeter(mtr.dataset.meter);
+  const bar = e.target.closest('[data-cap]');
+  if (bar) return showCap(bar);
+  if (e.target.closest('[data-wifi]')) return openWifi();
+  if (e.target.closest('[data-cook]')) { cookMode = !cookMode; window.scrollTo(0, 0); return render(); }
+  const cp = e.target.closest('[data-copy]');
+  if (cp) return copyText(cp.dataset.copy, 'Link kopiert');
   const wd_ = e.target.closest('[data-wish-done]');
   if (wd_) return toggleWish(wd_.dataset.wishDone);
   const wi = e.target.closest('[data-wish]');
@@ -3057,11 +3612,28 @@ document.addEventListener('click', (e) => {
     return render();
   }
 });
+// Säulendiagramm: Wert des Monats unter dem Finger bzw. der Maus zeigen
+function showCap(g) {
+  const cap = $('#cap-' + g.dataset.chart);
+  if (!cap) return;
+  g.closest('svg').querySelectorAll('.bar-g').forEach((x) => x.classList.toggle('on', x === g));
+  cap.textContent = g.dataset.cap;
+}
+document.addEventListener('pointerover', (e) => { const g = e.target.closest && e.target.closest('[data-cap]'); if (g && e.pointerType === 'mouse') showCap(g); });
+document.addEventListener('pointerout', (e) => {
+  const g = e.target.closest && e.target.closest('[data-cap]');
+  if (!g || e.pointerType !== 'mouse' || (e.relatedTarget && g.closest('svg').contains(e.relatedTarget))) return;
+  const cap = $('#cap-' + g.dataset.chart);
+  g.closest('svg').querySelectorAll('.bar-g').forEach((x) => x.classList.remove('on'));
+  if (cap) cap.textContent = cap.dataset.default;
+});
 $('#prev').addEventListener('click', () => move(-1));
 $('#next').addEventListener('click', () => move(1));
 $('#today').addEventListener('click', () => { cursor = new Date(); selected = keyOf(cursor); render(); });
 $('#fab').addEventListener('click', () => (tab === 'notes' ? openNoteSheet(null) : tab === 'shop' ? openRecipeEdit(null)
-  : tab === 'home' ? { bdays: editBday, wishes: editWish, devices: editDevice }[hview](null)
+  : tab === 'home' ? { cal: () => openPick('Neu im Kalender', [['📅', 'Termin', 'z. B. Handwerker, Arzt', () => editEvent(null)], ['🎂', 'Geburtstag', 'jedes Jahr', () => editBday(null)]]),
+    wishes: () => editWish(null),
+    devices: () => openPick('Neu', [['🔌', 'Gerät', 'Garantie, Anleitung, Wartung', () => editDevice(null)], ['📟', 'Zähler', 'Strom, Gas, Wasser', () => editMeter(null)]]) }[hview]()
   : openSheet(null, view === 'today' ? keyOf(new Date()) : selected)));
 
 // Nach links/rechts wischen = nächste/vorige Woche bzw. Monat

@@ -102,6 +102,25 @@ module.exports = async ({ browser, ok, phone, newHousehold, api, BASE, day, slee
     await sleep(600);
     ok(!got.slice(n0).some((g) => g.data && g.data.title === 'Wochenrückblick'), 'Wochenrückblick nur einmal');
 
+    // Monatserster: Termine, Ablaufendes und Zählerstände in der täglichen Erinnerung
+    const first = new Date(); first.setUTCMonth(first.getUTCMonth() + 1, 1); first.setUTCHours(7, 30, 0, 0); // 8:30 oder 9:30 Uhr in Berlin
+    const fk = first.toISOString().slice(0, 10), next = new Date(first.getTime() + 864e5).toISOString().slice(0, 10);
+    await api('/api/sync', {
+      events: [item('e1', { title: 'Zahnarzt', date: fk, time: '10:00', who: '' }), item('e2', { title: 'Sperrmüll', date: next, time: '' })],
+      pantry: [item('p1', { name: 'Joghurt', cat: 'Kühlregal', status: 'ok', best: next }), item('p2', { name: 'Sahne', cat: 'Kühlregal', status: 'out', best: fk })],
+      meters: [item('mt1', { name: 'Strom', unit: 'kWh', remind: true }), item('mt2', { name: 'Wasser', unit: 'm³', remind: false })],
+    }, code);
+    const sub4 = { endpoint: `http://127.0.0.1:9999/push/m-${run}`, keys: sub.keys };
+    await api('/api/push/subscribe', { subscription: sub4, person: 'partner', time: '08:00', tz: 'Europe/Berlin', opts: { weekly: false } }, code);
+    n0 = got.length;
+    await api('/api/push/run', { now: first.toISOString() }, code);
+    await until(() => got.some((g, i) => i >= n0 && g.url === '/push/m-' + run));
+    const m1 = got.slice(n0).find((g) => g.url === '/push/m-' + run);
+    const lines = m1 ? m1.data.body.split('\n') : [];
+    ok(lines.includes('📅 Heute 10:00: Zahnarzt') && lines.includes('📅 Morgen: Sperrmüll') && lines.includes('⏳ Läuft morgen ab: Joghurt')
+      && lines.includes('📟 Zählerstände ablesen: Strom') && !m1.data.body.includes('Sahne') && !m1.data.body.includes('Wasser'),
+      'Monatserster: Termine, Ablaufendes, Zähler: ' + lines.slice(1).join(' / '));
+
     // Oberfläche: Anmeldung im Browser nachgebildet (Headless-Chromium hat keinen echten Push-Dienst)
     const p = await phone(browser);
     await p.context().grantPermissions(['notifications'], { origin: BASE });

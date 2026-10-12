@@ -1,9 +1,9 @@
-// Zuhause: Pinnwand (mit „Wer bist du?“), Geburtstage, Anschaffungen, Geräte mit Wartung, Demnächst; zweites Gerät
+// Zuhause: Pinnwand (mit „Wer bist du?“), Kalender (Geburtstage), Anschaffungen, Geräte mit Wartung, Demnächst; zweites Gerät
 module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored, api, day, sleep }) => {
   const a = await phone(browser);
   const code = await newHousehold(a);
   await a.click('[data-tab=home]');
-  ok((await a.locator('[data-hview]').allTextContents()).join('|') === 'Übersicht|Geburtstage|Wünsche|Geräte', 'Zuhause: vier Bereiche');
+  ok((await a.locator('[data-hview]').allTextContents()).join('|') === 'Übersicht|Kalender|Wünsche|Geräte', 'Zuhause: vier Bereiche');
   const segCut = await a.$$eval('#homeSeg button', (bs) => bs.filter((b) => b.scrollWidth > b.clientWidth + 1).length);
   ok(!segCut, 'Beschriftung passt (360 px)');
 
@@ -19,10 +19,11 @@ module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored
   ok((await stored(a, 'board')).length === 1, 'Rückgängig');
 
   // Geburtstage
-  await a.click('[data-hview=bdays]');
-  ok(await a.textContent('#pageTitle') === 'Geburtstage' && await a.getAttribute('#fab', 'aria-label') === 'Neuer Geburtstag', 'Geburtstage: Titel und +');
+  await a.click('[data-hview=cal]');
+  ok(await a.textContent('#pageTitle') === 'Kalender' && await a.getAttribute('#fab', 'aria-label') === 'Neuer Termin oder Geburtstag', 'Kalender: Titel und +');
   const tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
-  await a.click('#fab'); await sleep(100);
+  const newBday = async () => { await a.click('#fab'); await a.click('#pickList [data-pick="1"]'); await sleep(100); };
+  await newBday();
   await a.fill('#gf_name', 'Mama');
   await a.fill('#gf_day', String(tmr.getDate()));
   await a.selectOption('#gf_month', String(tmr.getMonth() + 1));
@@ -30,11 +31,11 @@ module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored
   await a.fill('#gf_note', 'Gin, Buch');
   await a.click('#genForm button[type=submit]');
   ok((await a.textContent('#homeBody')).includes('morgen · wird 60'), 'Geburtstag: morgen, wird 60');
-  await a.click('#fab'); await sleep(100);
+  await newBday();
   await a.fill('#gf_name', 'Tim'); await a.fill('#gf_day', '1'); await a.selectOption('#gf_month', '1');
   await a.click('#genForm button[type=submit]');
   ok((await a.locator('[data-bday] .ttl').allTextContents())[0].includes('Mama'), 'Sortiert nach dem nächsten Termin');
-  await a.click('#fab'); await sleep(100);
+  await newBday();
   await a.click('#genForm button[type=submit]');
   ok(!(await a.isHidden('#formSheet')), 'Pflichtfeld fehlt: Fenster bleibt offen');
   await a.click('#gfCancel');
@@ -53,7 +54,7 @@ module.exports = async ({ browser, ok, settle, phone, newHousehold, join, stored
 
   // Geräte und Wartung
   await a.click('[data-hview=devices]');
-  await a.click('#fab'); await sleep(100);
+  await a.click('#fab'); await a.click('#pickList [data-pick="0"]'); await sleep(100);
   await a.fill('#gf_name', 'Kaffeemaschine');
   await a.fill('#gf_warranty', day(20));
   await a.fill('#gf_link', 'https://example.com/anleitung.pdf');

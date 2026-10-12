@@ -146,6 +146,17 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 - Client: alle synchronisierten Listen in einer Tabelle (`SYNCED`), Server: Pinnwand nach 30 Tagen und gekaufte Wünsche nach 180 Tagen aufgeräumt
 - Testzugang `POST /api/push/run` (nur lokal mit `ALLOW_LOCAL_PUSH`) für Zeitplan-Tests; 10 Testdateien, rund 160 Prüfungen
 
+## Umgesetzt (Phase 14, 3.1.0)
+
+- **Kalender** unter Zuhause (ersetzt „Geburtstage“): **Termine** (`events: {title, date, time?, who, note}`, nach 30 Tagen aufgeräumt) und Geburtstage; „+“ fragt, was angelegt wird
+- **Kalender-Abo** (iCalendar): `GET /api/cal/<token>.ics` mit Terminen, Geburtstagen (jährlich), Garantie-Enden, auf Wunsch `t=1` Putzaufgaben und `m=1` Essensplan; geheimer Link statt Haushaltscode (Tabelle `links`), neu erzeugbar
+- **Sprachassistent**: `GET|POST /api/add/<token>?w=nick` mit Text `t` (Adresse, Formular, JSON oder reiner Text) setzt Sachen auf die Liste und antwortet mit einem Satz zum Vorlesen (Siri-Kurzbefehl); Bereich und Menge ergänzt die App beim nächsten Sync
+- **Vorrat**: Mindesthaltbarkeit (`pantry.best`), „läuft bald ab“ im Vorrat, unter Demnächst, im Heute-Banner und in der täglichen Mitteilung; neu gekauft löscht das alte Datum
+- **„Was können wir kochen?“** bei den Rezepten: sortiert nach Zutaten im Vorrat (auch „Knapp“), zeigt, was fehlt; Zutaten passen jetzt auch mit Mehrzahl und Zusätzen („2 Zwiebeln (gewürfelt)“ ↔ „Zwiebel“)
+- **Zähler** unter Geräte (`meters: {name, unit, number, remind}`, `readings: {meter, date, value}`): Verbrauch pro Monat als Säulendiagramm (nur ganz abgedeckte Monate), Erinnerung am Monatsersten
+- **WLAN für Gäste** (`settings.wifi`): QR-Code im WIFI-Format, eigener QR-Generator in der App (geprüft mit jsQR)
+- Tägliche Mitteilung zusätzlich mit Terminen (heute/morgen), Ablaufendem und Zählerständen; 11 Testdateien, rund 200 Prüfungen
+
 ## Später möglich
 
 - Eigene Kategorien für Aufgaben, Erinnerung an einzelne Aufgaben zu einer Uhrzeit

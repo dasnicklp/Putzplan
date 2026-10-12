@@ -1,11 +1,11 @@
 {
-  "version": "3.0.0",
+  "version": "3.1.0",
   "date": "2026-10-12",
   "notes": [
-    "Vorrat: was zu Hause ist; „Knapp“ oder „Leer“ setzt es auf die Einkaufsliste, Rezepte wissen, was da ist",
-    "Zuhause: Pinnwand für Nachrichten aneinander, Geburtstage, Anschaffungen und Geräte (Garantie, Anleitung, Wartung)",
-    "Mitteilungen: Pinnwand, neue Sachen auf der Liste, Wochenrückblick am Sonntag, Geburtstage in der täglichen Erinnerung",
-    "Einstellungen: Laden-Reihenfolge, „Dieses Handy gehört“, Namen, Urlaub und Startpaket",
-    "Kurzbefehle: lange auf das App-Symbol drücken (Android)"
+    "Kalender unter Zuhause: Termine (z. B. Handwerker, Arzt) und Geburtstage, mit Erinnerung am Vortag",
+    "Kalender-Abo: Termine, Geburtstage und auf Wunsch Putzaufgaben und Essensplan im Handy-Kalender",
+    "Vorrat: Mindesthaltbarkeitsdatum mit Erinnerung, „Was können wir kochen?“ bei den Rezepten",
+    "Zähler: Strom, Gas, Wasser ablesen und den Verbrauch pro Monat sehen",
+    "WLAN für Gäste als QR-Code und „Hey Siri, Einkaufsliste“"
   ]
 }

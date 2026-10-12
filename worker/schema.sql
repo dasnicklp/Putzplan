@@ -26,3 +26,9 @@ CREATE TABLE IF NOT EXISTS push_subs (
   opts TEXT NOT NULL DEFAULT '{}',     -- Mitteilungs-Arten: daily, weekly, msgs, shop
   last_weekly TEXT NOT NULL DEFAULT '' -- Datum des letzten Wochenrückblicks
 );
+CREATE TABLE IF NOT EXISTS links (
+  token TEXT PRIMARY KEY,       -- geheimer Zufallswert im Link
+  household TEXT NOT NULL,      -- Haushalts-ID
+  kind TEXT NOT NULL,           -- 'cal' (Kalender-Abo) oder 'add' (auf die Einkaufsliste, z. B. per Siri)
+  created INTEGER NOT NULL
+);

@@ -3,8 +3,10 @@
 // - Zugang über einen 6-stelligen Haushaltscode, kein Konto
 // - Sync: Geräte schicken Aufgaben, Notizen, Einkaufsliste, Vorrat, Rezepte, Essensplan, Pinnwand, Geburtstage, Wünsche und Geräte, der Server führt sie zusammen (neueste Änderung gewinnt pro Eintrag)
 // - Nach 5 falschen Codes von einer IP wird diese IP 15 Minuten gesperrt
-// - Mitteilungen: Geräte melden sich für Web Push an. Ein Zeitplan (alle 15 Minuten) schickt einmal am Tag die offenen Aufgaben
-//   und Geburtstage, sonntags den Wochenrückblick. Pinnwand-Nachrichten und neue Sachen auf der Liste gehen sofort an das andere Handy.
+// - Mitteilungen: Geräte melden sich für Web Push an. Ein Zeitplan (alle 15 Minuten) schickt einmal am Tag die offenen Aufgaben,
+//   Termine, Geburtstage, ablaufende Lebensmittel und am Monatsersten die Zählerstände, sonntags den Wochenrückblick.
+//   Pinnwand-Nachrichten und neue Sachen auf der Liste gehen sofort an das andere Handy.
+// - Geheime Links (ohne Haushaltscode): Kalender-Abo (/api/cal/…ics) und „auf die Liste“ für Siri & Co. (/api/add/…)
 
 const ORIGINS = [
   'https://dasnicklp.github.io',
@@ -19,6 +21,7 @@ const MAX_MEALS = 500;
 const ARCHIVE_MS = 180 * 864e5; // erledigte Aufgaben nach einem halben Jahr aufräumen (nur „Zuletzt geputzt“ merkt sich das Letzte pro Bereich)
 const MEAL_KEEP_DAYS = 60;      // Essensplan: vergangene Tage nach 60 Tagen löschen
 const BOARD_KEEP_DAYS = 30;     // Pinnwand: Nachrichten nach 30 Tagen löschen
+const EVENT_KEEP_DAYS = 30;     // Termine: 30 Tage nach dem Termin löschen
 const SHOP_NOTIFY_MS = 30 * 60000; // neue Sachen auf der Liste innerhalb von 30 Minuten in einer Mitteilung sammeln
 const MAX_DATA = 1500 * 1024; // D1 erlaubt ca. 2 MB pro Zeile
 const TOMBSTONE_MS = 60 * 864e5; // gelöschte Aufgaben 60 Tage merken, damit andere Geräte sie auch löschen
@@ -63,6 +66,7 @@ async function init(env) {
     env.DB.prepare('CREATE TABLE IF NOT EXISTS households (id TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at INTEGER NOT NULL)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS attempts (ip TEXT PRIMARY KEY, fails INTEGER NOT NULL, locked_until INTEGER NOT NULL)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS config (k TEXT PRIMARY KEY, v TEXT NOT NULL)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS links (token TEXT PRIMARY KEY, household TEXT NOT NULL, kind TEXT NOT NULL, created INTEGER NOT NULL)'),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, household TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL,
       person TEXT NOT NULL, time TEXT NOT NULL, tz TEXT NOT NULL, last_sent TEXT NOT NULL DEFAULT '', created INTEGER NOT NULL)`),
   ]);
@@ -223,7 +227,7 @@ function cleanPantry(x) {
   const b = baseItem(x); if (!b) return null;
   const name = clampStr(x.name, 100);
   if (!b.deleted && !name) return null;
-  return { ...b, name, cat: clampStr(x.cat, 40), status: ['ok', 'low', 'out'].includes(x.status) ? x.status : 'ok' };
+  return { ...b, name, cat: clampStr(x.cat, 40), status: ['ok', 'low', 'out'].includes(x.status) ? x.status : 'ok', best: isDate(x.best) ? x.best : '' }; // best = mindestens haltbar bis
 }
 // Pinnwand: kurze Nachricht an den anderen
 function cleanBoard(x) {
@@ -256,6 +260,28 @@ function cleanDevice(x) {
   return { ...b, name, bought: isDate(x.bought) ? x.bought : '', warranty: isDate(x.warranty) ? x.warranty : '', link: httpLink(x.link), note: clampStr(x.note, 1000) };
 }
 
+// Termin: Tag, Uhrzeit optional, für wen (leer = beide)
+const isTime = (s) => typeof s === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
+function cleanEvent(x) {
+  const b = baseItem(x); if (!b) return null;
+  const title = clampStr(x.title, 200);
+  if (!b.deleted && (!title || !isDate(x.date))) return null;
+  return { ...b, title, date: isDate(x.date) ? x.date : '', time: isTime(x.time) ? x.time : '', who: person(x.who), note: clampStr(x.note, 1000) };
+}
+// Zähler (Strom, Gas, Wasser) und Ablesungen. Ablesungen sind eigene Einträge, damit beide Handys gleichzeitig eintragen können.
+function cleanMeter(x) {
+  const b = baseItem(x); if (!b) return null;
+  const name = clampStr(x.name, 60);
+  if (!b.deleted && !name) return null;
+  return { ...b, name, unit: clampStr(x.unit, 10), number: clampStr(x.number, 40), remind: x.remind !== false };
+}
+function cleanReading(x) {
+  const b = baseItem(x); if (!b) return null;
+  const ok = typeof x.meter === 'string' && /^[\w-]{1,64}$/.test(x.meter) && isDate(x.date) && Number.isFinite(x.value) && x.value >= 0 && x.value < 1e10;
+  if (!b.deleted && !ok) return null;
+  return { ...b, meter: ok ? x.meter : '', date: ok ? x.date : '', value: ok ? x.value : 0 };
+}
+
 // Alle Listen, die synchronisiert werden: Prüffunktion und Höchstzahl
 const COLLECTIONS = {
   tasks: [cleanTask, MAX_TASKS],
@@ -268,6 +294,9 @@ const COLLECTIONS = {
   bdays: [cleanBday, 300],
   wishes: [cleanWish, 300],
   devices: [cleanDevice, 200],
+  events: [cleanEvent, 500],
+  meters: [cleanMeter, 20],
+  readings: [cleanReading, 3000],
 };
 
 // Gemeinsame Einstellungen (Namen, Urlaub): als Ganzes, die neuere Änderung gewinnt
@@ -277,7 +306,11 @@ function cleanSettings(s) {
   const away = s.away && isDate(s.away.until) ? { until: s.away.until } : null; // Urlaub: zurück am
   // Reihenfolge der Bereiche im Laden (so, wie man durch den eigenen Supermarkt läuft)
   const shopOrder = Array.isArray(s.shopOrder) ? s.shopOrder.slice(0, 20).map((c) => clampStr(c, 40)).filter(Boolean) : [];
-  return { names: { nick: clampStr(n.nick, 30), partner: clampStr(n.partner, 30) }, away, shopOrder, updatedAt: s.updatedAt };
+  // WLAN für Gäste (für den QR-Code)
+  const w = s.wifi && typeof s.wifi === 'object' ? s.wifi : null;
+  const wifi = w && clampStr(w.ssid, 64) ? { ssid: clampStr(w.ssid, 64), pass: typeof w.pass === 'string' ? w.pass.slice(0, 64) : '',
+    type: ['WPA', 'WEP', 'nopass'].includes(w.type) ? w.type : 'WPA', hidden: w.hidden === true } : null;
+  return { names: { nick: clampStr(n.nick, 30), partner: clampStr(n.partner, 30) }, away, shopOrder, wifi, updatedAt: s.updatedAt };
 }
 
 // Pro Eintrag gewinnt die neuere Änderung. Alte Löschmarkierungen fallen weg.
@@ -314,6 +347,11 @@ function archive(out, history) {
   const oldMsg = Date.now() - BOARD_KEEP_DAYS * 864e5;
   out.board = out.board.filter((m) => m.deleted || m.createdAt >= oldMsg);
   out.wishes = out.wishes.filter((w) => !(w.done && !w.deleted && w.doneAt && w.doneAt < cutoff));
+  const oldEvent = new Date(Date.now() - EVENT_KEEP_DAYS * 864e5).toISOString().slice(0, 10);
+  out.events = out.events.filter((e) => e.deleted || e.date >= oldEvent);
+  // Ablesungen fallen weg, wenn ihr Zähler ganz vergessen ist (gelöschte Zähler werden 60 Tage gemerkt, so klappt „Rückgängig“)
+  const meters = new Set(out.meters.map((m) => m.id));
+  out.readings = out.readings.filter((r) => r.deleted || meters.has(r.meter));
   return Object.keys(h.lastByCat).length ? h : null;
 }
 
@@ -493,19 +531,47 @@ function birthdayLines(data, today) {
   return lines.sort((a, b) => a.d - b.d).map((l) => l.text);
 }
 
+const plusDays = (k, n) => new Date(Date.parse(k + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+// Termine heute und morgen
+function eventLines(data, today) {
+  const tomorrow = plusDays(today, 1);
+  return (data.events || []).filter((e) => !e.deleted && (e.date === today || e.date === tomorrow))
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+    .map((e) => `📅 ${e.date === today ? 'Heute' : 'Morgen'}${e.time ? ' ' + e.time : ''}: ${e.title}`);
+}
+// Vorrat: läuft heute oder morgen ab
+function expiryLines(data, today) {
+  const tomorrow = plusDays(today, 1);
+  const list = (data.pantry || []).filter((p) => !p.deleted && p.status !== 'out' && (p.best === today || p.best === tomorrow));
+  const day = (d) => list.filter((p) => p.best === d).map((p) => p.name).join(', ');
+  return [day(today) && `⏳ Läuft heute ab: ${day(today)}`, day(tomorrow) && `⏳ Läuft morgen ab: ${day(tomorrow)}`].filter(Boolean);
+}
+// Am Monatsersten: Zählerstände ablesen (wenn in den letzten 20 Tagen nicht abgelesen)
+function meterLines(data, today) {
+  if (!today.endsWith('-01')) return [];
+  const since = plusDays(today, -20);
+  const due = (data.meters || []).filter((m) => !m.deleted && m.remind
+    && !(data.readings || []).some((r) => !r.deleted && r.meter === m.id && r.date >= since));
+  return due.length ? [`📟 Zählerstände ablesen: ${due.map((m) => m.name).join(', ')}`] : [];
+}
+
 function reminderFor(data, person, today) {
   const away = data.settings && data.settings.away;
   const open = away && away.until > today ? [] : (data.tasks || []) // im Urlaub keine Aufgaben
     .filter((t) => !t.deleted && !t.done && t.due && t.due <= today && (!person || !t.assignee || t.assignee === person))
     .sort((a, b) => a.due.localeCompare(b.due) || a.title.localeCompare(b.title, 'de'));
   const bdays = birthdayLines(data, today);
-  if (!open.length && !bdays.length) return null;
-  if (!open.length) return { title: bdays.length === 1 ? 'Geburtstag' : 'Geburtstage', body: bdays.join('\n'), count: 0, tag: 'putzplan-today' };
+  const extra = [...eventLines(data, today), ...bdays, ...expiryLines(data, today), ...meterLines(data, today)];
+  if (!open.length && !extra.length) return null;
+  if (!open.length) {
+    const title = extra.length === bdays.length ? (bdays.length === 1 ? 'Geburtstag' : 'Geburtstage') : 'Heute im Haushalt';
+    return { title, body: extra.join('\n'), count: 0, tag: 'putzplan-today' };
+  }
   const late = open.filter((t) => t.due < today).length;
   const list = open.slice(0, 4).map((t) => t.title).join(', ') + (open.length > 4 ? ` und ${open.length - 4} weitere` : '');
   return {
     title: open.length === 1 ? 'Heute steht 1 Aufgabe an' : `Heute stehen ${open.length} Aufgaben an`,
-    body: list + (late ? ` (${late} überfällig)` : '') + (bdays.length ? '\n' + bdays.join('\n') : ''),
+    body: list + (late ? ` (${late} überfällig)` : '') + (extra.length ? '\n' + extra.join('\n') : ''),
     count: open.length,
     tag: 'putzplan-today',
   };
@@ -581,6 +647,110 @@ function cleanSub(body) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Geheime Links: Kalender-Abo und „auf die Liste“ (Siri, Google, …)   */
+/* Der Link enthält einen langen Zufallswert statt des Haushaltscodes. */
+/* ------------------------------------------------------------------ */
+const LINK_KINDS = ['cal', 'add'];
+async function getLink(env, id, kind, reset) {
+  if (reset) await env.DB.prepare('DELETE FROM links WHERE household = ? AND kind = ?').bind(id, kind).run();
+  const row = await env.DB.prepare('SELECT token FROM links WHERE household = ? AND kind = ?').bind(id, kind).first();
+  if (row) return row.token;
+  const token = b64u(crypto.getRandomValues(new Uint8Array(18)));
+  await env.DB.prepare('INSERT INTO links (token, household, kind, created) VALUES (?, ?, ?, ?)').bind(token, id, kind, Date.now()).run();
+  return token;
+}
+async function linkHousehold(env, token, kind) {
+  if (!/^[\w-]{24}$/.test(token)) return null;
+  const row = await env.DB.prepare('SELECT household FROM links WHERE token = ? AND kind = ?').bind(token, kind).first();
+  return row ? row.household : null;
+}
+
+// Kalender (iCalendar, RFC 5545): Termine, Geburtstage (jährlich), Garantie-Ende; auf Wunsch Putzaufgaben und Essensplan
+const icsText = (s) => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+function icsFold(line) { // Zeilen höchstens 75 Bytes, Fortsetzung mit Leerzeichen (UTF-8-Zeichen nicht zerschneiden)
+  const out = [];
+  let cur = '', bytes = 0;
+  for (const ch of line) {
+    const n = enc.encode(ch).length;
+    if (bytes + n > (out.length ? 74 : 75)) { out.push(cur); cur = ''; bytes = 0; }
+    cur += ch; bytes += n;
+  }
+  out.push(cur);
+  return out.join('\r\n ');
+}
+const icsDate = (k) => k.replace(/-/g, '');
+function buildCalendar(data, opts, now = new Date()) {
+  const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  const today = now.toISOString().slice(0, 10), from = plusDays(today, -30);
+  const n = shownNames(data);
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Haushalt//DE', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'X-WR-CALNAME:Haushalt', 'X-WR-TIMEZONE:Europe/Berlin', 'REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H'];
+  const ev = (uid, props) => lines.push('BEGIN:VEVENT', `UID:${uid}@haushalt`, `DTSTAMP:${stamp}`, ...props, 'END:VEVENT');
+  const allDay = (k) => [`DTSTART;VALUE=DATE:${icsDate(k)}`, `DTEND;VALUE=DATE:${icsDate(plusDays(k, 1))}`];
+  const live = (k) => (data[k] || []).filter((x) => !x.deleted);
+  for (const e of live('events')) {
+    if (e.date < from) continue;
+    const who = e.who ? ` (${n[e.who]})` : '';
+    let when = allDay(e.date);
+    if (e.time) { // ohne Zeitzone = Ortszeit des Kalenders, eine Stunde lang
+      const start = Date.parse(`${e.date}T${e.time}:00Z`), end = new Date(start + 3600e3).toISOString();
+      when = [`DTSTART:${icsDate(e.date)}T${e.time.replace(':', '')}00`, `DTEND:${icsDate(end.slice(0, 10))}T${end.slice(11, 16).replace(':', '')}00`];
+    }
+    ev('event-' + e.id, [...when, `SUMMARY:${icsText('📅 ' + e.title + who)}`, ...(e.note ? [`DESCRIPTION:${icsText(e.note)}`] : [])]);
+  }
+  for (const b of live('bdays')) {
+    const y = b.year || 2000, k = `${y}-${String(b.month).padStart(2, '0')}-${String(b.day).padStart(2, '0')}`;
+    if (!isDate(k) || Number.isNaN(Date.parse(k))) continue;
+    ev('bday-' + b.id, [...allDay(k), 'RRULE:FREQ=YEARLY', `SUMMARY:${icsText('🎂 ' + b.name)}`, 'TRANSP:TRANSPARENT',
+      ...(b.year ? [`DESCRIPTION:${icsText('Geboren ' + b.year)}`] : [])]);
+  }
+  for (const d of live('devices')) {
+    if (d.warranty && d.warranty >= from) ev('warranty-' + d.id, [...allDay(d.warranty), `SUMMARY:${icsText('⚠ Garantie endet: ' + d.name)}`, 'TRANSP:TRANSPARENT']);
+  }
+  if (opts.tasks) {
+    for (const t of live('tasks')) {
+      if (t.done || !t.due || t.due < from) continue;
+      ev('task-' + t.id, [...allDay(t.due), `SUMMARY:${icsText('🧽 ' + t.title + (t.assignee ? ` (${n[t.assignee]})` : ''))}`, 'TRANSP:TRANSPARENT']);
+    }
+  }
+  if (opts.meals) {
+    for (const m of live('meals')) {
+      if (m.date >= from) ev('meal-' + m.id, [...allDay(m.date), `SUMMARY:${icsText('🍽 ' + m.title)}`, 'TRANSP:TRANSPARENT']);
+    }
+  }
+  lines.push('END:VCALENDAR');
+  return lines.map(icsFold).join('\r\n') + '\r\n';
+}
+
+// „Milch, Eier und Butter“ → einzelne Einträge auf der Einkaufsliste (Bereich und Menge ergänzt die App)
+async function addByVoice(env, id, text, who) {
+  const names = String(text || '').slice(0, 300).split(/\r?\n|[,;]| und | sowie /i)
+    .map((x) => x.trim().replace(/[.!?]+$/, '')).filter(Boolean).slice(0, 10)
+    .map((x) => (x[0].toUpperCase() + x.slice(1)).slice(0, 100));
+  if (!names.length) return { names: [], exists: [] };
+  const row = await env.DB.prepare('SELECT data FROM households WHERE id = ?').bind(id).first();
+  if (!row) return null;
+  const cur = JSON.parse(row.data);
+  const key = (s) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+  const open = new Map((cur.shop || []).filter((i) => !i.deleted).map((i) => [key(i.name), i]));
+  const now = Date.now(), items = [], exists = [];
+  names.forEach((name, i) => {
+    const old = open.get(key(name));
+    if (old && !old.done) { exists.push(old.name); return; }
+    // Abgehakt: wieder auf die Liste (gleicher Eintrag), sonst neu
+    items.push(old ? { ...old, done: false, doneAt: null, updatedAt: Math.max(now, old.updatedAt + 1) }
+      : { id: 'v' + now.toString(36) + i + Math.random().toString(36).slice(2, 7), name, qty: '', from: '', cat: '', done: false, doneAt: null, createdAt: now, updatedAt: now, deleted: false });
+    open.set(key(name), { name, done: false });
+  });
+  if (!items.length) return { names: [], exists };
+  const incoming = Object.fromEntries(Object.keys(COLLECTIONS).map((k) => [k, []]));
+  incoming.shop = items.map(cleanShopItem).filter(Boolean);
+  const out = await sync(env, id, incoming, null, who);
+  return { names: items.map((x) => x.name), exists, out };
+}
+const listText = (a) => (a.length > 1 ? a.slice(0, -1).join(', ') + ' und ' + a[a.length - 1] : a[0] || '');
+
+/* ------------------------------------------------------------------ */
 /* HTTP-API                                                            */
 /* ------------------------------------------------------------------ */
 async function readJson(req) {
@@ -632,6 +802,42 @@ async function handle(req, env, ctx) {
     return json(req, { sent: await runReminders(env, body.now ? new Date(body.now) : new Date()) });
   }
 
+  // Kalender-Abo: /api/cal/<token>.ics?t=1&m=1 (t = Putzaufgaben, m = Essensplan)
+  const cal = /^\/api\/cal\/([\w-]+)\.ics$/.exec(path);
+  if (cal && (req.method === 'GET' || req.method === 'HEAD')) {
+    const hh = await linkHousehold(env, cal[1], 'cal');
+    const row = hh && await env.DB.prepare('SELECT data FROM households WHERE id = ?').bind(hh).first();
+    if (!row) return new Response('Diesen Kalender gibt es nicht (mehr).', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    const q = new URL(req.url).searchParams;
+    const body = buildCalendar(JSON.parse(row.data), { tasks: q.get('t') === '1', meals: q.get('m') === '1' });
+    return new Response(req.method === 'HEAD' ? null : body, { headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Cache-Control': 'no-cache', 'Content-Disposition': 'inline; filename="haushalt.ics"' } });
+  }
+
+  // Auf die Einkaufsliste (Siri-Kurzbefehl, HTTP-Shortcuts): /api/add/<token>?w=nick, Text als t (Adresse, Formular, JSON oder reiner Text)
+  const add = /^\/api\/add\/([\w-]+)$/.exec(path);
+  if (add && (req.method === 'GET' || req.method === 'POST')) {
+    const txt = (s, status = 200) => new Response(s, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8', ...corsHeaders(req) } });
+    const hh = await linkHousehold(env, add[1], 'add');
+    if (!hh) return txt('Dieser Link ist nicht mehr gültig. Bitte in der App unter Einstellungen einen neuen kopieren.', 404);
+    const q = new URL(req.url).searchParams;
+    let text = q.get('t') || q.get('text') || '';
+    if (!text && req.method === 'POST') {
+      const type = req.headers.get('Content-Type') || '';
+      if (/json/.test(type)) { const b = await readJson(req); text = String(b.t || b.text || ''); }
+      else if (/form/.test(type)) { const f = await req.formData(); text = String(f.get('t') || f.get('text') || ''); }
+      else text = (await req.text()).slice(0, 1000);
+    }
+    const who = person(q.get('w'));
+    const r = await addByVoice(env, hh, text, who);
+    if (!r) return txt('Diesen Haushalt gibt es nicht mehr.', 404);
+    if (r.out && r.out.added && r.out.added.shop && ctx) ctx.waitUntil(notifyOthers(env, hh, r.out, who, ''));
+    if (!r.names.length && !r.exists.length) return txt('Ich habe nichts verstanden. Bitte nochmal.', 400);
+    const parts = [];
+    if (r.names.length) parts.push(`${listText(r.names)} ${r.names.length === 1 ? 'steht' : 'stehen'} jetzt auf der Einkaufsliste.`);
+    if (r.exists.length) parts.push(`${listText(r.exists)} ${r.exists.length === 1 ? 'stand' : 'standen'} schon drauf.`);
+    return txt(parts.join(' '));
+  }
+
   // Öffentlicher Schlüssel für die Push-Anmeldung im Browser
   if (path === '/api/push/key') return json(req, { publicKey: (await getVapid(env)).pub });
 
@@ -640,6 +846,13 @@ async function handle(req, env, ctx) {
 
   // Code prüfen (wird beim Verbinden benutzt)
   if (path === '/api/join' && req.method === 'POST') return json(req, { ok: true });
+
+  // Geheimen Link holen (oder mit reset: true einen neuen erzeugen, der alte gilt dann nicht mehr)
+  if (path === '/api/link' && req.method === 'POST') {
+    const body = await readJson(req);
+    if (!LINK_KINDS.includes(body.kind)) return json(req, { error: 'kind' }, 400);
+    return json(req, { token: await getLink(env, auth.id, body.kind, body.reset === true) });
+  }
 
   if (path === '/api/sync' && req.method === 'POST') {
     const body = await readJson(req);
