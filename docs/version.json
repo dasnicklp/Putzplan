@@ -1,7 +1,8 @@
 {
-  "version": "3.4.0",
-  "date": "2026-10-12",
+  "version": "3.5.0",
+  "date": "2026-10-19",
   "notes": [
-    "Kassenbon scannen: im Vorrat den Bon fotografieren, die Artikel kommen in den Vorrat und werden auf der Einkaufsliste abgehakt"
+    "Geburtstage mit Kategorie, z. B. Familie, Freunde, Arbeit; im Kalender danach filtern",
+    "Einkaufsliste und Vorrat: neue Bereiche „Snacks süß“ und „Snacks salzig“; Chips, Schokolade und Co. werden einmal dorthin umsortiert"
   ]
 }
