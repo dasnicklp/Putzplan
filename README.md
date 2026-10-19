@@ -5,7 +5,7 @@ Gemeinsame Haushalts-App für zwei Personen als Web-App (PWA): Putzplan, Einkauf
 - Vier Reiter unten: Putzen (umschaltbar Heute · Woche · Monat · Bilanz), Einkauf (Liste · Vorrat · Rezepte · Essen), Notizen, Zuhause (Übersicht mit Pinnwand · Kalender mit Terminen und Geburtstagen · Wünsche · Geräte & Zähler), Einstellungen
 - Rezepte: Zutaten untereinander eintragen, Portionen umrechnen, ausgewählte Zutaten mit einem Tipp auf die Einkaufsliste; Import und Export als JSON (siehe unten)
 - Vorrat: was zu Hause ist; „Knapp“/„Leer“ setzt es auf die Einkaufsliste, Abhaken beim Einkauf füllt wieder auf, Rezepte wählen Vorhandenes ab
-- Pinnwand für Nachrichten aneinander, Termine und Geburtstage mit Erinnerung, Anschaffungen, Geräte mit Garantie, Anleitung und Wartung
+- Pinnwand für Nachrichten aneinander, Termine und Geburtstage mit Erinnerung (Geburtstage mit Kategorie, z. B. Familie, Freunde), Anschaffungen, Geräte mit Garantie, Anleitung und Wartung
 - Kassenbon scannen: Foto vom Bon, die Artikel kommen in den Vorrat und werden auf der Liste abgehakt
 - Vorrat mit Mindesthaltbarkeit, „Was können wir kochen?“ aus dem Vorrat, Zählerstände mit Verbrauch pro Monat, WLAN-QR-Code für Gäste
 - Kalender-Abo fürs Handy (iPhone, Google) und „Hey Siri, Einkaufsliste“ über einen geheimen Link
@@ -13,7 +13,7 @@ Gemeinsame Haushalts-App für zwei Personen als Web-App (PWA): Putzplan, Einkauf
 - Eigene Laden-Reihenfolge, Kurzbefehle am App-Symbol (Android)
 - Essensplan: Rezepte oder freie Gerichte auf Wochentage legen, alle Zutaten der Woche zusammengefasst auf die Einkaufsliste
 - Checklisten in Aufgaben (z. B. Spiegel, Waschbecken, Fugen); Löschen mit „Rückgängig“; Komplett-Sicherung als Datei
-- Gemeinsame Einkaufsliste: schnell eintippen („2 Milch“), automatisch nach Bereichen im Laden sortiert, Abhaken, Vorschläge aus dem Verlauf
+- Gemeinsame Einkaufsliste: schnell eintippen („2 Milch“), automatisch nach Bereichen im Laden sortiert (auch Snacks süß und salzig), Abhaken, Vorschläge aus dem Verlauf
 - Gemeinsame Notizen mit Kategorien (Filter, eigene Kategorien, Anheften)
 - Heute-Ansicht (Überfälliges, heute, morgen), Monatsansicht und Wochenansicht mit den 7 Tagen nebeneinander, darunter die Aufgaben des gewählten Tags
 - Bilanz: zuletzt geputzt pro Bereich, wer hat wie viel erledigt, über 8 Wochen und nach Kategorie

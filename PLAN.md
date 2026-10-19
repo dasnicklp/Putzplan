@@ -171,6 +171,11 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 - **Kassenbon scannen** im Vorrat: Foto wird in der App verkleinert (JPEG, unter 900 KB), `POST /api/receipt` lässt es von Workers AI lesen (Binding `AI`, mehrere Vision-Modelle der Reihe nach, das erste funktionierende wird gemerkt), Pfand/Summen/Doppeltes werden herausgefiltert; Prüffenster, dann in den Vorrat (neu oder wieder „Da“) und passende Einträge auf der Liste abhaken. 25 Bons pro Haushalt und Tag (Tabelle `usage`)
 - Tests laufen mit `wrangler dev --env test` (ohne KI, festes Beispiel über `FAKE_RECEIPT`); die echte KI prüft der Workflow „Bon-Scan prüfen“ (von Hand, mit `tests/fixtures/kassenbon.jpg`)
 
+## Umgesetzt (3.5.0)
+
+- Geburtstage mit Kategorie (Feld `cat`, frei mit Vorschlägen Familie, Freunde, Arbeit, Schreibweise wird angeglichen), Filter über den Geburtstagen im Kalender
+- Einkaufsliste und Vorrat: Bereiche „Snacks süß“ 🍫 und „Snacks salzig“ 🥨 hinter „Vorrat“, eigene Stichwörter; eine gespeicherte Laden-Reihenfolge bekommt neue Bereiche hinter ihrem Vorgänger. Einmal pro Gerät werden Einträge unter „Vorrat“, die nach Stichwort Snacks sind, umsortiert
+
 ## Später möglich
 
 - Eigene Kategorien für Aufgaben, Erinnerung an einzelne Aufgaben zu einer Uhrzeit
