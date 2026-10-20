@@ -2,7 +2,7 @@
 // Netzwerk zuerst (damit Updates ankommen), Cache als Rückfall (damit es offline trotzdem startet).
 // Die Verbindung zum Backend (andere Domain) wird nie zwischengespeichert.
 // Außerdem: tägliche Erinnerungen (Push) anzeigen.
-const CACHE = 'putzplan-v19';
+const CACHE = 'putzplan-v20';
 const SHELL = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {

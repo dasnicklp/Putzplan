@@ -762,7 +762,7 @@ a.btn.primary{color:var(--accent-ink)}
 </div>
 
 <!-- Kassenbon scannen -->
-<input id="receiptFile" type="file" accept="image/*" hidden>
+<input id="receiptFile" type="file" accept="image/*,application/pdf,.pdf" hidden>
 <div class="overlay" id="receiptSheet" hidden>
   <div class="sheet">
     <div class="grab"></div>
@@ -823,7 +823,7 @@ a.btn.primary{color:var(--accent-ink)}
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '3.4.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '3.5.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Zuhause“ änderbar
@@ -2742,50 +2742,105 @@ function editPantry(id) {
     onDelete: () => removeWithUndo(() => pantry, [p], `„${p.name}“ aus dem Vorrat genommen`),
   });
 }
-/* Kassenbon scannen: Foto verkleinern, vom Server lesen lassen, Artikel prüfen und in den Vorrat übernehmen */
+/* Kassenbon scannen: Foto verkleinern oder PDF lesen, vom Server auswerten lassen, Artikel prüfen und in den Vorrat übernehmen */
 let receipt = null; // { items: [{ name, qty, sel, pantry, shop }] }
 const sameThing = (a, b) => { a = nameKey(a); b = nameKey(b); return a === b || stem(a) === stem(b); };
+// Bild oder Canvas als JPEG unter 900 KB
+function toJpeg(src, w, h) {
+  let max = 1600, out = '';
+  for (let i = 0; i < 4; i++) {
+    const f = Math.min(1, max / Math.max(w, h));
+    const c = document.createElement('canvas');
+    c.width = Math.round(w * f); c.height = Math.round(h * f);
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+    g.drawImage(src, 0, 0, c.width, c.height);
+    out = c.toDataURL('image/jpeg', 0.8);
+    if (out.length < 900000) break;
+    max = Math.round(max * 0.75);
+  }
+  return out;
+}
 function shrinkImage(file) {
   return new Promise((resolve, reject) => {
     const img = new Image(), url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      let max = 1600, out = '';
-      for (let i = 0; i < 4; i++) {
-        const f = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-        const c = document.createElement('canvas');
-        c.width = Math.round(img.naturalWidth * f); c.height = Math.round(img.naturalHeight * f);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-        out = c.toDataURL('image/jpeg', 0.8);
-        if (out.length < 900000) break;
-        max = Math.round(max * 0.75);
-      }
-      resolve(out);
-    };
+    img.onload = () => { URL.revokeObjectURL(url); resolve(toJpeg(img, img.naturalWidth, img.naturalHeight)); };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bild')); };
     img.src = url;
   });
 }
+// PDF.js (Mozilla) liegt in vendor/pdfjs und wird erst beim ersten PDF geladen
+let pdfJs = null;
+function loadPdfJs() {
+  return pdfJs || (pdfJs = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'vendor/pdfjs/pdf.min.js';
+    s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js'; resolve(window.pdfjsLib); };
+    s.onerror = () => { pdfJs = null; s.remove(); reject(new Error('pdf')); };
+    document.head.appendChild(s);
+  }));
+}
+// PDF-Bon (z. B. eBon aus der Supermarkt-App): Text, wenn die PDF welchen hat, sonst die Seiten als Bild (eingescannt)
+async function readPdf(file) {
+  let doc;
+  try { doc = await (await loadPdfJs()).getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise; }
+  catch (e) { throw new Error('pdf'); }
+  try {
+    const pages = [];
+    for (let n = 1; n <= Math.min(doc.numPages, 4); n++) pages.push(await doc.getPage(n));
+    let text = '';
+    for (const page of pages) {
+      // Textstücke zu Zeilen: gleiche Höhe auf der Seite = gleiche Zeile, darin von links nach rechts
+      const rows = [];
+      for (const it of (await page.getTextContent()).items) {
+        if (!it.str || !it.str.trim()) continue;
+        const x = it.transform[4], y = it.transform[5];
+        let r = rows.find((r) => Math.abs(r.y - y) < Math.max(2, (it.height || 6) / 2));
+        if (!r) rows.push(r = { y, parts: [] });
+        r.parts.push({ x, s: it.str.trim() });
+      }
+      rows.sort((a, b) => b.y - a.y);
+      text += rows.map((r) => r.parts.sort((a, b) => a.x - b.x).map((p) => p.s).join(' ')).join('\n') + '\n';
+    }
+    if (text.replace(/\s/g, '').length >= 30) return { text: text.trim().slice(0, 20000) };
+    // Kein Text: Seiten untereinander auf ein Bild
+    const shots = [];
+    for (const page of pages) {
+      const vp = page.getViewport({ scale: Math.min(3, 1200 / page.getViewport({ scale: 1 }).width) });
+      const c = document.createElement('canvas');
+      c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+      await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+      shots.push(c);
+    }
+    const all = document.createElement('canvas');
+    all.width = Math.max(...shots.map((c) => c.width)); all.height = shots.reduce((h, c) => h + c.height, 0);
+    const g = all.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, all.width, all.height);
+    shots.reduce((y, c) => { g.drawImage(c, 0, y); return y + c.height; }, 0);
+    return { image: toJpeg(all, all.width, all.height) };
+  } finally { doc.destroy(); }
+}
 async function scanReceipt(file) {
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
   receipt = null;
   $('#rcList').innerHTML = '';
-  $('#rcInfo').textContent = 'Der Bon wird gelesen … das dauert ein paar Sekunden.';
+  $('#rcInfo').textContent = `${isPdf ? 'Die PDF' : 'Der Bon'} wird gelesen … das dauert ein paar Sekunden.`;
   $('#rcInfo').className = 'update-info';
   $('#rcAdd').hidden = true;
   $('#receiptSheet').hidden = false;
   try {
-    const image = await shrinkImage(file);
-    const r = await api('/api/receipt', { image });
+    const r = await api('/api/receipt', isPdf ? await readPdf(file) : { image: await shrinkImage(file) });
     const openList = openShop();
     receipt = { store: r.store, items: r.items.map((it) => ({ ...it, sel: true,
       pantry: livePantry().find((p) => sameThing(p.name, it.name)), shop: openList.find((i) => sameThing(i.name, it.name)) })) };
     renderReceipt();
   } catch (e) {
     $('#rcInfo').className = 'update-info bad';
-    $('#rcInfo').textContent = e.status === 422 ? 'Auf dem Foto habe ich keine Artikel erkannt. Bitte den Bon gerade, ganz und gut beleuchtet fotografieren.'
+    $('#rcInfo').textContent = e.status === 422 ? (isPdf ? 'In der PDF habe ich keine Artikel erkannt. Ist das ein Kassenbon?' : 'Auf dem Foto habe ich keine Artikel erkannt. Bitte den Bon gerade, ganz und gut beleuchtet fotografieren.')
       : e.status === 429 ? 'Für heute sind genug Bons gescannt. Morgen geht es wieder.'
       : e.status === 503 ? 'Das Lesen von Bons klappt gerade nicht. Bitte später nochmal versuchen.'
-      : e.message === 'bild' ? 'Das Bild ließ sich nicht öffnen. Bitte ein Foto (JPG oder PNG) wählen.'
+      : e.message === 'bild' ? 'Das Bild ließ sich nicht öffnen. Bitte ein Foto (JPG oder PNG) oder eine PDF wählen.'
+      : e.message === 'pdf' ? 'Die PDF ließ sich nicht öffnen (beschädigt oder mit Passwort?).'
       : 'Keine Verbindung. Bitte später nochmal versuchen.';
   }
 }

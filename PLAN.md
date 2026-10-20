@@ -171,6 +171,10 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 - **Kassenbon scannen** im Vorrat: Foto wird in der App verkleinert (JPEG, unter 900 KB), `POST /api/receipt` lässt es von Workers AI lesen (Binding `AI`, mehrere Vision-Modelle der Reihe nach, das erste funktionierende wird gemerkt), Pfand/Summen/Doppeltes werden herausgefiltert; Prüffenster, dann in den Vorrat (neu oder wieder „Da“) und passende Einträge auf der Liste abhaken. 25 Bons pro Haushalt und Tag (Tabelle `usage`)
 - Tests laufen mit `wrangler dev --env test` (ohne KI, festes Beispiel über `FAKE_RECEIPT`); die echte KI prüft der Workflow „Bon-Scan prüfen“ (von Hand, mit `tests/fixtures/kassenbon.jpg`)
 
+## Umgesetzt (3.5.0)
+
+- **Kassenbon als PDF** (z. B. eBon aus der Supermarkt-App): die App liest die PDF mit PDF.js (Mozilla, `docs/vendor/pdfjs`, Version 3.11.174 „legacy“, wird erst beim ersten PDF geladen). Hat die PDF Text, gehen nur die Zeilen als `{ text }` an `POST /api/receipt` und ein Text-Modell liest sie (genauer als ein Foto); eingescannte PDFs ohne Text werden gerendert (bis 4 Seiten untereinander) und wie ein Foto geschickt. Gleiches Tageslimit
+
 ## Später möglich
 
 - Eigene Kategorien für Aufgaben, Erinnerung an einzelne Aufgaben zu einer Uhrzeit

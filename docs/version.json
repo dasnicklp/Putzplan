@@ -1,7 +1,7 @@
 {
-  "version": "3.4.0",
-  "date": "2026-10-12",
+  "version": "3.5.0",
+  "date": "2026-10-20",
   "notes": [
-    "Kassenbon scannen: im Vorrat den Bon fotografieren, die Artikel kommen in den Vorrat und werden auf der Einkaufsliste abgehakt"
+    "Kassenbon scannen geht jetzt auch mit PDFs, z. B. dem digitalen Bon (eBon) aus der Supermarkt-App: im Vorrat auf „Kassenbon scannen“ tippen und die PDF auswählen"
   ]
 }

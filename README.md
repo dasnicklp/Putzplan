@@ -6,7 +6,7 @@ Gemeinsame Haushalts-App für zwei Personen als Web-App (PWA): Putzplan, Einkauf
 - Rezepte: Zutaten untereinander eintragen, Portionen umrechnen, ausgewählte Zutaten mit einem Tipp auf die Einkaufsliste; Import und Export als JSON (siehe unten)
 - Vorrat: was zu Hause ist; „Knapp“/„Leer“ setzt es auf die Einkaufsliste, Abhaken beim Einkauf füllt wieder auf, Rezepte wählen Vorhandenes ab
 - Pinnwand für Nachrichten aneinander, Termine und Geburtstage mit Erinnerung, Anschaffungen, Geräte mit Garantie, Anleitung und Wartung
-- Kassenbon scannen: Foto vom Bon, die Artikel kommen in den Vorrat und werden auf der Liste abgehakt
+- Kassenbon scannen: Foto vom Bon oder PDF (z. B. eBon aus der Supermarkt-App), die Artikel kommen in den Vorrat und werden auf der Liste abgehakt
 - Vorrat mit Mindesthaltbarkeit, „Was können wir kochen?“ aus dem Vorrat, Zählerstände mit Verbrauch pro Monat, WLAN-QR-Code für Gäste
 - Kalender-Abo fürs Handy (iPhone, Google) und „Hey Siri, Einkaufsliste“ über einen geheimen Link
 - Mitteilungen: täglich (Aufgaben, Termine, Geburtstage, Ablaufendes, Zählerstände), Wochenrückblick am Sonntag, Pinnwand und neue Sachen auf der Liste sofort ans andere Handy
@@ -68,6 +68,7 @@ docs/      App (statisch; ausgeliefert vom Worker und zusätzlich von GitHub Pag
   index.html            die ganze App: Oberfläche, Logik, Sync
   sw.js                 Offline-Cache
   manifest.webmanifest  Name und Icons für die Installation
+  vendor/pdfjs/         PDF.js (Mozilla) zum Lesen von Kassenbons als PDF
 worker/    Backend (Cloudflare Worker + D1-Datenbank)
   src/index.js          API: Haushalt anlegen, Code prüfen, alles synchronisieren, Erinnerungen, Aufräumen
   wrangler.toml         Worker-Name, Datenbank-Verknüpfung, Ordner der App

@@ -21,3 +21,8 @@ jobs:
           echo "Dauer: $(( $(date +%s) - START )) s"
           cat result.json; echo
           node -e 'const r=JSON.parse(require("fs").readFileSync("result.json")); if (!r.items || r.items.length < 5) process.exit(1); console.log("Erkannt:", r.items.map((i) => i.name + (i.qty ? " ×" + i.qty : "")).join(", "))'
+          echo "--- PDF-Bon (Text, wie ihn die App aus einer PDF liest)"
+          node -e 'require("fs").writeFileSync("body.json", JSON.stringify({ debug: true, text: ["REWE Markt GmbH", "Musterstr. 1, 12345 Musterstadt", "EUR", "BIO VOLLM.3,5%  1,19 B", "GOUDA JG.SCHB.  2,29 B", "BANANEN LOSE  1,49 B", "SPUELM.ZITR  0,95 A", "PFAND 0,25  0,25 A", "SUMME EUR  6,17", "Geg. EC-Cash EUR  6,17"].join("\n") }))'
+          curl -sS -X POST "$URL/api/receipt" -H "Authorization: Bearer $CODE" -H 'Content-Type: application/json' --data @body.json -o result.json -w 'HTTP %{http_code}\n'
+          cat result.json; echo
+          node -e 'const r=JSON.parse(require("fs").readFileSync("result.json")); if (!r.items || r.items.length < 3) process.exit(1); console.log("Erkannt:", r.items.map((i) => i.name + (i.qty ? " ×" + i.qty : "")).join(", "))'
