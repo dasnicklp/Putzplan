@@ -173,6 +173,11 @@ Aufbau nach dem Muster der Fokus-App (`dasnicklp/fokus-app`): eine `index.html` 
 
 ## Umgesetzt (3.5.0)
 
+- Geburtstage mit Kategorie (Feld `cat`, frei mit Vorschlägen Familie, Freunde, Arbeit, Schreibweise wird angeglichen), Filter über den Geburtstagen im Kalender
+- Einkaufsliste und Vorrat: Bereiche „Snacks süß“ 🍫 und „Snacks salzig“ 🥨 hinter „Vorrat“, eigene Stichwörter; eine gespeicherte Laden-Reihenfolge bekommt neue Bereiche hinter ihrem Vorgänger. Einmal pro Gerät werden Einträge unter „Vorrat“, die nach Stichwort Snacks sind, umsortiert
+
+## Umgesetzt (3.6.0)
+
 - **Kassenbon als PDF** (z. B. eBon aus der Supermarkt-App): die App liest die PDF mit PDF.js (Mozilla, `docs/vendor/pdfjs`, Version 3.11.174 „legacy“, wird erst beim ersten PDF geladen). Hat die PDF Text, gehen nur die Zeilen als `{ text }` an `POST /api/receipt` und ein Text-Modell liest sie (genauer als ein Foto); eingescannte PDFs ohne Text werden gerendert (bis 4 Seiten untereinander) und wie ein Foto geschickt. Gleiches Tageslimit
 
 ## Später möglich

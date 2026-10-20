@@ -244,7 +244,7 @@ function cleanBday(x) {
   const name = clampStr(x.name, 100);
   const month = intIn(x.month, 1, 12, 0), day = intIn(x.day, 1, 31, 0);
   if (!b.deleted && (!name || !month || !day)) return null;
-  return { ...b, name, month, day, year: intIn(x.year, 1900, 2100, null), remind: intIn(x.remind, 0, 60, 7), note: clampStr(x.note, 1000) };
+  return { ...b, name, month, day, year: intIn(x.year, 1900, 2100, null), remind: intIn(x.remind, 0, 60, 7), note: clampStr(x.note, 1000), cat: clampStr(x.cat, 40) }; // cat = Kategorie, z. B. Familie
 }
 // Anschaffung: größere Sachen, die ihr kaufen wollt
 function cleanWish(x) {

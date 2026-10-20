@@ -823,7 +823,7 @@ a.btn.primary{color:var(--accent-ink)}
 
 <script>
 /* ================= Einstellungen (hier anpassen) ================= */
-const APP_VERSION = '3.5.0'; // bei jeder neuen Version hier UND in version.json erhöhen
+const APP_VERSION = '3.6.0'; // bei jeder neuen Version hier UND in version.json erhöhen
 // Die App läuft auf zwei Adressen: direkt beim Worker (Backend unter derselben Adresse) und auf GitHub Pages
 const API_BASE = location.hostname.endsWith('github.io') ? 'https://putzplan-api.n-kudenholdt2000.workers.dev' : '';
 const DEFAULT_NAMES = { nick: 'Nick', partner: 'Freundin' };   // Standardnamen; in der App im Reiter „Zuhause“ änderbar
@@ -856,15 +856,17 @@ const TABS = { clean: 'Putzen', shop: 'Einkaufsliste', notes: 'Notizen', home: '
 const VIEWS = { today: 'Heute', week: 'Woche', month: 'Monat', stats: 'Bilanz' }; // Unteransichten im Reiter „Putzen“
 const NOTE_CAT_SUGGESTIONS = ['Putztipps', 'Info', 'Ideen'];
 // Einkaufsliste: Bereiche im Laden, in dieser Reihenfolge angezeigt
-const SHOP_CATS = ['Obst & Gemüse', 'Brot & Backwaren', 'Kühlregal', 'Tiefkühl', 'Vorrat', 'Getränke', 'Drogerie', 'Haushalt', 'Sonstiges'];
-const SHOP_ICON = { 'Obst & Gemüse': '🥦', 'Brot & Backwaren': '🥖', 'Kühlregal': '🧀', 'Tiefkühl': '🧊', 'Vorrat': '🥫', 'Getränke': '🥤', 'Drogerie': '🧴', 'Haushalt': '🧽', 'Sonstiges': '🛒' };
+const SHOP_CATS = ['Obst & Gemüse', 'Brot & Backwaren', 'Kühlregal', 'Tiefkühl', 'Vorrat', 'Snacks süß', 'Snacks salzig', 'Getränke', 'Drogerie', 'Haushalt', 'Sonstiges'];
+const SHOP_ICON = { 'Obst & Gemüse': '🥦', 'Brot & Backwaren': '🥖', 'Kühlregal': '🧀', 'Tiefkühl': '🧊', 'Vorrat': '🥫', 'Snacks süß': '🍫', 'Snacks salzig': '🥨', 'Getränke': '🥤', 'Drogerie': '🧴', 'Haushalt': '🧽', 'Sonstiges': '🛒' };
 // Stichwörter für die automatische Einordnung (Teil des Namens genügt, z. B. „Vollmilch“ → Kühlregal)
 const SHOP_WORDS = {
   'Obst & Gemüse': 'apfel äpfel banane birne orange zitrone limette traube beere erdbeer kiwi mango ananas melone obst gemüse tomate gurke paprika zwiebel knoblauch kartoffel möhre karotte salat brokkoli zucchini spinat pilz champignon lauch avocado ingwer kräuter petersilie basilikum radieschen kohl aubergine sellerie',
   'Brot & Backwaren': 'brot brötchen toast baguette croissant brezel laugen kuchen semmel wrap tortilla knäcke',
   'Kühlregal': 'parmesan gouda emmentaler crème fraîche speck kochschinken milch joghurt quark käse butter sahne schmand frischkäse mozzarella feta ei eier wurst schinken salami aufschnitt hähnchen fleisch hack lachs tofu margarine pudding skyr',
   'Tiefkühl': 'tiefkühl tk pizza eis pommes fischstäbchen erbsen',
-  'Vorrat': 'passiert kokosmilch kichererbsen nudel pasta spaghetti reis mehl zucker salz pfeffer öl essig müsli haferflocken cornflakes honig marmelade nutella kaffee tee dose konserve linsen bohnen mais tomatenmark ketchup senf mayo gewürz brühe soße sauce chips schokolade keks nüsse backpulver hefe',
+  'Vorrat': 'passiert kokosmilch kichererbsen nudel pasta spaghetti reis mehl zucker salz pfeffer öl essig müsli haferflocken cornflakes honig marmelade nutella kaffee tee dose konserve linsen bohnen mais tomatenmark ketchup senf mayo gewürz brühe soße sauce backpulver hefe',
+  'Snacks süß': 'schokolade schoko keks kekse plätzchen gummibärchen gummibären fruchtgummi weingummi bonbon bonbons praline pralinen riegel waffel waffeln lakritz marshmallow süßigkeiten süßes naschi kinderschokolade lebkuchen spekulatius',
+  'Snacks salzig': 'chips flips salzstangen salzbrezeln cracker popcorn nüsse erdnüsse cashew cashews pistazien mandeln nachos knabber knabberzeug salzgebäck studentenfutter',
   'Getränke': 'wasser sprudel saft cola limo bier wein sekt getränk mate',
   'Drogerie': 'zahnpasta zahnbürste shampoo duschgel seife deo creme rasier tampon binde windel taschentuch watte pflaster sonnencreme',
   'Haushalt': 'klopapier toilettenpapier küchenrolle küchenpapier spüli spülmittel tabs spülmaschine waschmittel weichspüler müllbeutel müllsack schwamm putzmittel reiniger entkalker glasreiniger alufolie frischhaltefolie backpapier batterie glühbirne lappen',
@@ -1360,7 +1362,9 @@ const nameKey = (s) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ')
 function guessShopCat(name) {
   const k = nameKey(name);
   const prev = shop.filter((i) => nameKey(i.name) === k && SHOP_CATS.includes(i.cat)).sort((a, b) => b.updatedAt - a.updatedAt)[0];
-  if (prev) return prev.cat;
+  return prev ? prev.cat : guessByWords(k);
+}
+function guessByWords(k) {
   const words = k.split(/[^\p{L}]+/u).filter(Boolean);
   let best = 'Sonstiges', score = 0;
   for (const [cat, list] of Object.entries(SHOP_WORDS)) {
@@ -2098,8 +2102,9 @@ function openForm({ title, fields, values = {}, onSave, onDelete }) {
       ? `<select id="${id}">${f.options.map(([o, l]) => `<option value="${esc(o)}"${String(o) === String(v) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`
       : f.type === 'textarea'
         ? `<textarea id="${id}" maxlength="1000" style="min-height:90px" placeholder="${esc(f.placeholder || '')}">${esc(v)}</textarea>`
-        : `<input id="${id}" type="${f.type === 'number' ? 'number' : f.type === 'decimal' ? 'text' : f.type || 'text'}"${f.type === 'number' ? ' inputmode="numeric"' : ''}${f.type === 'decimal' ? ' inputmode="decimal"' : ''}${f.type === 'url' ? ' inputmode="url"' : ''} value="${esc(f.type === 'decimal' && typeof v === 'number' ? String(v).replace('.', ',') : v)}" placeholder="${esc(f.placeholder || '')}" autocomplete="off" maxlength="${f.max || 200}">`;
-    return `<div><label for="${id}">${esc(f.label)}</label>${field}</div>`;
+        : `<input id="${id}" type="${f.type === 'number' ? 'number' : f.type === 'decimal' ? 'text' : f.type || 'text'}"${f.type === 'number' ? ' inputmode="numeric"' : ''}${f.type === 'decimal' ? ' inputmode="decimal"' : ''}${f.type === 'url' ? ' inputmode="url"' : ''} value="${esc(f.type === 'decimal' && typeof v === 'number' ? String(v).replace('.', ',') : v)}" placeholder="${esc(f.placeholder || '')}" autocomplete="off" maxlength="${f.max || 200}"${f.list ? ` list="${id}_l"` : ''}>`;
+    const list = f.list ? `<datalist id="${id}_l">${f.list.map((o) => `<option value="${esc(o)}">`).join('')}</datalist>` : ''; // Vorschläge zum Antippen
+    return `<div><label for="${id}">${esc(f.label)}</label>${field}${list}</div>`;
   };
   const flush = () => { if (half.length) { html += half.length === 2 ? `<div class="two">${half.join('')}</div>` : half[0]; half = []; } };
   for (const f of fields) {
@@ -2183,12 +2188,22 @@ function nextBday(b) {
   return { days: Math.round((d - today) / 864e5), age: b.year ? d.getFullYear() - b.year : null, date: d };
 }
 const bdayWhen = (n) => (n.days === 0 ? 'heute' : n.days === 1 ? 'morgen' : `in ${n.days} Tagen`);
+// Kategorien wie bei den Notizen: ergeben sich aus den Geburtstagen selbst, eine pro Geburtstag; leer = ohne Kategorie
+const BDAY_CAT_SUGGESTIONS = ['Familie', 'Freunde', 'Arbeit'];
+const bdayCats = () => [...new Set(live_(bdays).map((b) => b.cat).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
+let bdayFilter = (() => { try { const v = JSON.parse(lsGet('putzplan.bdayCat')); return typeof v === 'string' ? v : null; } catch (e) { return null; } })();
 function bdaysHtml() {
-  const list = live_(bdays).map((b) => ({ b, n: nextBday(b) })).sort((x, y) => x.n.days - y.n.days);
-  if (!list.length) return '<p class="empty">Noch keine Geburtstage. Mit „+“ eintragen; die tägliche Mitteilung erinnert dann rechtzeitig.</p>';
-  return '<div>' + list.map(({ b, n }) => `<button type="button" class="note" data-bday="${b.id}">
+  const cats = bdayCats(), hasNone = live_(bdays).some((b) => !b.cat);
+  if (bdayFilter !== null && bdayFilter !== '' && !cats.includes(bdayFilter)) bdayFilter = null;
+  if (bdayFilter === '' && !hasNone) bdayFilter = null;
+  const chip = (v, label) => `<button type="button" data-bcat="${v === null ? '*' : esc(v)}" aria-pressed="${bdayFilter === v}">${esc(label)}</button>`;
+  const bar = cats.length ? `<div class="filters" style="margin:0 0 8px">${chip(null, 'Alle')}${cats.map((c) => chip(c, c)).join('')}${hasNone ? chip('', 'Ohne Kategorie') : ''}</div>` : '';
+  const list = live_(bdays).filter((b) => bdayFilter === null || (b.cat || '') === bdayFilter)
+    .map((b) => ({ b, n: nextBday(b) })).sort((x, y) => x.n.days - y.n.days);
+  if (!live_(bdays).length) return '<p class="empty">Noch keine Geburtstage. Mit „+“ eintragen; die tägliche Mitteilung erinnert dann rechtzeitig.</p>';
+  return bar + '<div>' + list.map(({ b, n }) => `<button type="button" class="note" data-bday="${b.id}">
     <span class="ttl">🎂 ${esc(b.name)}</span>
-    <span class="meta"><span class="chip">${b.day}. ${MONTH_LONG[b.month - 1]}</span><span class="chip">${bdayWhen(n)}${n.age ? ` · wird ${n.age}` : ''}</span></span>
+    <span class="meta"><span class="chip">${b.day}. ${MONTH_LONG[b.month - 1]}</span><span class="chip">${bdayWhen(n)}${n.age ? ` · wird ${n.age}` : ''}</span>${b.cat ? `<span class="chip">🏷 ${esc(b.cat)}</span>` : ''}</span>
     ${b.note ? `<span class="nbody">${esc(b.note)}</span>` : ''}</button>`).join('') + '</div>';
 }
 function editBday(id) {
@@ -2202,10 +2217,14 @@ function editBday(id) {
       { key: 'month', label: 'Monat', type: 'select', options: MONTHS_OPT, half: true },
       { key: 'year', label: 'Geburtsjahr (optional)', type: 'number', half: true, placeholder: 'für das Alter' },
       { key: 'remind', label: 'Erinnern', type: 'select', half: true, options: [[0, 'am Tag selbst'], [1, '1 Tag vorher'], [3, '3 Tage vorher'], [7, '1 Woche vorher'], [14, '2 Wochen vorher']] },
+      { key: 'cat', label: 'Kategorie (optional)', placeholder: 'z. B. Familie, Freunde, Arbeit', max: 40,
+        list: [...bdayCats(), ...BDAY_CAT_SUGGESTIONS.filter((c) => !bdayCats().some((x) => x.toLowerCase() === c.toLowerCase()))] },
       { key: 'note', label: 'Geschenkideen, Notizen', type: 'textarea', placeholder: 'z. B. mag Gin, Buch von …' },
     ],
     onSave: (v) => {
-      const data = { name: v.name.slice(0, 100), day: Math.max(1, Math.min(31, v.day)), month: Number(v.month), year: v.year && v.year > 1900 && v.year < 2100 ? v.year : null, remind: Number(v.remind), note: v.note };
+      // Vorhandene Schreibweise übernehmen, damit aus „familie“ und „Familie“ keine zwei Kategorien werden
+      const cat = catNorm(v.cat), same = bdayCats().find((c) => c.toLowerCase() === cat.toLowerCase());
+      const data = { name: v.name.slice(0, 100), day: Math.max(1, Math.min(31, v.day)), month: Number(v.month), year: v.year && v.year > 1900 && v.year < 2100 ? v.year : null, remind: Number(v.remind), note: v.note, cat: same || cat };
       if (b) { Object.assign(b, data); touch(b); } else bdays.push(newItem(data));
     },
     onDelete: b ? () => removeWithUndo(() => bdays, [b], `Geburtstag „${b.name}“ gelöscht`) : null,
@@ -2682,7 +2701,9 @@ const pantryOf = (name) => livePantry().find((p) => nameKey(p.name) === nameKey(
 // Reihenfolge der Bereiche, wie in den Einstellungen festgelegt
 function shopOrder() {
   const o = ((settings && settings.shopOrder) || []).filter((c) => SHOP_CATS.includes(c));
-  return [...o, ...SHOP_CATS.filter((c) => !o.includes(c))];
+  // Fehlende (z. B. die Snacks seit 3.5) kommen hinter ihren Vorgänger aus der Grundreihenfolge
+  SHOP_CATS.forEach((c, i) => { if (!o.includes(c)) o.splice(i ? o.indexOf(SHOP_CATS[i - 1]) + 1 : 0, 0, c); });
+  return o;
 }
 // Mindestens haltbar bis: Tage bis dahin und Text
 function bestInfo(p) {
@@ -3523,6 +3544,17 @@ async function api(path, body, c = code) {
 }
 
 // Vom Server (Sprachassistent) eingetragene Sachen haben noch keinen Bereich: „2 Liter Milch“ → Menge und Bereich ergänzen
+// Seit 3.5 gibt es Snacks süß und salzig: Was bisher von selbst unter „Vorrat“ lag (Chips, Schokolade …), einmal umsortieren
+function moveSnacks() {
+  if (lsGet('putzplan.snacks')) return 0;
+  lsSet('putzplan.snacks', '1');
+  let n = 0;
+  for (const i of [...liveShop(), ...livePantry()]) {
+    const c = i.cat === 'Vorrat' && guessByWords(nameKey(i.name));
+    if (c && c.startsWith('Snacks')) { i.cat = c; touch(i); n++; }
+  }
+  return n;
+}
 function tidyVoiceItems() {
   let n = 0;
   for (const i of openShop()) {
@@ -3551,7 +3583,7 @@ async function sync() {
       for (const [k, [get]] of Object.entries(SYNCED)) lsSet('putzplan.' + k, JSON.stringify(get()));
       lsSet(LS.history, JSON.stringify(archived));
       lsSet(LS.settings, JSON.stringify(settings));
-      if (tidyVoiceItems()) save();
+      if (tidyVoiceItems() + moveSnacks()) save();
       if (JSON.stringify([allData(), settings, archived]) !== before) render(); // nur neu zeichnen, wenn sich etwas geändert hat
     } else {
       again = true; // während der Anfrage wurde etwas geändert: gleich noch einmal senden
@@ -3793,6 +3825,8 @@ document.addEventListener('click', (e) => {
   if (sg) return shopView === 'pantry' ? addPantry(sg.dataset.sugg) : addShop(sg.dataset.sugg);
   const tip = e.target.closest('[data-tip]');
   if (tip) return toast(tip.dataset.tip);
+  const bc = e.target.closest('[data-bcat]');
+  if (bc) { bdayFilter = bc.dataset.bcat === '*' ? null : bc.dataset.bcat; lsSet('putzplan.bdayCat', JSON.stringify(bdayFilter)); return render(); }
   const nc = e.target.closest('[data-ncat]');
   if (nc) { noteFilter = nc.dataset.ncat === '*' ? null : nc.dataset.ncat; lsSet(LS.noteCat, JSON.stringify(noteFilter)); return render(); }
   const note = e.target.closest('[data-note]');

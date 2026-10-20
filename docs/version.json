@@ -1,5 +1,5 @@
 {
-  "version": "3.5.0",
+  "version": "3.6.0",
   "date": "2026-10-20",
   "notes": [
     "Kassenbon scannen geht jetzt auch mit PDFs, z. B. dem digitalen Bon (eBon) aus der Supermarkt-App: im Vorrat auf „Kassenbon scannen“ tippen und die PDF auswählen"
