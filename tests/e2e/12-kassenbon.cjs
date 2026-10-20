@@ -1,4 +1,4 @@
-// Kassenbon scannen: Foto → Server (in den Tests ein festes Beispiel statt KI) → prüfen → Vorrat und Einkaufsliste
+// Kassenbon scannen: Foto oder PDF → Server (in den Tests ein festes Beispiel statt KI) → prüfen → Vorrat und Einkaufsliste
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -48,8 +48,50 @@ module.exports = async ({ browser, ok, phone, newHousehold, stored, api }) => {
   ok(shop.find((i) => i.name === 'Bananen').done && shop.find((i) => i.name === 'Kaffee').done && !shop.find((i) => i.name === 'Brot').done, 'Liste: Bananen und Kaffee abgehakt, Brot nicht');
   ok((await a.textContent('#toast')).includes('2 neu im Vorrat') && (await a.textContent('#toast')).includes('1 aufgefüllt'), 'Hinweis: ' + await a.textContent('#toast'));
 
-  // Server: falsches Bild abgelehnt, Tageslimit
+  // PDF-Bon mit Text (wie ein eBon aus der Supermarkt-App): die App liest den Text und schickt nur ihn
+  const pdfPage = await browser.newPage();
+  const pdfOf = async (html) => {
+    await pdfPage.setContent(`<body style="margin:8px;font:14px monospace">${html}</body>`);
+    const f = path.join(os.tmpdir(), `bon-${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`);
+    fs.writeFileSync(f, await pdfPage.pdf({ width: '80mm', height: '150mm' }));
+    return f;
+  };
+  const textPdf = await pdfOf(['REWE Markt GmbH', 'BIO VOLLM 3,5%      1,19 B', 'BANANEN LOSE        1,49 B', 'SUMME EUR           2,68'].map((t) => `<div>${t}</div>`).join(''));
+  const scanFile = async (f) => {
+    sent = null;
+    await a.setInputFiles('#receiptFile', f);
+    await a.waitForFunction(() => document.querySelector('#rcList [data-rc]') || document.querySelector('#rcInfo.bad'), null, { timeout: 15000 });
+    return sent && JSON.parse(sent);
+  };
+  let body = await scanFile(textPdf);
+  ok(body && !body.image && /BIO VOLLM 3,5%\s+1,19 B\nBANANEN LOSE/.test(body.text || ''), 'PDF mit Text: Text zeilenweise gesendet, kein Bild');
+  ok(await a.locator('#rcList [data-rc]').count() === 4, 'PDF mit Text: Artikel zur Kontrolle');
+  await a.click('#rcCancel');
+
+  // Eingescannte PDF (nur ein Bild, kein Text): die App schickt die Seite als Foto
+  const scanImg = await a.evaluate(() => {
+    const c = document.createElement('canvas'); c.width = 600; c.height = 900;
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+    g.fillStyle = '#000'; g.font = '32px monospace'; g.fillText('KAFFEE  4,99', 40, 80);
+    return c.toDataURL('image/png');
+  });
+  const imagePdf = await pdfOf(`<img src="${scanImg}" style="width:100%">`);
+  body = await scanFile(imagePdf);
+  ok(body && !body.text && /^data:image\/jpeg;base64,/.test(body.image || '') && body.image.length < 900000, 'Eingescannte PDF: als Bild gesendet');
+  ok(await a.locator('#rcList [data-rc]').count() === 4, 'Eingescannte PDF: Artikel zur Kontrolle');
+  await a.click('#rcCancel');
+
+  // Kaputte PDF: verständlicher Hinweis
+  const badPdf = path.join(os.tmpdir(), `bon-${Date.now()}-kaputt.pdf`);
+  fs.writeFileSync(badPdf, '%PDF-1.4 kaputt');
+  await scanFile(badPdf);
+  ok((await a.textContent('#rcInfo')).includes('PDF ließ sich nicht öffnen'), 'Kaputte PDF: Hinweis');
+  await a.click('#rcCancel');
+  [textPdf, imagePdf, badPdf].forEach((f) => fs.unlinkSync(f));
+
+  // Server: falsches Bild oder zu wenig Text abgelehnt, Tageslimit
   ok((await api('/api/receipt', { image: 'kein Bild' }, code)).status === 400, 'Kein Bild: abgelehnt');
+  ok((await api('/api/receipt', { text: 'Summe 2,68' }, code)).status === 400, 'Zu wenig Text: abgelehnt');
   const tiny = 'data:image/png;base64,' + 'A'.repeat(200);
   let last = 0;
   for (let i = 0; i < 25; i++) last = (await api('/api/receipt', { image: tiny }, code)).status;

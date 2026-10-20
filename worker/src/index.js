@@ -753,29 +753,37 @@ async function addByVoice(env, id, text, who) {
 const listText = (a) => (a.length > 1 ? a.slice(0, -1).join(', ') + ' und ' + a[a.length - 1] : a[0] || '');
 
 /* ------------------------------------------------------------------ */
-/* Kassenbon lesen (Workers AI): Foto rein, Liste der Artikel raus     */
+/* Kassenbon lesen (Workers AI): Foto/PDF-Text rein, Artikel raus     */
 /* ------------------------------------------------------------------ */
-const RECEIPT_PROMPT = `Das Bild zeigt einen Kassenbon aus einem deutschen Supermarkt oder einer Drogerie.
-Liste alle gekauften Artikel auf. Schreibe abgekürzte Bezeichnungen als normale deutsche Wörter aus, so wie man sie auf einen Einkaufszettel schreibt
+const RECEIPT_RULES = `Liste alle gekauften Artikel auf. Schreibe abgekürzte Bezeichnungen als normale deutsche Wörter aus, so wie man sie auf einen Einkaufszettel schreibt
 (z. B. "BIO VOLLM.3,5%" -> "Vollmilch", "GOUDA JG.SCHB." -> "Gouda", "BANANEN LOSE" -> "Bananen", "SPUELM.ZITR" -> "Spülmittel").
 Kauft jemand etwas mehrfach, gib die Anzahl als qty an.
 Lass Pfand, Leergut, Tüten, Rabatte, Coupons, Summen, Steuern und Zahlungsangaben weg.
 Antworte nur mit JSON in dieser Form, ohne weiteren Text:
 {"store": "Name des Ladens", "items": [{"name": "Vollmilch", "qty": "2"}]}`;
+const RECEIPT_PROMPT = `Das Bild zeigt einen Kassenbon aus einem deutschen Supermarkt oder einer Drogerie.\n${RECEIPT_RULES}`;
+// PDF-Bons (z. B. eBons aus der Supermarkt-App): die App schickt den Text, den sie aus der PDF gelesen hat
+const RECEIPT_TEXT_PROMPT = `Unten steht der Text eines Kassenbons aus einem deutschen Supermarkt oder einer Drogerie (aus einer PDF, Spalten durch Leerzeichen getrennt).\n${RECEIPT_RULES}\n\nText des Bons:\n`;
 // Was kein Artikel ist (falls das Modell es trotzdem aufführt)
 const NOT_ITEM = /pfand|leergut|t(ü|ue)te|tragetasche|summe|gesamt|zwischensumme|r(ü|ue)ckgeld|mwst|steuer|rabatt|coupon|payback|kartenzahlung|ec-?karte|bar\b|gegeben|netto|brutto|bonus/i;
-// Modelle in dieser Reihenfolge; das erste, das antwortet, wird gemerkt
+// Modelle in dieser Reihenfolge; das erste, das antwortet, wird gemerkt (für Fotos und für Text getrennt)
 const VISION_MODELS = [
   ['@cf/meta/llama-4-scout-17b-16e-instruct', 'parts'],
   ['@cf/google/gemma-3-12b-it', 'parts'],
   ['@cf/mistralai/mistral-small-3.1-24b-instruct', 'parts'],
   ['@cf/meta/llama-3.2-11b-vision-instruct', 'image'],
 ];
-let goodModel = null;
-async function askVision(env, model, kind, dataUrl) {
-  const input = kind === 'parts'
-    ? { messages: [{ role: 'user', content: [{ type: 'text', text: RECEIPT_PROMPT }, { type: 'image_url', image_url: { url: dataUrl } }] }], max_tokens: 1500, temperature: 0.1 }
-    : { messages: [{ role: 'user', content: RECEIPT_PROMPT }], image: dataUrl, max_tokens: 1500, temperature: 0.1 };
+const TEXT_MODELS = [
+  ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', 'text'],
+  ['@cf/meta/llama-4-scout-17b-16e-instruct', 'text'],
+  ['@cf/mistralai/mistral-small-3.1-24b-instruct', 'text'],
+  ['@cf/meta/llama-3.1-8b-instruct-fast', 'text'],
+];
+const goodModel = {};
+async function askModel(env, model, kind, data) {
+  const input = kind === 'text' ? { messages: [{ role: 'user', content: RECEIPT_TEXT_PROMPT + data }], max_tokens: 1500, temperature: 0.1 }
+    : kind === 'parts' ? { messages: [{ role: 'user', content: [{ type: 'text', text: RECEIPT_PROMPT }, { type: 'image_url', image_url: { url: data } }] }], max_tokens: 1500, temperature: 0.1 }
+    : { messages: [{ role: 'user', content: RECEIPT_PROMPT }], image: data, max_tokens: 1500, temperature: 0.1 };
   try { return await env.AI.run(model, input); }
   catch (e) {
     // Llama 3.2 Vision verlangt einmalig die Zustimmung zur Lizenz
@@ -804,16 +812,19 @@ function parseReceipt(out) {
   }
   return { store: clampStr(data.store || data.laden || '', 60), items };
 }
-async function readReceipt(env, dataUrl) {
+// { image } (Foto als data-URL) oder { text } (aus einer PDF)
+async function readReceipt(env, { image, text }) {
   if (env.FAKE_RECEIPT === '1') { // nur in den Tests: festes Beispiel, inkl. Dingen, die herausgefiltert werden
     return parseReceipt({ response: 'Hier: {"store":"Testmarkt","items":[{"name":"Vollmilch","qty":"2"},{"name":"bananen","qty":"1"},{"name":"Spülmittel"},{"name":"Pfand"},{"name":"Vollmilch","qty":"2"},{"name":"Summe"},{"name":"Kaffee"}]}' });
   }
   if (!env.AI) return { error: 'ai' };
+  const src = text ? 'text' : 'image', list = text ? TEXT_MODELS : VISION_MODELS, good = goodModel[src];
   const tried = [];
-  for (const [model, kind] of goodModel ? [goodModel, ...VISION_MODELS.filter((m) => m !== goodModel)] : VISION_MODELS) {
+  for (const m of good ? [good, ...list.filter((x) => x !== good)] : list) {
+    const [model, kind] = m;
     try {
-      const r = parseReceipt(await askVision(env, model, kind, dataUrl));
-      if (r) { goodModel = [model, kind]; return { ...r, model }; }
+      const r = parseReceipt(await askModel(env, model, kind, text || image));
+      if (r) { goodModel[src] = m; return { ...r, model }; }
       tried.push(model + ': keine Liste');
     } catch (e) { tried.push(model + ': ' + String(e && e.message || e).slice(0, 200)); }
   }
@@ -937,17 +948,18 @@ async function handle(req, env, ctx) {
     return json(req, { ...rest, serverTime: Date.now() });
   }
 
-  // Kassenbon lesen: { image: 'data:image/jpeg;base64,…' } → { store, items: [{ name, qty }] }
+  // Kassenbon lesen: { image: 'data:image/jpeg;base64,…' } oder { text: '…' } (aus einer PDF) → { store, items: [{ name, qty }] }
   if (path === '/api/receipt' && req.method === 'POST') {
     const body = await readJson(req);
-    const img = String(body.image || '');
-    if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]{100,}$/.test(img)) return json(req, { error: 'image' }, 400);
+    const img = String(body.image || ''), text = clampStr(body.text, 20000);
+    if (body.text !== undefined) { if (text.replace(/\s/g, '').length < 20) return json(req, { error: 'text' }, 400); }
+    else if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]{100,}$/.test(img)) return json(req, { error: 'image' }, 400);
     const day = new Date().toISOString().slice(0, 10), key = `scan:${auth.id}:${day}`;
     const used = await env.DB.prepare('SELECT n FROM usage WHERE k = ?').bind(key).first();
     if (used && used.n >= MAX_SCANS) return json(req, { error: 'limit' }, 429);
     await env.DB.prepare('INSERT INTO usage (k, n) VALUES (?, 1) ON CONFLICT(k) DO UPDATE SET n = n + 1').bind(key).run();
     await env.DB.prepare("DELETE FROM usage WHERE k LIKE 'scan:%' AND k NOT LIKE ?").bind(`scan:%:${day}`).run(); // alte Tage vergessen
-    const r = await readReceipt(env, img);
+    const r = await readReceipt(env, text ? { text } : { image: img });
     if (r.error) return json(req, { error: r.error, ...(body.debug ? { tried: r.tried } : {}) }, 503);
     if (!r.items.length) return json(req, { error: 'empty', ...(body.debug ? { model: r.model } : {}) }, 422);
     return json(req, { store: r.store, items: r.items, ...(body.debug ? { model: r.model } : {}) });
